@@ -19,6 +19,10 @@ export type MyceoCornerRadiusToken = keyof typeof MYCEO_CORNER_RADIUS;
 export function myceoCornerStyle(token: MyceoCornerRadiusToken): ViewStyle {
   return {
     borderRadius: MYCEO_CORNER_RADIUS[token],
-    ...(Platform.OS === 'ios' ? { borderCurve: 'continuous' as const } : null),
-  };
+    ...(Platform.OS === 'ios'
+      ? { borderCurve: 'continuous' as const }
+      : Platform.OS === 'web'
+        ? ({ cornerShape: 'squircle' } as object)
+        : null),
+  } as ViewStyle;
 }

@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
-  Easing,
   LayoutChangeEvent,
   Platform,
   StyleProp,
@@ -15,42 +14,46 @@ import { tapLight } from '../../utils/haptics';
 type RotatingRevealTextProps = {
   phrases: string[];
   textStyle?: StyleProp<TextStyle>;
+  /** Background color the wipe matches (so only the dot stays visible). */
   coverColor: string;
   dotColor: string;
   dotSize?: number;
+  /** Gap between the end of the text and the resting dot. */
   dotGap?: number;
+  /** ms the phrase stays fully revealed before the next wipe. */
   holdMs?: number;
-  revealMs?: number;
-  coverMs?: number;
+  /** ms before the very first reveal. */
   introMs?: number;
   singleLine?: boolean;
 };
 
-const REVEAL_EASING = Easing.bezier(0.25, 0.1, 0.25, 1);
-const COVER_EASING = Easing.bezier(0.4, 0, 0.2, 1);
-/** Progress below this = dot rests beside text; above = dot follows the cover edge. */
-const REST_PROGRESS = 0.025;
-
 /**
- * ChatGPT-style headline: dot sweeps with the cover, then rests beside the phrase.
+ * ChatGPT / Superlist style headline.
+ *
+ * A physical dot wipes the text away (right → left) and reveals the next
+ * phrase (left → right), riding the leading edge of a background-colored
+ * cover. Between phrases it rests just past the last glyph and breathes.
+ *
+ * The dot lives OUTSIDE the clipped text layer, so it is never cut off at
+ * the edges. Motion is spring-based for a natural, weighty feel.
  */
 export function RotatingRevealText({
   phrases,
   textStyle,
   coverColor,
   dotColor,
-  dotSize = 12,
-  dotGap = 10,
-  holdMs = 2400,
-  revealMs = 1700,
-  coverMs = 1050,
+  dotSize = 14,
+  dotGap = 12,
+  holdMs = 2200,
   introMs = 350,
   singleLine = false,
 }: RotatingRevealTextProps) {
   const [index, setIndex] = useState(0);
   const [textWidth, setTextWidth] = useState(0);
+
+  // progress: 1 = fully covered (text hidden, dot at left), 0 = revealed (dot resting at end)
   const progress = useRef(new Animated.Value(1)).current;
-  const restPulse = useRef(new Animated.Value(1)).current;
+  const pulse = useRef(new Animated.Value(1)).current;
 
   const phrase = phrases[index];
 
@@ -62,6 +65,7 @@ export function RotatingRevealText({
         ? flatTextStyle.fontSize * 1.2
         : 40;
 
+  // Re-measure whenever the phrase changes.
   useEffect(() => {
     setTextWidth(0);
   }, [phrase]);
@@ -71,43 +75,51 @@ export function RotatingRevealText({
     if (w > 0 && w !== textWidth) setTextWidth(w);
   };
 
+  // Resting dot "breathes" with a soft, springy pulse.
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.spring(pulse, {
+          toValue: 1.18,
+          stiffness: 140,
+          damping: 7,
+          mass: 0.7,
+          useNativeDriver: false,
+        }),
+        Animated.spring(pulse, {
+          toValue: 1,
+          stiffness: 120,
+          damping: 9,
+          mass: 0.7,
+          useNativeDriver: false,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [pulse]);
+
+  // Reveal → hold → cover, then swap. Spring physics give it weight.
   useEffect(() => {
     if (textWidth <= 0) return;
     let cancelled = false;
 
     progress.setValue(1);
-    restPulse.setValue(1);
 
-    const reveal = Animated.timing(progress, {
+    const reveal = Animated.spring(progress, {
       toValue: 0,
-      duration: revealMs,
-      easing: REVEAL_EASING,
+      stiffness: 95,
+      damping: 16,
+      mass: 1,
       useNativeDriver: false,
     });
-    const cover = Animated.timing(progress, {
+    const cover = Animated.spring(progress, {
       toValue: 1,
-      duration: coverMs,
-      easing: COVER_EASING,
+      stiffness: 130,
+      damping: 20,
+      mass: 0.9,
       useNativeDriver: false,
     });
-    const breathe = Animated.loop(
-      Animated.sequence([
-        Animated.timing(restPulse, {
-          toValue: 1.03,
-          duration: 900,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: false,
-        }),
-        Animated.timing(restPulse, {
-          toValue: 1,
-          duration: 900,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: false,
-        }),
-      ]),
-    );
-
-    breathe.start();
 
     Animated.sequence([
       Animated.delay(introMs),
@@ -115,114 +127,70 @@ export function RotatingRevealText({
       Animated.delay(holdMs),
       cover,
     ]).start(({ finished }) => {
-      breathe.stop();
-      restPulse.setValue(1);
       if (!finished || cancelled) return;
-      tapLight();
+      tapLight(); // haptic exactly on the phrase swap
       setIndex((i) => (i + 1) % phrases.length);
     });
 
     return () => {
       cancelled = true;
       progress.stopAnimation();
-      breathe.stop();
-      restPulse.stopAnimation();
     };
-  }, [coverMs, holdMs, index, introMs, phrases.length, progress, revealMs, restPulse, textWidth]);
+  }, [holdMs, index, introMs, phrases.length, progress, textWidth]);
 
+  // Cover is anchored to the right edge and grows leftward to hide the text.
   const coverWidth = useMemo(
-    () =>
-      progress.interpolate({
-        inputRange: [0, 1],
-        outputRange: [0, textWidth || 1],
-      }),
+    () => progress.interpolate({ inputRange: [0, 1], outputRange: [0, textWidth] }),
     [progress, textWidth],
   );
 
-  const sweepLeft = useMemo(
+  // Dot leads the wipe; at rest it sits a clean `dotGap` past the last glyph.
+  const dotLeft = useMemo(
     () =>
       progress.interpolate({
-        inputRange: [0, REST_PROGRESS, 1],
-        outputRange: [-dotSize * 2, REST_PROGRESS * (textWidth || 1) - dotSize / 2, (textWidth || 1) - dotSize / 2],
+        inputRange: [0, 1],
+        outputRange: [textWidth + dotGap, -dotSize],
       }),
-    [dotSize, progress, textWidth],
-  );
-
-  const isAnimating = useMemo(
-    () =>
-      progress.interpolate({
-        inputRange: [0, REST_PROGRESS, REST_PROGRESS + 0.001, 1],
-        outputRange: [0, 0, 1, 1],
-        extrapolate: 'clamp',
-      }),
-    [progress],
-  );
-
-  const isResting = useMemo(
-    () =>
-      progress.interpolate({
-        inputRange: [0, REST_PROGRESS],
-        outputRange: [1, 0],
-        extrapolate: 'clamp',
-      }),
-    [progress],
+    [dotGap, dotSize, progress, textWidth],
   );
 
   const dotTop = (lineHeight - dotSize) / 2;
   const ready = textWidth > 0;
 
-  const dotStyle = {
-    width: dotSize,
-    height: dotSize,
-    borderRadius: dotSize / 2,
-    backgroundColor: dotColor,
-  };
-
   return (
     <View style={styles.row}>
-      <View style={styles.phraseRow}>
+      <View style={[styles.phraseRow, { minHeight: lineHeight }]}>
+        {/* Clipped text + wipe cover. Dot is intentionally NOT inside here. */}
         <View style={[styles.textClip, { minHeight: lineHeight }]}>
           <Text
             key={phrase}
-            style={[styles.text, singleLine && styles.textSingleLine, textStyle]}
+            style={[styles.text, textStyle]}
             onLayout={onLayout}
             numberOfLines={singleLine ? 1 : undefined}
-            adjustsFontSizeToFit={singleLine}
-            minimumFontScale={singleLine ? 0.85 : undefined}
           >
             {phrase}
           </Text>
           {ready ? (
-            <>
-              <Animated.View
-                style={[styles.cover, { backgroundColor: coverColor, width: coverWidth }]}
-              />
-              <Animated.View
-                style={[
-                  styles.sweepDot,
-                  dotStyle,
-                  styles.dotShadow,
-                  {
-                    top: dotTop,
-                    left: sweepLeft,
-                    opacity: isAnimating,
-                  },
-                ]}
-              />
-            </>
+            <Animated.View
+              style={[styles.cover, { backgroundColor: coverColor, width: coverWidth }]}
+            />
           ) : null}
         </View>
 
+        {/* The dot — free of the clip, so it never gets cut off. */}
         {ready ? (
           <Animated.View
             style={[
-              styles.restDot,
-              dotStyle,
+              styles.dot,
               styles.dotShadow,
               {
-                marginLeft: dotGap,
-                opacity: isResting,
-                transform: [{ scale: restPulse }],
+                width: dotSize,
+                height: dotSize,
+                borderRadius: dotSize / 2,
+                backgroundColor: dotColor,
+                top: dotTop,
+                left: dotLeft,
+                transform: [{ scale: pulse }],
               },
             ]}
           />
@@ -239,35 +207,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   phraseRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    position: 'relative',
+    alignSelf: 'center',
     justifyContent: 'center',
   },
   textClip: {
     position: 'relative',
-    flexShrink: 1,
     justifyContent: 'center',
     overflow: 'hidden',
   },
   text: {
     textAlign: 'left',
   },
-  textSingleLine: {
-    flexShrink: 0,
-  },
   cover: {
     position: 'absolute',
-    left: 0,
+    right: 0,
     top: 0,
     bottom: 0,
     pointerEvents: 'none',
   },
-  sweepDot: {
+  dot: {
     position: 'absolute',
     pointerEvents: 'none',
-  },
-  restDot: {
-    flexShrink: 0,
   },
   dotShadow: Platform.select({
     ios: {

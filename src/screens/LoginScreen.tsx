@@ -91,11 +91,9 @@ export function LoginScreen({ onBack, onContinue }: LoginScreenProps) {
           textStyle={styles.heroText}
           coverColor={HERO_BG}
           dotColor="#000000"
-          dotSize={40}
-          dotGap={12}
-          holdMs={3200}
-          revealMs={1900}
-          coverMs={1200}
+          dotSize={34}
+          dotGap={14}
+          holdMs={2400}
           introMs={450}
           singleLine
         />

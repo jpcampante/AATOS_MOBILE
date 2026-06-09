@@ -12,11 +12,11 @@ export const welcomeContent = {
   ],
   /** Login hero — short single-line headlines (ChatGPT-style). */
   loginPhrases: [
-    "Let's collab",
-    'Build smarter',
-    'Ship together',
+    "Let's build",
+    'Move faster',
+    'Think bigger',
     'Meet Auria',
-    'AATOS',
+    'Run on AATOS',
   ],
   features: [
     {

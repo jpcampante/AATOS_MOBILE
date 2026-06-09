@@ -10,6 +10,14 @@ export const welcomeContent = {
     'Your whole team, one context.',
     'Sales and ops, finally aligned.',
   ],
+  /** Login hero — short single-line headlines (ChatGPT-style). */
+  loginPhrases: [
+    "Let's collab",
+    'Build smarter',
+    'Ship together',
+    'Meet Auria',
+    'AATOS',
+  ],
   features: [
     {
       emoji: '\u2728',

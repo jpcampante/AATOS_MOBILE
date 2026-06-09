@@ -3,6 +3,7 @@ import {
   Animated,
   Easing,
   LayoutChangeEvent,
+  Platform,
   StyleProp,
   StyleSheet,
   Text,
@@ -14,107 +15,218 @@ import { tapLight } from '../../utils/haptics';
 type RotatingRevealTextProps = {
   phrases: string[];
   textStyle?: StyleProp<TextStyle>;
-  /** Background color the wipe matches (so only the dot stays visible). */
   coverColor: string;
   dotColor: string;
   dotSize?: number;
-  /** ms the phrase stays fully revealed before the next wipe. */
+  dotGap?: number;
   holdMs?: number;
+  revealMs?: number;
+  coverMs?: number;
+  introMs?: number;
+  singleLine?: boolean;
 };
 
+const REVEAL_EASING = Easing.bezier(0.25, 0.1, 0.25, 1);
+const COVER_EASING = Easing.bezier(0.4, 0, 0.2, 1);
+/** Progress below this = dot rests beside text; above = dot follows the cover edge. */
+const REST_PROGRESS = 0.025;
+
 /**
- * A line of text that is revealed by a small dot ("bola preta") sweeping
- * right → left. When the dot finishes covering, the phrase swaps and a
- * light haptic fires. Then the dot reveals the new phrase.
+ * ChatGPT-style headline: dot sweeps with the cover, then rests beside the phrase.
  */
 export function RotatingRevealText({
   phrases,
   textStyle,
   coverColor,
   dotColor,
-  dotSize = 9,
-  holdMs = 1600,
+  dotSize = 12,
+  dotGap = 10,
+  holdMs = 2400,
+  revealMs = 1700,
+  coverMs = 1050,
+  introMs = 350,
+  singleLine = false,
 }: RotatingRevealTextProps) {
   const [index, setIndex] = useState(0);
-  const [width, setWidth] = useState(0);
-  // progress: 1 = fully covered, 0 = fully revealed
+  const [textWidth, setTextWidth] = useState(0);
   const progress = useRef(new Animated.Value(1)).current;
-  const indexRef = useRef(index);
-  indexRef.current = index;
+  const restPulse = useRef(new Animated.Value(1)).current;
+
+  const phrase = phrases[index];
+
+  const flatTextStyle = StyleSheet.flatten(textStyle) ?? {};
+  const lineHeight =
+    typeof flatTextStyle.lineHeight === 'number'
+      ? flatTextStyle.lineHeight
+      : typeof flatTextStyle.fontSize === 'number'
+        ? flatTextStyle.fontSize * 1.2
+        : 40;
+
+  useEffect(() => {
+    setTextWidth(0);
+  }, [phrase]);
 
   const onLayout = (e: LayoutChangeEvent) => {
-    const w = e.nativeEvent.layout.width;
-    if (Math.abs(w - width) > 0.5) setWidth(w);
+    const w = Math.ceil(e.nativeEvent.layout.width);
+    if (w > 0 && w !== textWidth) setTextWidth(w);
   };
 
   useEffect(() => {
-    if (width <= 0) return;
+    if (textWidth <= 0) return;
     let cancelled = false;
 
-    progress.setValue(1); // start covered
+    progress.setValue(1);
+    restPulse.setValue(1);
+
     const reveal = Animated.timing(progress, {
       toValue: 0,
-      duration: 720,
-      easing: Easing.out(Easing.cubic),
+      duration: revealMs,
+      easing: REVEAL_EASING,
       useNativeDriver: false,
     });
     const cover = Animated.timing(progress, {
       toValue: 1,
-      duration: 440,
-      easing: Easing.in(Easing.cubic),
+      duration: coverMs,
+      easing: COVER_EASING,
       useNativeDriver: false,
     });
+    const breathe = Animated.loop(
+      Animated.sequence([
+        Animated.timing(restPulse, {
+          toValue: 1.03,
+          duration: 900,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: false,
+        }),
+        Animated.timing(restPulse, {
+          toValue: 1,
+          duration: 900,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: false,
+        }),
+      ]),
+    );
 
-    Animated.sequence([reveal, Animated.delay(holdMs), cover]).start(({ finished }) => {
+    breathe.start();
+
+    Animated.sequence([
+      Animated.delay(introMs),
+      reveal,
+      Animated.delay(holdMs),
+      cover,
+    ]).start(({ finished }) => {
+      breathe.stop();
+      restPulse.setValue(1);
       if (!finished || cancelled) return;
-      tapLight(); // vibrate exactly when the phrase swaps
+      tapLight();
       setIndex((i) => (i + 1) % phrases.length);
     });
 
     return () => {
       cancelled = true;
       progress.stopAnimation();
+      breathe.stop();
+      restPulse.stopAnimation();
     };
-  }, [index, width, holdMs, phrases.length, progress]);
+  }, [coverMs, holdMs, index, introMs, phrases.length, progress, revealMs, restPulse, textWidth]);
 
-  // Cover width shrinks from `width` (covered) to 0 (revealed).
-  const coverStyle = useMemo(
-    () => ({
-      width: progress.interpolate({
+  const coverWidth = useMemo(
+    () =>
+      progress.interpolate({
         inputRange: [0, 1],
-        outputRange: [0, width || 1],
+        outputRange: [0, textWidth || 1],
       }),
-    }),
-    [progress, width],
+    [progress, textWidth],
   );
 
-  const phrase = phrases[index];
+  const sweepLeft = useMemo(
+    () =>
+      progress.interpolate({
+        inputRange: [0, REST_PROGRESS, 1],
+        outputRange: [-dotSize * 2, REST_PROGRESS * (textWidth || 1) - dotSize / 2, (textWidth || 1) - dotSize / 2],
+      }),
+    [dotSize, progress, textWidth],
+  );
+
+  const isAnimating = useMemo(
+    () =>
+      progress.interpolate({
+        inputRange: [0, REST_PROGRESS, REST_PROGRESS + 0.001, 1],
+        outputRange: [0, 0, 1, 1],
+        extrapolate: 'clamp',
+      }),
+    [progress],
+  );
+
+  const isResting = useMemo(
+    () =>
+      progress.interpolate({
+        inputRange: [0, REST_PROGRESS],
+        outputRange: [1, 0],
+        extrapolate: 'clamp',
+      }),
+    [progress],
+  );
+
+  const dotTop = (lineHeight - dotSize) / 2;
+  const ready = textWidth > 0;
+
+  const dotStyle = {
+    width: dotSize,
+    height: dotSize,
+    borderRadius: dotSize / 2,
+    backgroundColor: dotColor,
+  };
 
   return (
     <View style={styles.row}>
-      <View>
-        <Text style={[styles.text, textStyle]} onLayout={onLayout}>
-          {phrase}
-        </Text>
+      <View style={styles.phraseRow}>
+        <View style={[styles.textClip, { minHeight: lineHeight }]}>
+          <Text
+            key={phrase}
+            style={[styles.text, singleLine && styles.textSingleLine, textStyle]}
+            onLayout={onLayout}
+            numberOfLines={singleLine ? 1 : undefined}
+            adjustsFontSizeToFit={singleLine}
+            minimumFontScale={singleLine ? 0.85 : undefined}
+          >
+            {phrase}
+          </Text>
+          {ready ? (
+            <>
+              <Animated.View
+                style={[styles.cover, { backgroundColor: coverColor, width: coverWidth }]}
+              />
+              <Animated.View
+                style={[
+                  styles.sweepDot,
+                  dotStyle,
+                  styles.dotShadow,
+                  {
+                    top: dotTop,
+                    left: sweepLeft,
+                    opacity: isAnimating,
+                  },
+                ]}
+              />
+            </>
+          ) : null}
+        </View>
 
-        {/* Wipe cover (matches background) with the dot riding its right edge. */}
-        <Animated.View
-          style={[styles.cover, { backgroundColor: coverColor }, coverStyle]}
-        >
-          <View
+        {ready ? (
+          <Animated.View
             style={[
-              styles.dot,
+              styles.restDot,
+              dotStyle,
+              styles.dotShadow,
               {
-                width: dotSize,
-                height: dotSize,
-                borderRadius: dotSize / 2,
-                backgroundColor: dotColor,
-                right: -dotSize / 2,
-                marginTop: -dotSize / 2,
+                marginLeft: dotGap,
+                opacity: isResting,
+                transform: [{ scale: restPulse }],
               },
             ]}
           />
-        </Animated.View>
+        ) : null}
       </View>
     </View>
   );
@@ -124,20 +236,51 @@ const styles = StyleSheet.create({
   row: {
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
+  phraseRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  textClip: {
+    position: 'relative',
+    flexShrink: 1,
+    justifyContent: 'center',
+    overflow: 'hidden',
   },
   text: {
-    textAlign: 'center',
+    textAlign: 'left',
+  },
+  textSingleLine: {
+    flexShrink: 0,
   },
   cover: {
     position: 'absolute',
     left: 0,
     top: 0,
     bottom: 0,
-    overflow: 'visible',
     pointerEvents: 'none',
   },
-  dot: {
+  sweepDot: {
     position: 'absolute',
-    top: '50%',
+    pointerEvents: 'none',
   },
+  restDot: {
+    flexShrink: 0,
+  },
+  dotShadow: Platform.select({
+    ios: {
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.2,
+      shadowRadius: 8,
+    },
+    android: {
+      elevation: 5,
+    },
+    default: {
+      boxShadow: '0 6px 18px rgba(0,0,0,0.2)',
+    } as object,
+  }),
 });

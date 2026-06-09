@@ -4,7 +4,7 @@ import type { AuriaImageArtifact as AuriaImageArtifactData } from '../../feature
 import { auriaTypography, myceoCornerStyle, useTheme } from '../../theme';
 import { AuriaIcon, AURIA_ICON_SIZE, AURIA_ICON_STROKE_NAV } from '../icons';
 
-const imageMock = require('../../../assets/auria-image-mock.png');
+const imageMock = require('../../../assets/auria-image-mock.jpg');
 
 type AuriaImageArtifactProps = {
   artifact: AuriaImageArtifactData;

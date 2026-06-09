@@ -1,38 +1,18 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { AppShell } from './src/components/navigation/AppShell';
 import { ScreenTransition } from './src/components/ui/transitions';
 import { ProductTabId } from './src/data/productNavigation';
-import { AuriaScreen } from './src/screens/AuriaScreen';
-import { HomeScreen } from './src/screens/HomeScreen';
 import { LoginScreen } from './src/screens/LoginScreen';
-import { PlaceholderModuleScreen } from './src/screens/PlaceholderModuleScreen';
 import { ThemeProvider } from './src/theme';
+
+const MainApp = lazy(() => import('./src/MainApp'));
 
 type AppPhase = 'login' | 'main';
 
 export default function App() {
   const [phase, setPhase] = useState<AppPhase>('login');
   const [activeTab, setActiveTab] = useState<ProductTabId>('insights');
-
-  const renderProductScreen = (tab: ProductTabId) => {
-    switch (tab) {
-      case 'insights':
-        return <HomeScreen />;
-      case 'auria':
-        return <AuriaScreen />;
-      case 'tasks':
-        return <PlaceholderModuleScreen title="Tasks" subtitle="Kanban, roadmap, and workload" />;
-      case 'specialists':
-        return <PlaceholderModuleScreen title="Specialists" subtitle="Chat with professionals" />;
-      case 'integrations':
-        return (
-          <PlaceholderModuleScreen title="Integrations" subtitle="Mail, calendar, and connectors" />
-        );
-      default:
-        return null;
-    }
-  };
 
   return (
     <SafeAreaProvider>
@@ -42,15 +22,28 @@ export default function App() {
             <LoginScreen onContinue={() => setPhase('main')} />
           </ScreenTransition>
         ) : (
-          <ScreenTransition key="main">
-            <AppShell
-              activeTab={activeTab}
-              onTabChange={setActiveTab}
-              renderScreen={renderProductScreen}
-            />
-          </ScreenTransition>
+          <Suspense fallback={<BootFallback />}>
+            <MainApp activeTab={activeTab} onTabChange={setActiveTab} />
+          </Suspense>
         )}
       </ThemeProvider>
     </SafeAreaProvider>
   );
 }
+
+function BootFallback() {
+  return (
+    <View style={styles.boot}>
+      <ActivityIndicator size="large" color="#252B2F" />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  boot: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+});

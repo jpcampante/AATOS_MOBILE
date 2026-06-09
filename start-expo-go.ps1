@@ -18,4 +18,4 @@ Write-Host ""
 Write-Host "Use Enter URL manually in Expo Go." -ForegroundColor Yellow
 
 Set-Location $PSScriptRoot
-npx expo start --host lan --port 8081
+npx expo start --host lan --port 8081 --no-dev --minify

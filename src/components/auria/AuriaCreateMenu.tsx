@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import * as DocumentPicker from 'expo-document-picker';
 import {
+  Animated,
+  Easing,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -80,12 +82,21 @@ export function AuriaCreateMenu({
   const [imageRatio, setImageRatio] = useState<ImageRatio>('1:1');
   const [teammate, setTeammate] = useState<(typeof TEAMMATES)[number]>(TEAMMATES[0]);
 
+  const anim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     if (!visible) {
       setMode('home');
       setPrompt('');
+      anim.setValue(0);
+      return;
     }
-  }, [visible]);
+    Animated.timing(anim, {
+      toValue: 1,
+      duration: 240,
+      easing: Easing.bezier(0.23, 1, 0.32, 1),
+      useNativeDriver: Platform.OS !== 'web',
+    }).start();
+  }, [anim, visible]);
 
   const finish = (request: string) => {
     onSendRequest(request);
@@ -163,26 +174,29 @@ export function AuriaCreateMenu({
         keyboardShouldPersistTaps="handled"
       >
         {mode === 'home' ? (
-          ACTIONS.map((action) => (
-            <Pressable
-              key={action.id}
-              onPress={() => openAction(action.id)}
-              style={({ pressed }) => [styles.actionRow, pressed && styles.pressed]}
-              accessibilityRole="button"
-            >
-              <LiquidGlassSurface
-                interactive
-                elevated={false}
-                borderRadius={theme.radius.md}
-                style={styles.actionIcon}
+          <View style={styles.grid}>
+            {ACTIONS.map((action) => (
+              <Pressable
+                key={action.id}
+                onPress={() => openAction(action.id)}
+                style={({ pressed }) => [styles.tilePress, pressed && styles.tilePressed]}
+                accessibilityRole="button"
+                accessibilityLabel={action.label}
               >
-                <AuriaIcon name={action.icon} size={AURIA_ICON_SIZE.md} />
-              </LiquidGlassSurface>
-              <View style={styles.actionCopy}>
-                <Text style={styles.actionTitle}>{action.label}</Text>
-              </View>
-            </Pressable>
-          ))
+                <LiquidGlassSurface
+                  interactive
+                  elevationLevel="card"
+                  borderRadius={theme.radius.lg}
+                  style={styles.tile}
+                >
+                  <View style={styles.tileIcon}>
+                    <AuriaIcon name={action.icon} size={AURIA_ICON_SIZE.md} />
+                  </View>
+                  <Text style={styles.tileLabel}>{action.label}</Text>
+                </LiquidGlassSurface>
+              </Pressable>
+            ))}
+          </View>
         ) : (
           <>
             {mode === 'document' ? (
@@ -256,7 +270,18 @@ export function AuriaCreateMenu({
         accessibilityRole="button"
         accessibilityLabel="Close create menu"
       />
-      <View style={styles.sheetPosition}>
+      <Animated.View
+        style={[
+          styles.sheetPosition,
+          {
+            opacity: anim,
+            transform: [
+              { translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) },
+              { scale: anim.interpolate({ inputRange: [0, 1], outputRange: [0.96, 1] }) },
+            ],
+          },
+        ]}
+      >
         <LiquidGlassSurface
           strong
           elevationLevel="modal"
@@ -265,7 +290,7 @@ export function AuriaCreateMenu({
         >
           {menuBody}
         </LiquidGlassSurface>
-      </View>
+      </Animated.View>
     </KeyboardAvoidingView>
   );
 }
@@ -293,11 +318,18 @@ function OptionSection<T extends string>({
             <Pressable
               key={option}
               onPress={() => onChange(option)}
-              style={[styles.chip, active && styles.chipActive]}
+              style={({ pressed }) => [styles.chipPress, pressed && styles.chipPressed]}
               accessibilityRole="button"
               accessibilityState={{ selected: active }}
             >
-              <Text style={[styles.chipText, active && styles.chipTextActive]}>{option}</Text>
+              <LiquidGlassSurface
+                interactive
+                elevated={false}
+                borderRadius={theme.radius.pill}
+                style={[styles.chip, active && styles.chipActive]}
+              >
+                <Text style={[styles.chipText, active && styles.chipTextActive]}>{option}</Text>
+              </LiquidGlassSurface>
             </Pressable>
           );
         })}
@@ -362,23 +394,42 @@ function createStyles(
       gap: 10,
       paddingBottom: 4,
     },
-    actionRow: {
+    grid: {
       flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 10,
+    },
+    tilePress: {
+      width: '47.5%',
+      flexGrow: 1,
+      borderRadius: theme.radius.lg,
+    },
+    tilePressed: {
+      opacity: 0.92,
+      transform: [{ scale: 0.97 }],
+    },
+    tile: {
+      minHeight: 96,
+      padding: 14,
+      borderRadius: theme.radius.lg,
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+    tileIcon: {
+      width: 36,
+      height: 36,
       alignItems: 'center',
-      gap: 11,
-      paddingHorizontal: 8,
-      paddingVertical: 7,
-      borderRadius: theme.radius.md,
+      justifyContent: 'center',
+    },
+    tileLabel: {
+      ...auriaTypography.body,
+      color: theme.colors.text,
+      fontSize: 13.5,
+      fontWeight: theme.typography.fontWeight.semibold,
+      letterSpacing: -0.2,
     },
     pressed: {
       backgroundColor: glass.pressed,
-    },
-    actionIcon: {
-      width: 42,
-      height: 42,
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderRadius: theme.radius.md,
     },
     actionCopy: {
       flex: 1,
@@ -409,13 +460,21 @@ function createStyles(
     chips: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      gap: 7,
+      gap: 8,
+    },
+    chipPress: {
+      borderRadius: theme.radius.pill,
+    },
+    chipPressed: {
+      opacity: 0.9,
+      transform: [{ scale: 0.96 }],
     },
     chip: {
-      paddingHorizontal: 11,
-      paddingVertical: 8,
+      paddingHorizontal: 13,
+      paddingVertical: 9,
       borderRadius: theme.radius.pill,
-      backgroundColor: glass.fill,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     chipActive: {
       backgroundColor: theme.colors.accent,

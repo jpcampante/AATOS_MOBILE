@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { companyInsight, companyKpis, activitySeries } from '../../data/insightsMockData';
-import { contentColors, useTheme } from '../../theme';
+import { contentColors, myceoCornerStyle, useTheme } from '../../theme';
 import { MiniBarChart } from './MiniBarChart';
 
 export function InsightsKpiGrid() {
@@ -87,7 +87,7 @@ function createStyles(
 ) {
   const cardBase = {
     backgroundColor: insights.surface,
-    borderRadius: theme.radius.card,
+    ...myceoCornerStyle('card'),
     padding: theme.spacing.lg,
   } as const;
 
@@ -148,7 +148,7 @@ function createStyles(
     },
     actionPill: {
       backgroundColor: insights.filterBarBg,
-      borderRadius: theme.radius.pill,
+      ...myceoCornerStyle('chip'),
       paddingHorizontal: 12,
       paddingVertical: 8,
     },

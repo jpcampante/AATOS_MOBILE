@@ -20,7 +20,7 @@ export default function App() {
       case 'insights':
         return <HomeScreen />;
       case 'auria':
-        return <AuriaScreen activeModule={activeTab} onNavigateModule={setActiveTab} />;
+        return <AuriaScreen />;
       case 'tasks':
         return <PlaceholderModuleScreen title="Tasks" subtitle="Kanban, roadmap, and workload" />;
       case 'specialists':

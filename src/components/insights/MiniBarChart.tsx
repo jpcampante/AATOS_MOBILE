@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { useTheme } from '../../theme';
+import { myceoCornerStyle, useTheme } from '../../theme';
 
 type MiniBarChartProps = {
   data: ReadonlyArray<{ month: string; value: number }>;
@@ -57,7 +57,7 @@ function createStyles(insights: ReturnType<typeof useTheme>['insights']) {
       justifyContent: 'flex-end',
     },
     bar: {
-      borderRadius: 4,
+      ...myceoCornerStyle('iconSm'),
       opacity: 0.88,
     },
     labelsRow: {

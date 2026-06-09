@@ -93,7 +93,7 @@ export const AuriaComposer = forwardRef<AuriaComposerHandle, AuriaComposerProps>
       <LiquidGlassSurface
         variant="input"
         interactive
-        elevationLevel="dock"
+        elevated={false}
         borderRadius={AURIA_COMPOSER_TOOLBAR_HEIGHT / 2}
         style={styles.toolbarGlass}
       >

@@ -10,9 +10,16 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
-import { auriaTypography, liquidGlassTokens, useTheme } from '../../theme';
+import {
+  auriaTypography,
+  liquidGlassTokens,
+  MYCEO_CORNER_RADIUS,
+  myceoCornerStyle,
+  useTheme,
+} from '../../theme';
 import { AuriaIcon, AuriaIconName, AURIA_ICON_SIZE } from '../icons';
 import { LiquidGlassSurface } from '../ui/LiquidGlassSurface';
 
@@ -70,6 +77,8 @@ export function AuriaCreateMenu({
   bottomOffset,
 }: AuriaCreateMenuProps) {
   const { theme } = useTheme();
+  const { width: viewportWidth } = useWindowDimensions();
+  const sheetWidth = Math.min(Math.max(0, viewportWidth - 36), 420);
   const styles = useMemo(
     () => createStyles(theme, bottomOffset),
     [bottomOffset, theme],
@@ -174,26 +183,19 @@ export function AuriaCreateMenu({
         keyboardShouldPersistTaps="handled"
       >
         {mode === 'home' ? (
-          <View style={styles.grid}>
+          <View style={styles.actionList}>
             {ACTIONS.map((action) => (
               <Pressable
                 key={action.id}
                 onPress={() => openAction(action.id)}
-                style={({ pressed }) => [styles.tilePress, pressed && styles.tilePressed]}
+                style={({ pressed }) => [styles.actionRow, pressed && styles.actionRowPressed]}
                 accessibilityRole="button"
                 accessibilityLabel={action.label}
               >
-                <LiquidGlassSurface
-                  interactive
-                  elevationLevel="card"
-                  borderRadius={theme.radius.lg}
-                  style={styles.tile}
-                >
-                  <View style={styles.tileIcon}>
-                    <AuriaIcon name={action.icon} size={AURIA_ICON_SIZE.md} />
-                  </View>
-                  <Text style={styles.tileLabel}>{action.label}</Text>
-                </LiquidGlassSurface>
+                <View style={styles.actionIcon}>
+                  <AuriaIcon name={action.icon} size={AURIA_ICON_SIZE.md} />
+                </View>
+                <Text style={styles.actionLabel}>{action.label}</Text>
               </Pressable>
             ))}
           </View>
@@ -235,7 +237,13 @@ export function AuriaCreateMenu({
             ) : null}
             <View style={styles.section}>
               <Text style={styles.sectionLabel}>{mode === 'image' ? 'Describe the image' : 'Brief'}</Text>
-              <LiquidGlassSurface variant="input" interactive elevated={false} borderRadius={theme.radius.md} style={styles.promptSurface}>
+              <LiquidGlassSurface
+                variant="input"
+                interactive
+                elevated={false}
+                borderRadius={MYCEO_CORNER_RADIUS.inset}
+                style={styles.promptSurface}
+              >
                 <TextInput
                   value={prompt}
                   onChangeText={setPrompt}
@@ -273,6 +281,7 @@ export function AuriaCreateMenu({
       <Animated.View
         style={[
           styles.sheetPosition,
+          { width: sheetWidth },
           {
             opacity: anim,
             transform: [
@@ -284,8 +293,8 @@ export function AuriaCreateMenu({
       >
         <LiquidGlassSurface
           strong
-          elevationLevel="modal"
-          borderRadius={theme.radius.panel}
+          elevationLevel="card"
+          borderRadius={MYCEO_CORNER_RADIUS.menu}
           style={styles.sheet}
         >
           {menuBody}
@@ -325,7 +334,7 @@ function OptionSection<T extends string>({
               <LiquidGlassSurface
                 interactive
                 elevated={false}
-                borderRadius={theme.radius.pill}
+                borderRadius={MYCEO_CORNER_RADIUS.chip}
                 style={[styles.chip, active && styles.chipActive]}
               >
                 <Text style={[styles.chipText, active && styles.chipTextActive]}>{option}</Text>
@@ -347,8 +356,8 @@ function createStyles(
     overlay: {
       ...StyleSheet.absoluteFillObject,
       justifyContent: 'flex-end',
-      alignItems: 'flex-start',
-      paddingHorizontal: 16,
+      alignItems: 'center',
+      paddingHorizontal: 18,
       paddingBottom: bottomOffset,
       zIndex: 20,
     },
@@ -358,18 +367,19 @@ function createStyles(
       zIndex: 0,
     },
     sheetPosition: {
-      width: 320,
-      maxWidth: '88%',
-      maxHeight: '64%',
+      maxHeight: '72%',
     },
     sheet: {
       width: '100%',
-      padding: 12,
+      ...myceoCornerStyle('menu'),
+      paddingHorizontal: 14,
+      paddingTop: 10,
+      paddingBottom: 14,
       gap: 4,
       zIndex: 1,
     },
     header: {
-      minHeight: 40,
+      minHeight: 46,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
@@ -379,57 +389,53 @@ function createStyles(
       height: 38,
       alignItems: 'center',
       justifyContent: 'center',
-      borderRadius: 19,
+      ...myceoCornerStyle('icon'),
     },
     title: {
       ...auriaTypography.title,
       color: theme.colors.text,
-      fontSize: 17,
+      fontSize: 18,
       fontWeight: theme.typography.fontWeight.bold,
+      letterSpacing: -0.35,
     },
     scroll: {
       flexGrow: 0,
     },
     scrollContent: {
-      gap: 10,
-      paddingBottom: 4,
-    },
-    grid: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: 10,
-    },
-    tilePress: {
-      width: '47.5%',
-      flexGrow: 1,
-      borderRadius: theme.radius.lg,
-    },
-    tilePressed: {
-      opacity: 0.92,
-      transform: [{ scale: 0.97 }],
-    },
-    tile: {
-      minHeight: 96,
-      padding: 14,
-      borderRadius: theme.radius.lg,
-      justifyContent: 'space-between',
       gap: 12,
+      paddingBottom: 2,
     },
-    tileIcon: {
-      width: 36,
-      height: 36,
+    actionList: {
+      gap: 2,
+    },
+    actionRow: {
+      minHeight: 70,
+      width: '100%',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 14,
+      paddingHorizontal: 6,
+      paddingVertical: 7,
+      ...myceoCornerStyle('inset'),
+    },
+    actionRowPressed: {
+      backgroundColor: glass.pressed,
+      transform: [{ scale: 0.985 }],
+    },
+    actionIcon: {
+      width: 48,
+      height: 48,
       alignItems: 'center',
       justifyContent: 'center',
+      backgroundColor: theme.colors.input,
+      ...myceoCornerStyle('iconLg'),
     },
-    tileLabel: {
+    actionLabel: {
       ...auriaTypography.body,
       color: theme.colors.text,
-      fontSize: 13.5,
+      fontSize: 16,
       fontWeight: theme.typography.fontWeight.semibold,
-      letterSpacing: -0.2,
-    },
-    pressed: {
-      backgroundColor: glass.pressed,
+      letterSpacing: -0.3,
     },
     actionCopy: {
       flex: 1,
@@ -463,7 +469,7 @@ function createStyles(
       gap: 8,
     },
     chipPress: {
-      borderRadius: theme.radius.pill,
+      ...myceoCornerStyle('chip'),
     },
     chipPressed: {
       opacity: 0.9,
@@ -472,7 +478,7 @@ function createStyles(
     chip: {
       paddingHorizontal: 13,
       paddingVertical: 9,
-      borderRadius: theme.radius.pill,
+      ...myceoCornerStyle('chip'),
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -494,7 +500,7 @@ function createStyles(
       alignItems: 'center',
       gap: 10,
       padding: 10,
-      borderRadius: theme.radius.md,
+      ...myceoCornerStyle('inset'),
     },
     personRowActive: {
       backgroundColor: glass.fillStrong,
@@ -504,7 +510,7 @@ function createStyles(
       height: 38,
       alignItems: 'center',
       justifyContent: 'center',
-      borderRadius: 19,
+      ...myceoCornerStyle('icon'),
       backgroundColor: theme.colors.accent,
     },
     avatarText: {
@@ -516,6 +522,7 @@ function createStyles(
     promptSurface: {
       minHeight: 92,
       padding: 12,
+      ...myceoCornerStyle('inset'),
     },
     prompt: {
       ...auriaTypography.body,
@@ -534,7 +541,7 @@ function createStyles(
       alignItems: 'center',
       justifyContent: 'center',
       gap: 8,
-      borderRadius: theme.radius.pill,
+      ...myceoCornerStyle('chip'),
       backgroundColor: theme.colors.accent,
       marginTop: 2,
     },

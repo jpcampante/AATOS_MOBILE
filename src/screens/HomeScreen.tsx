@@ -9,7 +9,7 @@ import {
   InsightsKpiGrid,
 } from '../components/insights/InsightsWidgets';
 import { companyDashboard } from '../data/insightsMockData';
-import { useTheme } from '../theme';
+import { myceoCornerStyle, useTheme } from '../theme';
 
 export function HomeScreen() {
   const { insights, theme } = useTheme();
@@ -100,7 +100,7 @@ function createStyles(
       gap: 6,
       paddingHorizontal: 12,
       paddingVertical: 8,
-      borderRadius: theme.radius.pill,
+      ...myceoCornerStyle('chip'),
       backgroundColor: insights.filterBarBg,
     },
     dashboardPillText: {
@@ -115,7 +115,7 @@ function createStyles(
     viewPill: {
       paddingHorizontal: 12,
       paddingVertical: 8,
-      borderRadius: theme.radius.pill,
+      ...myceoCornerStyle('chip'),
       backgroundColor: insights.surface,
     },
     viewPillText: {

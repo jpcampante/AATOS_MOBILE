@@ -6,7 +6,7 @@ import {
   heroPlaceholder,
   heroSuggestionChips,
 } from '../../data/insightsMockData';
-import { useTheme } from '../../theme';
+import { myceoCornerStyle, useTheme } from '../../theme';
 import { MiniBarChart } from './MiniBarChart';
 
 export function InsightsHero() {
@@ -67,7 +67,7 @@ function createStyles(
   return StyleSheet.create({
     shell: {
       backgroundColor: insights.heroShell,
-      borderRadius: theme.radius.hero,
+      ...myceoCornerStyle('card'),
       padding: theme.spacing.lg,
       gap: theme.spacing.lg,
     },
@@ -76,7 +76,7 @@ function createStyles(
       alignItems: 'center',
       gap: 10,
       backgroundColor: insights.heroSearchBg,
-      borderRadius: theme.radius.pill,
+      ...myceoCornerStyle('inset'),
       paddingHorizontal: 14,
       paddingVertical: 10,
       ...theme.shadow.heroSearch,
@@ -95,7 +95,7 @@ function createStyles(
     sparkButton: {
       width: 28,
       height: 28,
-      borderRadius: 14,
+      ...myceoCornerStyle('icon'),
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: insights.accentBg,
@@ -155,7 +155,7 @@ function createStyles(
     },
     chip: {
       backgroundColor: theme.colors.chipSurface,
-      borderRadius: theme.radius.pill,
+      ...myceoCornerStyle('chip'),
       paddingHorizontal: 12,
       paddingVertical: 8,
     },

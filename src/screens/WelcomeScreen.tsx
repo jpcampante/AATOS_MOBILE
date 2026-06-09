@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { welcomeContent } from '../data/welcomeContent';
 import { useTheme } from '../theme';
+import { RotatingRevealText } from '../components/ui/RotatingRevealText';
 
 type WelcomeScreenProps = {
   onContinue: () => void;
@@ -24,7 +25,12 @@ export function WelcomeScreen({ onContinue, onLogin }: WelcomeScreenProps) {
           </View>
           <Text style={styles.brand}>{welcomeContent.brand}</Text>
           <Text style={styles.title}>{welcomeContent.title}</Text>
-          <Text style={styles.description}>{welcomeContent.description}</Text>
+          <RotatingRevealText
+            phrases={welcomeContent.rotatingPhrases}
+            textStyle={styles.description}
+            coverColor={theme.colors.page}
+            dotColor={theme.colors.text}
+          />
         </View>
 
         <View style={styles.features}>

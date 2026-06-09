@@ -13,6 +13,8 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../theme';
+import { AppleLogo, GoogleLogo } from '../components/ui/SocialLogos';
+import { tapMedium, tapSuccess } from '../utils/haptics';
 
 type Tab = 'login' | 'register';
 
@@ -41,6 +43,13 @@ export function LoginScreen({ onBack, onContinue }: LoginScreenProps) {
     setTimeout(onContinue, 700);
   };
 
+  // Apple / Google → enter the system directly, with an Apple-style haptic.
+  const handleSocial = () => {
+    tapMedium();
+    tapSuccess();
+    onContinue();
+  };
+
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar style={theme.colors.statusBar} />
@@ -60,6 +69,34 @@ export function LoginScreen({ onBack, onContinue }: LoginScreenProps) {
               </View>
               <Text style={styles.title}>AATOS</Text>
               <Text style={styles.subtitle}>Project management</Text>
+            </View>
+
+            <View style={styles.socialGroup}>
+              <Pressable
+                style={({ pressed }) => [styles.appleButton, pressed && styles.socialPressed]}
+                onPress={handleSocial}
+                accessibilityRole="button"
+                accessibilityLabel="Continue with Apple"
+              >
+                <AppleLogo size={18} color={theme.colors.surface} />
+                <Text style={styles.appleButtonText}>Continue with Apple</Text>
+              </Pressable>
+
+              <Pressable
+                style={({ pressed }) => [styles.googleButton, pressed && styles.socialPressed]}
+                onPress={handleSocial}
+                accessibilityRole="button"
+                accessibilityLabel="Continue with Google"
+              >
+                <GoogleLogo size={18} />
+                <Text style={styles.googleButtonText}>Continue with Google</Text>
+              </Pressable>
+            </View>
+
+            <View style={styles.dividerRow}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>or</Text>
+              <View style={styles.dividerLine} />
             </View>
 
             <View style={styles.tabRow}>
@@ -197,6 +234,58 @@ function createStyles(theme: ReturnType<typeof useTheme>['theme']) {
     logoEmoji: { fontSize: 24 },
     title: { fontSize: 24, fontWeight: '800', color: colors.text },
     subtitle: { fontSize: 13, color: colors.textTertiary, marginTop: 4 },
+    socialGroup: {
+      gap: 10,
+    },
+    appleButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 10,
+      backgroundColor: colors.accent,
+      borderRadius: 14,
+      paddingVertical: 14,
+      ...border,
+    },
+    appleButtonText: {
+      color: colors.surface,
+      fontSize: 15,
+      fontWeight: '700',
+    },
+    googleButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 10,
+      backgroundColor: colors.surface,
+      borderRadius: 14,
+      paddingVertical: 14,
+      borderWidth: 1,
+      borderColor: colors.borderInput,
+    },
+    googleButtonText: {
+      color: colors.text,
+      fontSize: 15,
+      fontWeight: '700',
+    },
+    socialPressed: {
+      opacity: 0.85,
+    },
+    dividerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+    dividerLine: {
+      flex: 1,
+      height: 1,
+      backgroundColor: colors.divider,
+    },
+    dividerText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.textTertiary,
+    },
     tabRow: {
       flexDirection: 'row',
       backgroundColor: colors.input,

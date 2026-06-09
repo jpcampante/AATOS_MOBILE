@@ -18,7 +18,6 @@ import {
   type AuriaIconName,
 } from '../icons';
 import { auriaTypography, liquidGlassBorder, liquidGlassTokens, useTheme } from '../../theme';
-import { PRODUCT_TABS, ProductTabId } from '../../data/productNavigation';
 import { AuriaLogoMark } from './AuriaLogoMark';
 
 type AuriaSidebarProps = {
@@ -29,8 +28,6 @@ type AuriaSidebarProps = {
   activeConversationId?: string | null;
   projectRows?: AuriaSidebarProjectRow[];
   projects?: AuriaProject[];
-  activeModule?: ProductTabId;
-  onNavigateModule?: (tab: ProductTabId) => void;
   onNewChat: () => void;
   onSelectPanel: (panel: AuriaPanel) => void;
   onSelectConversation: (id: string) => void;
@@ -152,8 +149,6 @@ export function AuriaSidebar({
   activeConversationId,
   projectRows = auriaSidebarProjects,
   projects = auriaProjects,
-  activeModule,
-  onNavigateModule,
   onNewChat,
   onSelectPanel,
   onSelectConversation,
@@ -245,37 +240,6 @@ export function AuriaSidebar({
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {onNavigateModule ? (
-          <View style={styles.moduleBlock}>
-            <SidebarSection title="Workspace" styles={styles} />
-            <View style={styles.moduleGrid}>
-              {PRODUCT_TABS.map((tab) => {
-                const active = tab.id === activeModule;
-                return (
-                  <Pressable
-                    key={tab.id}
-                    style={({ pressed }) => [
-                      styles.moduleChip,
-                      active && styles.moduleChipActive,
-                      pressed && styles.rowPressed,
-                    ]}
-                    onPress={() => onNavigateModule(tab.id)}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: active }}
-                  >
-                    <Text
-                      style={[styles.moduleChipText, active && styles.moduleChipTextActive]}
-                      numberOfLines={1}
-                    >
-                      {tab.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
-        ) : null}
-
         <SidebarRow
           label="New chat"
           onPress={onNewChat}
@@ -502,35 +466,6 @@ function createStyles(
       marginBottom: 4,
       letterSpacing: 0.4,
       textTransform: 'uppercase',
-    },
-    moduleBlock: {
-      marginBottom: theme.spacing.sm,
-    },
-    moduleGrid: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: 6,
-      paddingHorizontal: theme.spacing.sm,
-      marginTop: 2,
-    },
-    moduleChip: {
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-      borderRadius: theme.radius.pill,
-      backgroundColor: glass.fill,
-      ...rimSubtle,
-    },
-    moduleChipActive: {
-      backgroundColor: ds.auriaBlue,
-    },
-    moduleChipText: {
-      ...auriaTypography.label,
-      fontSize: 13,
-      fontWeight: theme.typography.fontWeight.semibold,
-      color: theme.colors.textSecondary,
-    },
-    moduleChipTextActive: {
-      color: ds.white,
     },
     row: {
       flexDirection: 'row',

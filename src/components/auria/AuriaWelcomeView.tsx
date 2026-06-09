@@ -99,22 +99,19 @@ export function AuriaWelcomeView({
       <View style={styles.centerBlock}>
         <AnimatedScreenBlock index={0} centered>
           <View style={styles.columnWrap}>
-            <View style={styles.logoBlock}>
-              <AuriaLogoMark size="lg" />
-            </View>
-          </View>
-        </AnimatedScreenBlock>
-
-        <AnimatedScreenBlock index={1} centered>
-          <View style={styles.columnWrap}>
             <View style={styles.greetingBlock}>
-              <Text style={styles.greetHi}>Hi {auriaWelcomeName}</Text>
+              <View style={styles.greetRow}>
+                <View style={styles.greetLogo}>
+                  <AuriaLogoMark size="md" />
+                </View>
+                <Text style={styles.greetHi}>Hi {auriaWelcomeName}</Text>
+              </View>
               <Text style={styles.greetTitle}>Where should we start?</Text>
             </View>
           </View>
         </AnimatedScreenBlock>
 
-        <AnimatedScreenBlock index={2} centered>
+        <AnimatedScreenBlock index={1} centered>
           <View style={styles.columnWrap}>
             <Animated.View
               style={[
@@ -146,7 +143,7 @@ export function AuriaWelcomeView({
           </View>
         </AnimatedScreenBlock>
 
-        <AnimatedScreenBlock index={3} centered>
+        <AnimatedScreenBlock index={2} centered>
           <View style={styles.columnWrap}>
             <View style={styles.refreshWrap}>
               <AuriaRefreshButton onPress={handleRefresh} />
@@ -186,7 +183,16 @@ function createStyles(
     greetingBlock: {
       width: '100%',
       alignItems: 'center',
-      gap: 4,
+      gap: 6,
+    },
+    greetRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 10,
+    },
+    greetLogo: {
+      marginTop: 1,
     },
     columnWrap: {
       ...column,

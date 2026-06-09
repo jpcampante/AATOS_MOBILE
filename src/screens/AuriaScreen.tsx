@@ -33,6 +33,7 @@ import { AuriaNewProjectInput, AuriaNewProjectModal } from '../components/auria/
 import { AuriaSidebar } from '../components/auria/AuriaSidebar';
 import { AuriaWelcomeView } from '../components/auria/AuriaWelcomeView';
 import { AuriaWorkspaceHeader, WORKSPACE_HEADER_HEIGHT } from '../components/auria/AuriaWorkspaceHeader';
+import { AuriaModuleBar } from '../components/auria/AuriaModuleBar';
 import { AuriaPanel } from '../data/auriaMockData';
 import { ProductTabId } from '../data/productNavigation';
 import { useAuriaWorkspace } from '../features/auria/useAuriaWorkspace';
@@ -256,11 +257,6 @@ export function AuriaScreen({ activeModule, onNavigateModule }: AuriaScreenProps
         activeConversationId={workspace.activeConversationId}
         projectRows={workspace.projectRows}
         projects={workspace.projects}
-        activeModule={activeModule}
-        onNavigateModule={(tab) => {
-          closeSidebar();
-          onNavigateModule?.(tab);
-        }}
         onNewChat={handleNewChat}
         onSelectPanel={transitionPanel}
         onCreateProject={openNewProjectModal}
@@ -280,6 +276,10 @@ export function AuriaScreen({ activeModule, onNavigateModule }: AuriaScreenProps
               onNewChat={handleNewChat}
             />
           </View>
+
+          {onNavigateModule ? (
+            <AuriaModuleBar activeModule={activeModule} onNavigate={onNavigateModule} />
+          ) : null}
 
           <View style={styles.main}>
             <Pressable style={styles.contentTapArea} onPress={handleContentTap} accessible={false}>

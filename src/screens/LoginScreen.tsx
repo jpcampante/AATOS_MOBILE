@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Animated,
   Easing,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -29,6 +30,7 @@ type LoginScreenProps = {
 const SHEET_BG = '#000000';
 const SHEET_MUTED = '#2B2B2B';
 const HERO_BG = '#FFFFFF';
+const AATOS_IMAGOTYPE = require('../../assets/aatos-imagotype.png');
 
 const SHEET_EASE = Easing.bezier(0.32, 0.72, 0, 1); // iOS drawer curve
 
@@ -86,17 +88,27 @@ export function LoginScreen({ onBack, onContinue }: LoginScreenProps) {
           </Pressable>
         ) : null}
 
-        <RotatingRevealText
-          phrases={welcomeContent.loginPhrases}
-          textStyle={styles.heroText}
-          coverColor={HERO_BG}
-          dotColor="#000000"
-          dotSize={34}
-          dotGap={14}
-          holdMs={2400}
-          introMs={450}
-          singleLine
-        />
+        <View style={styles.heroContent}>
+          <FadeInUp delay={80} distance={10} style={styles.logoReveal}>
+            <Image
+              source={AATOS_IMAGOTYPE}
+              resizeMode="contain"
+              style={styles.logo}
+              accessibilityLabel="AATOS"
+            />
+          </FadeInUp>
+          <RotatingRevealText
+            phrases={welcomeContent.loginPhrases}
+            textStyle={styles.heroText}
+            coverColor={HERO_BG}
+            dotColor="#000000"
+            dotSize={34}
+            dotGap={14}
+            holdMs={2400}
+            introMs={450}
+            singleLine
+          />
+        </View>
       </View>
 
       <KeyboardAvoidingView
@@ -236,6 +248,20 @@ function createStyles(safeBottom: number) {
       justifyContent: 'center',
       paddingHorizontal: 32,
       paddingTop: 8,
+    },
+    heroContent: {
+      width: '100%',
+      alignItems: 'center',
+      gap: 24,
+    },
+    logoReveal: {
+      width: '100%',
+      alignItems: 'center',
+    },
+    logo: {
+      width: '72%',
+      maxWidth: 248,
+      height: 52,
     },
     closeButton: {
       position: 'absolute',

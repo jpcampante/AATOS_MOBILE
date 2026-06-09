@@ -3,6 +3,8 @@ import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-nat
 import { AURIA_CHAT_SCROLL_END_PADDING, AURIA_CONTENT_HORIZONTAL_INSET } from './auriaLayout';
 import { auriaTypography, liquidGlassBorder, liquidGlassTokens, useTheme } from '../../theme';
 import type { AuriaChatMessage } from '../../features/auria/types';
+import { AuriaDocumentArtifact } from './AuriaDocumentArtifact';
+import { AuriaImageArtifact } from './AuriaImageArtifact';
 
 type AuriaChatViewProps = {
   messages: AuriaChatMessage[];
@@ -31,10 +33,22 @@ export function AuriaChatView({ messages, isResponding = false }: AuriaChatViewP
             key={message.id}
             style={[styles.row, isUser ? styles.rowUser : styles.rowAssistant]}
           >
-            <View style={[styles.bubble, isUser ? styles.bubbleUser : styles.bubbleAssistant]}>
+            <View
+              style={[
+                styles.bubble,
+                isUser ? styles.bubbleUser : styles.bubbleAssistant,
+                message.artifact && styles.bubbleWithArtifact,
+              ]}
+            >
               <Text style={[styles.text, isUser ? styles.textUser : styles.textAssistant]}>
                 {message.text}
               </Text>
+              {message.artifact?.kind === 'document' ? (
+                <AuriaDocumentArtifact artifact={message.artifact} />
+              ) : null}
+              {message.artifact?.kind === 'image' ? (
+                <AuriaImageArtifact artifact={message.artifact} />
+              ) : null}
             </View>
           </View>
         );
@@ -90,6 +104,15 @@ function createStyles(
       backgroundColor: glass.fill,
       ...rim,
       ...glass.webBlur,
+    },
+    bubbleWithArtifact: {
+      width: '100%',
+      maxWidth: '100%',
+      paddingHorizontal: 0,
+      paddingVertical: 0,
+      backgroundColor: 'transparent',
+      borderWidth: 0,
+      gap: 10,
     },
     text: {
       ...auriaTypography.body,

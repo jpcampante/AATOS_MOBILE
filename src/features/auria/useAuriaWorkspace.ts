@@ -9,7 +9,9 @@ import {
   auriaProjects,
   auriaSidebarProjects,
 } from '../../data/auriaMockData';
-import type { AuriaChatMessage } from './types';
+import type { AuriaChatMessage, AuriaDocumentArtifact, AuriaImageArtifact } from './types';
+
+type AssistantReply = string | Pick<AuriaChatMessage, 'text' | 'artifact'>;
 
 type WorkspaceState = {
   panel: AuriaPanel;
@@ -28,25 +30,99 @@ type WorkspaceAction =
   | { type: 'open-panel'; panel: AuriaPanel }
   | { type: 'new-chat' }
   | { type: 'send-message'; text: string; id: number }
-  | { type: 'receive-reply'; text: string; id: number }
+  | { type: 'receive-reply'; reply: AssistantReply; id: number }
   | { type: 'open-conversation'; conversationId: string }
   | { type: 'open-project-modal' }
   | { type: 'close-project-modal' }
   | { type: 'create-project'; name: string; visibility: AuriaProjectVisibility; id: number };
 
+function buildDocumentArtifact(text: string): AuriaDocumentArtifact {
+  const brief = text.match(/Brief:\s*(.+)$/i)?.[1]?.trim();
+  const requestedType = text.match(/Create a ([^.]+)\./i)?.[1]?.trim() ?? 'document';
+  const title =
+    brief && !brief.toLowerCase().startsWith('ask me')
+      ? brief.replace(/[.!?]+$/, '')
+      : `${requestedType.charAt(0).toUpperCase()}${requestedType.slice(1)} draft`;
+
+  return {
+    kind: 'document',
+    title,
+    body: `Purpose
+This working draft turns the request into a clear, editable structure that can be reviewed and refined with the team.
+
+Executive summary
+The recommended approach is to define the desired outcome first, align the document with its audience, and keep every section focused on a decision or next action.
+
+Proposed structure
+1. Context and objective
+2. Key findings and considerations
+3. Recommended direction
+4. Risks and dependencies
+5. Next actions and owners
+
+Next step
+Review the structure, then tell Auria which section should be expanded or rewritten.`,
+  };
+}
+
+export const auriaDocumentMock: AuriaChatMessage = {
+  id: 'document-mock',
+  role: 'assistant',
+  text: 'Here is a working document draft.',
+  artifact: buildDocumentArtifact('Create a document. Brief: Product strategy working draft'),
+};
+
+function buildImageArtifact(text: string): AuriaImageArtifact {
+  const ratio = text.match(/aspect ratio\s+(\d+):(\d+)/i);
+  const width = Number(ratio?.[1] ?? 1);
+  const height = Number(ratio?.[2] ?? 1);
+  const prompt =
+    text.match(/Image brief:\s*(.+)$/i)?.[1]?.trim() ??
+    'A floating garden pavilion above a calm lake at sunset.';
+
+  return {
+    kind: 'image',
+    title: 'Floating garden pavilion',
+    prompt,
+    aspectRatio: width / height,
+  };
+}
+
+export const auriaImageMock: AuriaChatMessage = {
+  id: 'image-mock',
+  role: 'assistant',
+  text: 'I created an image mock from the selected brief.',
+  artifact: buildImageArtifact(
+    'Create an image with aspect ratio 1:1. Image brief: A floating garden pavilion above a calm lake at sunset.',
+  ),
+};
+
 const initialState: WorkspaceState = {
   panel: 'chat',
-  showWelcome: true,
+  showWelcome: false,
   composerText: '',
-  activeConversationId: null,
+  activeConversationId: 'document-mock',
   projects: [...auriaProjects],
   projectRows: [...auriaSidebarProjects],
-  messages: [],
+  messages: [
+    {
+      id: 'document-mock-request',
+      role: 'user',
+      text: 'Create a product strategy working draft.',
+    },
+    auriaDocumentMock,
+    {
+      id: 'image-mock-request',
+      role: 'user',
+      text: 'Create a floating garden image.',
+    },
+    auriaImageMock,
+  ],
   pendingReply: null,
   newProjectOpen: false,
 };
 
-function buildAssistantReply(text: string): string {
+function buildAssistantReply(text: string): AssistantReply {
   const normalized = text.toLowerCase();
   if (normalized.includes('task') || normalized.includes('priority')) {
     return 'Here is a practical priority structure:\n\n1. Define the outcome and deadline.\n2. Separate urgent work from important work.\n3. Assign an owner and next action to every task.\n4. Review blockers before starting execution.\n\nTell me the project or deadline and I will turn this into a specific task list.';
@@ -58,14 +134,16 @@ function buildAssistantReply(text: string): string {
     return 'I can draft that follow-up. Share the recipient, desired tone, and the action you want them to take. I will produce a concise subject line and editable email.';
   }
   if (normalized.includes('create an image') || normalized.includes('image brief')) {
-    return 'Your image brief is ready. I will preserve the selected proportion and can help refine the subject, composition, lighting, and visual style before generation.';
+    return {
+      text: 'I created an image mock from the selected brief.',
+      artifact: buildImageArtifact(text),
+    };
   }
-  if (
-    normalized.includes('create a document') ||
-    normalized.includes('create a presentation') ||
-    normalized.includes('create a spreadsheet')
-  ) {
-    return 'The document workspace is ready. I can build the outline first, then draft each section while keeping the content editable.';
+  if (normalized.includes('create a document')) {
+    return {
+      text: 'I created a working draft. You can copy it or expand it for focused reading.',
+      artifact: buildDocumentArtifact(text),
+    };
   }
   if (normalized.includes('shared conversation with')) {
     return 'The teammate AI has been added to this conversation. Describe the decision or question you want to work through together.';
@@ -117,14 +195,17 @@ function workspaceReducer(state: WorkspaceState, action: WorkspaceAction): Works
     }
     case 'receive-reply':
       if (state.pendingReply?.id !== action.id) return state;
-      return {
-        ...state,
-        pendingReply: null,
-        messages: [
-          ...state.messages,
-          { id: `m-${action.id}-a`, role: 'assistant', text: action.text },
-        ],
-      };
+      {
+        const reply = typeof action.reply === 'string' ? { text: action.reply } : action.reply;
+        return {
+          ...state,
+          pendingReply: null,
+          messages: [
+            ...state.messages,
+            { id: `m-${action.id}-a`, role: 'assistant', ...reply },
+          ],
+        };
+      }
     case 'open-conversation': {
       const conversation = auriaConversations.find((item) => item.id === action.conversationId);
       return {
@@ -193,7 +274,7 @@ export function useAuriaWorkspace() {
     if (!state.pendingReply) return;
     const { id, text } = state.pendingReply;
     const timer = setTimeout(() => {
-      dispatch({ type: 'receive-reply', id, text: buildAssistantReply(text) });
+      dispatch({ type: 'receive-reply', id, reply: buildAssistantReply(text) });
     }, 700);
     return () => clearTimeout(timer);
   }, [state.pendingReply]);

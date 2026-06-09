@@ -23,8 +23,8 @@ import {
 import { AuriaIcon, AuriaIconName, AURIA_ICON_SIZE } from '../icons';
 import { LiquidGlassSurface } from '../ui/LiquidGlassSurface';
 
-type CreateMode = 'home' | 'document' | 'image' | 'teammate';
-type DocumentType = 'Document' | 'Presentation' | 'Spreadsheet' | 'Report';
+type CreateMode = 'home' | 'image' | 'teammate';
+type CreateActionId = Exclude<CreateMode, 'home'> | 'files' | 'document';
 type ImageRatio = '1:1' | '4:3' | '3:4' | '16:9' | '9:16';
 
 type AuriaCreateMenuProps = {
@@ -35,7 +35,7 @@ type AuriaCreateMenuProps = {
 };
 
 const ACTIONS: Array<{
-  id: Exclude<CreateMode, 'home'> | 'files';
+  id: CreateActionId;
   label: string;
   icon: AuriaIconName;
 }> = [
@@ -61,8 +61,6 @@ const ACTIONS: Array<{
   },
 ];
 
-const DOCUMENT_TYPES: DocumentType[] = ['Document', 'Presentation', 'Spreadsheet', 'Report'];
-const DOCUMENT_TASKS = ['Draft from scratch', 'Rewrite', 'Summarize', 'Create outline'] as const;
 const IMAGE_RATIOS: ImageRatio[] = ['1:1', '4:3', '3:4', '16:9', '9:16'];
 const TEAMMATES = [
   { name: 'Maya Chen', role: 'Finance AI', context: 'Budgets, forecasts, and board reporting' },
@@ -84,9 +82,6 @@ export function AuriaCreateMenu({
   );
   const [mode, setMode] = useState<CreateMode>('home');
   const [prompt, setPrompt] = useState('');
-  const [documentType, setDocumentType] = useState<DocumentType>('Document');
-  const [documentTask, setDocumentTask] =
-    useState<(typeof DOCUMENT_TASKS)[number]>('Draft from scratch');
   const [imageRatio, setImageRatio] = useState<ImageRatio>('1:1');
   const [teammate, setTeammate] = useState<(typeof TEAMMATES)[number]>(TEAMMATES[0]);
   const sheetWidth =
@@ -125,9 +120,13 @@ export function AuriaCreateMenu({
     finish(`Analyze the attached files: ${names}. Ask me what outcome I need before starting.`);
   };
 
-  const openAction = (id: (typeof ACTIONS)[number]['id']) => {
+  const openAction = (id: CreateActionId) => {
     if (id === 'files') {
       void addFiles();
+      return;
+    }
+    if (id === 'document') {
+      finish('Create a document. Brief: Product strategy working draft.');
       return;
     }
     setMode(id);
@@ -135,9 +134,7 @@ export function AuriaCreateMenu({
 
   const submit = () => {
     const detail = prompt.trim() || 'Ask me for the missing details before starting.';
-    if (mode === 'document') {
-      finish(`Create a ${documentType.toLowerCase()}. Task: ${documentTask}. Brief: ${detail}`);
-    } else if (mode === 'image') {
+    if (mode === 'image') {
       finish(`Create an image with aspect ratio ${imageRatio}. Image brief: ${detail}`);
     } else if (mode === 'teammate') {
       finish(`Start a shared conversation with ${teammate.name}, ${teammate.role}. Topic: ${detail}`);
@@ -147,11 +144,9 @@ export function AuriaCreateMenu({
   const title =
     mode === 'home'
       ? 'Create with Auria'
-      : mode === 'document'
-        ? 'Create document'
-        : mode === 'image'
-          ? 'Create image'
-          : 'Talk to teammate AI';
+      : mode === 'image'
+        ? 'Create image'
+        : 'Talk to teammate AI';
 
   const menuBody = (
     <>
@@ -202,12 +197,6 @@ export function AuriaCreateMenu({
           </View>
         ) : (
           <>
-            {mode === 'document' ? (
-              <>
-                <OptionSection label="Format" options={DOCUMENT_TYPES} value={documentType} onChange={setDocumentType} />
-                <OptionSection label="Action" options={DOCUMENT_TASKS} value={documentTask} onChange={setDocumentTask} />
-              </>
-            ) : null}
             {mode === 'image' ? (
               <OptionSection label="Proportion" options={IMAGE_RATIOS} value={imageRatio} onChange={setImageRatio} />
             ) : null}

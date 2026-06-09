@@ -78,7 +78,6 @@ export function AuriaCreateMenu({
 }: AuriaCreateMenuProps) {
   const { theme } = useTheme();
   const { width: viewportWidth } = useWindowDimensions();
-  const sheetWidth = Math.min(Math.max(0, viewportWidth - 36), 420);
   const styles = useMemo(
     () => createStyles(theme, bottomOffset),
     [bottomOffset, theme],
@@ -90,6 +89,10 @@ export function AuriaCreateMenu({
     useState<(typeof DOCUMENT_TASKS)[number]>('Draft from scratch');
   const [imageRatio, setImageRatio] = useState<ImageRatio>('1:1');
   const [teammate, setTeammate] = useState<(typeof TEAMMATES)[number]>(TEAMMATES[0]);
+  const sheetWidth =
+    mode === 'home'
+      ? Math.min(Math.max(0, viewportWidth - 32), 230)
+      : Math.min(Math.max(0, viewportWidth - 36), 420);
 
   const anim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -152,8 +155,8 @@ export function AuriaCreateMenu({
 
   const menuBody = (
     <>
-      <View style={styles.header}>
-        {mode !== 'home' ? (
+      {mode !== 'home' ? (
+        <View style={styles.header}>
           <Pressable
             onPress={() => setMode('home')}
             style={styles.headerButton}
@@ -162,19 +165,17 @@ export function AuriaCreateMenu({
           >
             <AuriaIcon name="arrowLeft" size={AURIA_ICON_SIZE.sm} />
           </Pressable>
-        ) : (
-          <View style={styles.headerButton} />
-        )}
-        <Text style={styles.title}>{title}</Text>
-        <Pressable
-          onPress={onClose}
-          style={styles.headerButton}
-          accessibilityRole="button"
-          accessibilityLabel="Close"
-        >
-          <AuriaIcon name="moreHorizontal" size={AURIA_ICON_SIZE.sm} />
-        </Pressable>
-      </View>
+          <Text style={styles.title}>{title}</Text>
+          <Pressable
+            onPress={onClose}
+            style={styles.headerButton}
+            accessibilityRole="button"
+            accessibilityLabel="Close"
+          >
+            <AuriaIcon name="moreHorizontal" size={AURIA_ICON_SIZE.sm} />
+          </Pressable>
+        </View>
+      ) : null}
 
       <ScrollView
         key={mode}
@@ -281,6 +282,7 @@ export function AuriaCreateMenu({
       <Animated.View
         style={[
           styles.sheetPosition,
+          mode === 'home' ? styles.homeSheetPosition : styles.detailSheetPosition,
           { width: sheetWidth },
           {
             opacity: anim,
@@ -356,8 +358,8 @@ function createStyles(
     overlay: {
       ...StyleSheet.absoluteFillObject,
       justifyContent: 'flex-end',
-      alignItems: 'center',
-      paddingHorizontal: 18,
+      alignItems: 'stretch',
+      paddingHorizontal: 16,
       paddingBottom: bottomOffset,
       zIndex: 20,
     },
@@ -369,13 +371,17 @@ function createStyles(
     sheetPosition: {
       maxHeight: '72%',
     },
+    homeSheetPosition: {
+      alignSelf: 'flex-start',
+    },
+    detailSheetPosition: {
+      alignSelf: 'center',
+    },
     sheet: {
       width: '100%',
       ...myceoCornerStyle('menu'),
-      paddingHorizontal: 14,
-      paddingTop: 10,
-      paddingBottom: 14,
-      gap: 4,
+      padding: 8,
+      gap: 2,
       zIndex: 1,
     },
     header: {
@@ -402,20 +408,19 @@ function createStyles(
       flexGrow: 0,
     },
     scrollContent: {
-      gap: 12,
-      paddingBottom: 2,
+      gap: 10,
     },
     actionList: {
-      gap: 2,
+      gap: 0,
     },
     actionRow: {
-      minHeight: 70,
+      minHeight: 52,
       width: '100%',
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 14,
-      paddingHorizontal: 6,
-      paddingVertical: 7,
+      gap: 10,
+      paddingHorizontal: 2,
+      paddingVertical: 4,
       ...myceoCornerStyle('inset'),
     },
     actionRowPressed: {
@@ -423,19 +428,19 @@ function createStyles(
       transform: [{ scale: 0.985 }],
     },
     actionIcon: {
-      width: 48,
-      height: 48,
+      width: 36,
+      height: 36,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: theme.colors.input,
-      ...myceoCornerStyle('iconLg'),
+      ...myceoCornerStyle('icon'),
     },
     actionLabel: {
       ...auriaTypography.body,
       color: theme.colors.text,
-      fontSize: 16,
-      fontWeight: theme.typography.fontWeight.semibold,
-      letterSpacing: -0.3,
+      fontSize: 13,
+      fontWeight: theme.typography.fontWeight.medium,
+      letterSpacing: -0.1,
     },
     actionCopy: {
       flex: 1,

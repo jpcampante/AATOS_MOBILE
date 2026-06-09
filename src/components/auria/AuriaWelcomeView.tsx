@@ -5,12 +5,11 @@ import { AURIA_CONTENT_HORIZONTAL_INSET } from './auriaLayout';
 import { AnimatedScreenBlock } from '../navigation/AnimatedScreenBlock';
 import {
   auriaTypography,
-  liquidGlassTokens,
+  myceoCornerStyle,
   useTheme,
 } from '../../theme';
 import { AuriaLogoMark } from './AuriaLogoMark';
 import { AuriaRefreshButton } from './AuriaRefreshButton';
-import { LiquidGlassSurface } from '../ui/LiquidGlassSurface';
 
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
@@ -28,6 +27,11 @@ function pickSuggestions(count = 3) {
     [pool[i], pool[j]] = [pool[j], pool[i]];
   }
   return pool.slice(0, count);
+}
+
+function getSuggestionWidth(text: string, contentMaxWidth?: number) {
+  const availableWidth = contentMaxWidth ?? 320;
+  return Math.min(availableWidth, 310, Math.max(176, text.length * 7 + 34));
 }
 
 export function AuriaWelcomeView({
@@ -125,18 +129,17 @@ export function AuriaWelcomeView({
               {suggestions.map((suggestion) => (
                 <Pressable
                   key={`${refreshKey}-${suggestion}`}
-                  style={({ pressed }) => [styles.suggestionPressable, pressed && styles.suggestionPillPressed]}
+                  style={({ pressed }) => [
+                    styles.suggestionPressable,
+                    { width: getSuggestionWidth(suggestion, contentMaxWidth) },
+                    pressed && styles.suggestionPillPressed,
+                  ]}
                   onPress={() => onSuggestion(suggestion)}
                   accessibilityRole="button"
                 >
-                  <LiquidGlassSurface
-                    borderRadius={22}
-                    elevationLevel="card"
-                    interactive
-                    style={styles.suggestionPill}
-                  >
-                    <Text style={styles.suggestionText}>{suggestion}</Text>
-                  </LiquidGlassSurface>
+                  <Text style={styles.suggestionText} numberOfLines={1} ellipsizeMode="tail">
+                    {suggestion}
+                  </Text>
                 </Pressable>
               ))}
             </Animated.View>
@@ -162,7 +165,6 @@ function createStyles(
   contentTopPadding = 56,
 ) {
   const column = contentMaxWidth ? { maxWidth: contentMaxWidth, width: '100%' as const } : { width: '100%' as const };
-  const glass = liquidGlassTokens(theme);
   return StyleSheet.create({
     wrap: {
       flex: 1,
@@ -219,28 +221,27 @@ function createStyles(
     },
     suggestions: {
       ...column,
-      gap: 10,
-      alignItems: 'stretch',
+      gap: 9,
+      alignItems: 'center',
     },
     suggestionPressable: {
-      width: '100%',
-      borderRadius: 22,
-    },
-    suggestionPill: {
-      paddingHorizontal: 18,
-      paddingVertical: 15,
-      borderRadius: 22,
+      minHeight: 40,
+      paddingHorizontal: 16,
+      paddingVertical: 9,
+      alignSelf: 'center',
       alignItems: 'center',
       justifyContent: 'center',
+      backgroundColor: ds.gray200,
+      ...myceoCornerStyle('menu'),
     },
     suggestionPillPressed: {
-      backgroundColor: glass.pressed,
-      transform: [{ scale: 0.985 }],
+      backgroundColor: ds.gray300,
+      transform: [{ scale: 0.98 }],
     },
     suggestionText: {
       ...auriaTypography.body,
-      fontSize: 15,
-      fontWeight: theme.typography.fontWeight.medium,
+      fontSize: 14,
+      fontWeight: theme.typography.fontWeight.normal,
       color: ds.gray900,
       textAlign: 'center',
     },

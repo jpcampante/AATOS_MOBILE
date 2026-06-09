@@ -301,7 +301,7 @@ export function AuriaScreen() {
               visible={createMenuOpen}
               onClose={() => setCreateMenuOpen(false)}
               onSendRequest={handleCreateRequest}
-              bottomOffset={composerHeight + 8}
+              bottomOffset={composerHeight + 4}
             />
           </View>
         </View>

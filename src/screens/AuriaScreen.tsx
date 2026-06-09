@@ -33,19 +33,29 @@ import { AuriaNewProjectInput, AuriaNewProjectModal } from '../components/auria/
 import { AuriaSidebar } from '../components/auria/AuriaSidebar';
 import { AuriaWelcomeView } from '../components/auria/AuriaWelcomeView';
 import { AuriaWorkspaceHeader, WORKSPACE_HEADER_HEIGHT } from '../components/auria/AuriaWorkspaceHeader';
-import { APP_SHELL_BOTTOM_INSET } from '../components/navigation/AppShell';
 import { AuriaPanel } from '../data/auriaMockData';
+import { ProductTabId } from '../data/productNavigation';
 import { useAuriaWorkspace } from '../features/auria/useAuriaWorkspace';
 import { useKeyboardInset } from '../hooks/useKeyboardInset';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme';
 
 const SLIDE_DURATION = 280;
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
-export function AuriaScreen() {
+type AuriaScreenProps = {
+  activeModule?: ProductTabId;
+  onNavigateModule?: (tab: ProductTabId) => void;
+};
+
+export function AuriaScreen({ activeModule, onNavigateModule }: AuriaScreenProps = {}) {
   const { ds } = useTheme();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
-  const keyboardInset = useKeyboardInset(APP_SHELL_BOTTOM_INSET);
+  const safeBottom = useSafeAreaInsets().bottom;
+  // Composer now owns the true bottom edge: rest on the safe-area inset, and
+  // ride the keyboard when it opens.
+  const keyboardInset = useKeyboardInset(0);
+  const composerBottomInset = keyboardInset > 0 ? keyboardInset : safeBottom;
   const composerRef = useRef<AuriaComposerHandle>(null);
   const workspace = useAuriaWorkspace();
 
@@ -63,14 +73,14 @@ export function AuriaScreen() {
   const styles = useMemo(() => createStyles(ds), [ds]);
   const sidebarWidth = useMemo(() => getSidebarWidth(screenWidth), [screenWidth]);
   const contentMaxWidth = useMemo(() => getContentMaxWidth(screenWidth), [screenWidth]);
-  const composerOverlayHeight = getAuriaComposerOverlayHeight(keyboardInset);
+  const composerOverlayHeight = getAuriaComposerOverlayHeight(composerBottomInset);
   const welcomeTopPadding = useMemo(
     () =>
       getWelcomeContentTopPadding(
         screenHeight,
         WORKSPACE_HEADER_HEIGHT,
         composerOverlayHeight,
-        APP_SHELL_BOTTOM_INSET,
+        0,
       ),
     [composerOverlayHeight, screenHeight],
   );
@@ -246,6 +256,11 @@ export function AuriaScreen() {
         activeConversationId={workspace.activeConversationId}
         projectRows={workspace.projectRows}
         projects={workspace.projects}
+        activeModule={activeModule}
+        onNavigateModule={(tab) => {
+          closeSidebar();
+          onNavigateModule?.(tab);
+        }}
         onNewChat={handleNewChat}
         onSelectPanel={transitionPanel}
         onCreateProject={openNewProjectModal}
@@ -288,7 +303,7 @@ export function AuriaScreen() {
                   onChangeText={workspace.setComposerText}
                   onSend={handleSend}
                   onAttach={openCreateMenu}
-                  bottomInset={keyboardInset}
+                  bottomInset={composerBottomInset}
                   isResponding={workspace.isResponding}
                 />
               </View>

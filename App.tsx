@@ -11,26 +11,28 @@ import { ThemeProvider } from './src/theme';
 
 type AppPhase = 'login' | 'main';
 
-function renderProductScreen(tab: ProductTabId) {
-  switch (tab) {
-    case 'insights':
-      return <HomeScreen />;
-    case 'auria':
-      return <AuriaScreen />;
-    case 'tasks':
-      return <PlaceholderModuleScreen title="Tasks" subtitle="Kanban, roadmap, and workload" />;
-    case 'specialists':
-      return <PlaceholderModuleScreen title="Specialists" subtitle="Chat with professionals" />;
-    case 'integrations':
-      return <PlaceholderModuleScreen title="Integrations" subtitle="Mail, calendar, and connectors" />;
-    default:
-      return null;
-  }
-}
-
 export default function App() {
   const [phase, setPhase] = useState<AppPhase>('login');
   const [activeTab, setActiveTab] = useState<ProductTabId>('insights');
+
+  const renderProductScreen = (tab: ProductTabId) => {
+    switch (tab) {
+      case 'insights':
+        return <HomeScreen />;
+      case 'auria':
+        return <AuriaScreen activeModule={activeTab} onNavigateModule={setActiveTab} />;
+      case 'tasks':
+        return <PlaceholderModuleScreen title="Tasks" subtitle="Kanban, roadmap, and workload" />;
+      case 'specialists':
+        return <PlaceholderModuleScreen title="Specialists" subtitle="Chat with professionals" />;
+      case 'integrations':
+        return (
+          <PlaceholderModuleScreen title="Integrations" subtitle="Mail, calendar, and connectors" />
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
     <SafeAreaProvider>

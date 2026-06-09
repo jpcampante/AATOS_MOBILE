@@ -22,20 +22,27 @@ export function AppShell({ activeTab, onTabChange, renderScreen }: AppShellProps
   const { theme, ds } = useTheme();
   const shellBackground = activeTab === 'auria' ? ds.gray50 : theme.colors.page;
 
+  // Auria is a focused chat surface: the composer owns the bottom edge, and
+  // module switching lives in its own sidebar — so the floating nav pill is
+  // hidden here and the bottom reservation is released.
+  const isAuria = activeTab === 'auria';
+
   return (
     <View style={[styles.root, { backgroundColor: shellBackground }]}>
       <SafeAreaView style={styles.main} edges={['top']}>
         <StatusBar style={theme.colors.statusBar} />
-        <View style={styles.content}>
+        <View style={[styles.content, { paddingBottom: isAuria ? 0 : APP_SHELL_BOTTOM_INSET }]}>
           <ProductTabTransition activeTab={activeTab} renderScreen={renderScreen} />
         </View>
       </SafeAreaView>
 
-      <View style={styles.navOverlay}>
-        <SafeAreaView edges={['bottom']} style={styles.navSafe}>
-          <ProductNavBar activeTab={activeTab} onTabChange={onTabChange} />
-        </SafeAreaView>
-      </View>
+      {isAuria ? null : (
+        <View style={styles.navOverlay}>
+          <SafeAreaView edges={['bottom']} style={styles.navSafe}>
+            <ProductNavBar activeTab={activeTab} onTabChange={onTabChange} />
+          </SafeAreaView>
+        </View>
+      )}
     </View>
   );
 }
@@ -49,7 +56,6 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingBottom: APP_SHELL_BOTTOM_INSET,
   },
     navOverlay: {
       position: 'absolute',

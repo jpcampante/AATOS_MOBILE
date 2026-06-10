@@ -2,21 +2,25 @@ import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { auriaTypography, useTheme } from '../../theme';
 import type { TasksSummary } from '../../data/tasksMockData';
+import { AuriaIcon } from '../icons';
 
 type SummaryKey = keyof TasksSummary;
 
-const CARDS: Array<{
+type CardSpec = {
   key: SummaryKey;
   title: string;
   description: (n: number) => string;
-  tone: 'neutral' | 'warn' | 'accent';
-}> = [
-  { key: 'today', title: 'Today', description: (n) => `${n} need attention`, tone: 'neutral' },
-  { key: 'overdue', title: 'Overdue', description: (n) => `${n} behind schedule`, tone: 'warn' },
-  { key: 'inProgress', title: 'In progress', description: (n) => `${n} active right now`, tone: 'neutral' },
-  { key: 'waiting', title: 'Waiting', description: (n) => `${n} on others`, tone: 'neutral' },
-  { key: 'blocked', title: 'Blocked', description: (n) => `${n} need unblocking`, tone: 'warn' },
-  { key: 'aiSuggestions', title: 'AI suggested', description: (n) => `${n} for review`, tone: 'accent' },
+  bg: string;
+  valueColor: string;
+};
+
+const CARDS: CardSpec[] = [
+  { key: 'today', title: 'Today', description: (n) => `${n} need attention`, bg: '#E9EBFF', valueColor: '#1E2BFF' },
+  { key: 'overdue', title: 'Overdue', description: (n) => `${n} behind schedule`, bg: '#FFE3E3', valueColor: '#E0353B' },
+  { key: 'inProgress', title: 'In progress', description: (n) => `${n} active right now`, bg: '#EFF6E1', valueColor: '#3F6712' },
+  { key: 'waiting', title: 'Waiting', description: (n) => `${n} on others`, bg: '#FFF1D6', valueColor: '#7A4A0E' },
+  { key: 'blocked', title: 'Blocked', description: (n) => `${n} need unblocking`, bg: '#F4DCDC', valueColor: '#B0282C' },
+  { key: 'aiSuggestions', title: 'AI suggested', description: (n) => `${n} for review`, bg: '#E6F4FF', valueColor: '#1F66B0' },
 ];
 
 export function TasksSummaryCards({
@@ -36,27 +40,26 @@ export function TasksSummaryCards({
       {CARDS.map((card) => {
         const value = summary[card.key];
         const isActive = activeKey === card.key;
-        const valueColor =
-          card.tone === 'warn' && value > 0
-            ? ds.danger
-            : card.tone === 'accent'
-              ? ds.auriaBlue
-              : ds.gray900;
-
         return (
           <Pressable
             key={card.key}
             onPress={() => onSelect?.(card.key)}
             style={({ pressed }) => [
               styles.card,
+              { backgroundColor: card.bg },
               isActive && styles.cardActive,
               pressed && styles.cardPressed,
             ]}
             accessibilityRole="button"
             accessibilityLabel={`${card.title}: ${value}`}
           >
-            <Text style={styles.label}>{card.title}</Text>
-            <Text style={[styles.value, { color: valueColor }]}>{value}</Text>
+            <View style={styles.topRow}>
+              <Text style={styles.label}>{card.title}</Text>
+              <View style={styles.arrowBadge}>
+                <AuriaIcon name="arrowUp" size={11} color="#0F1216" strokeWidth={2.2} />
+              </View>
+            </View>
+            <Text style={[styles.value, { color: card.valueColor }]}>{value}</Text>
             <Text style={styles.description} numberOfLines={1}>
               {card.description(value)}
             </Text>
@@ -80,39 +83,49 @@ function createStyles(
     card: {
       flexBasis: '47%',
       flexGrow: 1,
-      backgroundColor: ds.white,
-      borderRadius: 14,
-      paddingHorizontal: 14,
-      paddingVertical: 12,
-      borderWidth: 1,
-      borderColor: ds.gray200,
-      gap: 2,
+      borderRadius: 22,
+      paddingHorizontal: 16,
+      paddingTop: 14,
+      paddingBottom: 14,
+      gap: 4,
     },
     cardActive: {
-      borderColor: ds.gray700,
+      transform: [{ scale: 0.98 }],
     },
     cardPressed: {
-      backgroundColor: ds.gray100,
+      opacity: 0.88,
+    },
+    topRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
     },
     label: {
-      ...auriaTypography.label,
-      fontSize: 11,
-      fontWeight: theme.typography.fontWeight.semibold,
-      color: ds.gray500,
-      textTransform: 'uppercase',
-      letterSpacing: 0.4,
+      ...auriaTypography.body,
+      fontSize: 12.5,
+      fontWeight: theme.typography.fontWeight.medium,
+      color: 'rgba(15,18,22,0.62)',
+    },
+    arrowBadge: {
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      backgroundColor: 'rgba(255,255,255,0.7)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      transform: [{ rotate: '40deg' }],
     },
     value: {
-      fontSize: 28,
+      fontSize: 36,
       fontWeight: theme.typography.fontWeight.bold,
-      letterSpacing: -0.6,
+      letterSpacing: -1,
       marginTop: 2,
+      lineHeight: 40,
     },
     description: {
       ...auriaTypography.body,
       fontSize: 12,
-      color: ds.gray500,
-      marginTop: 2,
+      color: 'rgba(15,18,22,0.6)',
     },
   });
 }

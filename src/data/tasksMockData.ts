@@ -17,6 +17,8 @@ export type TaskItem = {
   blockedReason?: string;
   waitingOn?: string;
   reviewLabel?: string;
+  workspace?: string;
+  progress?: number;
 };
 
 export type TasksSummary = {
@@ -29,6 +31,20 @@ export type TasksSummary = {
 };
 
 export const TASKS_USER = 'Marta Campante';
+
+export const taskWorkspaces = [
+  { id: 'all', label: 'All workspaces', count: 16 },
+  { id: 'aatos', label: 'AATOS', count: 7 },
+  { id: 'finance', label: 'Finance team', count: 4 },
+  { id: 'legal', label: 'Legal team', count: 3 },
+  { id: 'sales', label: 'Sales team', count: 2 },
+] as const;
+
+export const tasksAiOverview = {
+  title: 'Auria task reading',
+  summary: 'Two deadlines need attention today. Legal review is blocking the MSA contract, while the Q3 strategy draft is ready for approval.',
+  action: 'Review focus',
+};
 
 export const tasksSummary: TasksSummary = {
   today: 4,
@@ -51,6 +67,8 @@ export const todayFocusTasks: TaskItem[] = [
     owner: TASKS_USER,
     lastActivity: '2h ago',
     reviewLabel: 'Document awaiting your approval',
+    workspace: 'aatos',
+    progress: 72,
   },
   {
     id: 't-today-2',
@@ -62,6 +80,8 @@ export const todayFocusTasks: TaskItem[] = [
     relatedItem: 'Design system v2',
     owner: TASKS_USER,
     lastActivity: '4h ago',
+    workspace: 'aatos',
+    progress: 35,
   },
   {
     id: 't-today-3',
@@ -73,6 +93,8 @@ export const todayFocusTasks: TaskItem[] = [
     relatedItem: 'partnership@acme.io',
     owner: TASKS_USER,
     lastActivity: 'Yesterday',
+    workspace: 'sales',
+    progress: 10,
   },
   {
     id: 't-today-4',
@@ -84,6 +106,8 @@ export const todayFocusTasks: TaskItem[] = [
     relatedItem: 'Weekly standup',
     owner: TASKS_USER,
     lastActivity: '1h ago',
+    workspace: 'aatos',
+    progress: 58,
   },
 ];
 
@@ -99,6 +123,8 @@ export const overdueTasks: TaskItem[] = [
     owner: TASKS_USER,
     lastActivity: '3d ago',
     blockedReason: 'Legal review pending signature',
+    workspace: 'legal',
+    progress: 60,
   },
   {
     id: 't-overdue-2',
@@ -110,6 +136,8 @@ export const overdueTasks: TaskItem[] = [
     relatedItem: 'Q2 retro',
     owner: TASKS_USER,
     lastActivity: '1d ago',
+    workspace: 'aatos',
+    progress: 45,
   },
 ];
 
@@ -126,6 +154,8 @@ export const aiSuggestionTasks: TaskItem[] = [
     lastActivity: 'Just now',
     isAiSuggestion: true,
     aiConfidence: 88,
+    workspace: 'sales',
+    progress: 0,
   },
   {
     id: 't-ai-2',
@@ -139,6 +169,8 @@ export const aiSuggestionTasks: TaskItem[] = [
     lastActivity: '1h ago',
     isAiSuggestion: true,
     aiConfidence: 92,
+    workspace: 'legal',
+    progress: 0,
   },
   {
     id: 't-ai-3',
@@ -152,6 +184,8 @@ export const aiSuggestionTasks: TaskItem[] = [
     lastActivity: '3h ago',
     isAiSuggestion: true,
     aiConfidence: 76,
+    workspace: 'aatos',
+    progress: 0,
   },
 ];
 
@@ -167,6 +201,8 @@ export const waitingTasks: TaskItem[] = [
     owner: 'Diego Oliveira',
     lastActivity: '1d ago',
     waitingOn: 'Diego Oliveira',
+    workspace: 'finance',
+    progress: 68,
   },
   {
     id: 't-wait-2',
@@ -179,6 +215,8 @@ export const waitingTasks: TaskItem[] = [
     owner: 'Eduarda Santos',
     lastActivity: '2d ago',
     waitingOn: 'Eduarda Santos',
+    workspace: 'aatos',
+    progress: 42,
   },
 ];
 

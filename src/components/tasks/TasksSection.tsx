@@ -40,43 +40,46 @@ function createStyles(
 ) {
   return StyleSheet.create({
     section: {
-      gap: 10,
+      gap: 12,
     },
     headerRow: {
-      gap: 3,
+      gap: 4,
     },
     titleRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
+      gap: 9,
     },
     title: {
       ...auriaTypography.title,
-      fontSize: 16,
+      fontSize: 19,
       fontWeight: theme.typography.fontWeight.bold,
-      color: ds.gray900,
-      letterSpacing: -0.2,
+      color: '#0F1216',
+      letterSpacing: -0.4,
     },
     countPill: {
+      minWidth: 24,
       paddingHorizontal: 8,
-      paddingVertical: 2,
+      paddingVertical: 3,
       borderRadius: 999,
-      backgroundColor: '#DBEAFE',
+      backgroundColor: '#0F1216',
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     countText: {
       ...auriaTypography.label,
       fontSize: 11,
       fontWeight: theme.typography.fontWeight.bold,
-      color: '#1D4ED8',
+      color: '#FFFFFF',
     },
     subtitle: {
       ...auriaTypography.body,
-      fontSize: 12.5,
-      color: ds.gray500,
-      lineHeight: 17,
+      fontSize: 13,
+      color: 'rgba(15,18,22,0.55)',
+      lineHeight: 18,
     },
     list: {
-      gap: 8,
+      gap: 12,
     },
   });
 }

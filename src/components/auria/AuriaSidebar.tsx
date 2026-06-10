@@ -330,21 +330,6 @@ export function AuriaSidebar({
             styles={styles}
           />
         ))}
-        <View style={styles.settingsDivider} />
-        <SidebarRow
-          label="Settings"
-          active={activePanel === 'settings'}
-          onPress={() => onSelectPanel('settings')}
-          styles={styles}
-          icon={
-            <AuriaIcon
-              name="settings"
-              size={AURIA_ICON_SIZE.sm}
-              active={activePanel === 'settings'}
-              strokeWidth={AURIA_ICON_STROKE_NAV}
-            />
-          }
-        />
       </ScrollView>
 
       </View>
@@ -510,12 +495,6 @@ function createStyles(
     projectIconMuted: {
       backgroundColor: glass.fill,
       ...rimSubtle,
-    },
-    settingsDivider: {
-      height: 1,
-      backgroundColor: ds.gray200,
-      marginHorizontal: theme.spacing.md,
-      marginVertical: theme.spacing.sm,
     },
   });
 }

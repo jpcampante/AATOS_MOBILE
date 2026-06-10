@@ -3,7 +3,8 @@ export type ProductTabId =
   | 'auria'
   | 'tasks'
   | 'specialists'
-  | 'integrations';
+  | 'integrations'
+  | 'settings';
 
 export const PRODUCT_TABS: { id: ProductTabId; label: string }[] = [
   { id: 'insights', label: 'Insights' },
@@ -11,4 +12,5 @@ export const PRODUCT_TABS: { id: ProductTabId; label: string }[] = [
   { id: 'tasks', label: 'Tasks' },
   { id: 'specialists', label: 'Specialists' },
   { id: 'integrations', label: 'Integrations' },
+  { id: 'settings', label: 'Settings' },
 ];

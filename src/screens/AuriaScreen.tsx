@@ -43,7 +43,12 @@ import { useTheme } from '../theme';
 const SLIDE_DURATION = 280;
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
-export function AuriaScreen() {
+type AuriaScreenProps = {
+  onSidebarOpenChange?: (open: boolean) => void;
+  onOpenSettings?: () => void;
+};
+
+export function AuriaScreen({ onSidebarOpenChange, onOpenSettings }: AuriaScreenProps) {
   const { ds } = useTheme();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const safeBottom = useSafeAreaInsets().bottom;
@@ -91,7 +96,10 @@ export function AuriaScreen() {
       easing: sidebarOpen ? Easing.out(Easing.cubic) : Easing.in(Easing.cubic),
       useNativeDriver: USE_NATIVE_DRIVER,
     }).start();
-  }, [sidebarOpen, slideProgress]);
+    onSidebarOpenChange?.(sidebarOpen);
+  }, [onSidebarOpenChange, sidebarOpen, slideProgress]);
+
+  useEffect(() => () => onSidebarOpenChange?.(false), [onSidebarOpenChange]);
 
   const mainTranslateX = slideProgress.interpolate({
     inputRange: [0, 1],
@@ -150,6 +158,16 @@ export function AuriaScreen() {
       });
       panelTransitionRef.current.start();
     });
+  };
+
+  const handleSelectSidebarPanel = (next: AuriaPanel) => {
+    if (next === 'settings') {
+      dismissKeyboard();
+      closeSidebar();
+      onOpenSettings?.();
+      return;
+    }
+    transitionPanel(next);
   };
 
   const handleNewChat = () => {
@@ -250,7 +268,7 @@ export function AuriaScreen() {
         projectRows={workspace.projectRows}
         projects={workspace.projects}
         onNewChat={handleNewChat}
-        onSelectPanel={transitionPanel}
+        onSelectPanel={handleSelectSidebarPanel}
         onCreateProject={openNewProjectModal}
         onSelectConversation={handleConversation}
       />

@@ -1,0 +1,82 @@
+import { useMemo, type ReactNode } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import { auriaTypography, useTheme } from '../../theme';
+
+export function TasksSection({
+  title,
+  subtitle,
+  count,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  count?: number;
+  children: ReactNode;
+}) {
+  const { ds, theme } = useTheme();
+  const styles = useMemo(() => createStyles(ds, theme), [ds, theme]);
+
+  return (
+    <View style={styles.section}>
+      <View style={styles.headerRow}>
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>{title}</Text>
+          {count != null ? (
+            <View style={styles.countPill}>
+              <Text style={styles.countText}>{count}</Text>
+            </View>
+          ) : null}
+        </View>
+        {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+      </View>
+      <View style={styles.list}>{children}</View>
+    </View>
+  );
+}
+
+function createStyles(
+  ds: ReturnType<typeof useTheme>['ds'],
+  theme: ReturnType<typeof useTheme>['theme'],
+) {
+  return StyleSheet.create({
+    section: {
+      gap: 10,
+    },
+    headerRow: {
+      gap: 3,
+    },
+    titleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    title: {
+      ...auriaTypography.title,
+      fontSize: 16,
+      fontWeight: theme.typography.fontWeight.bold,
+      color: ds.gray900,
+      letterSpacing: -0.2,
+    },
+    countPill: {
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 999,
+      backgroundColor: '#DBEAFE',
+    },
+    countText: {
+      ...auriaTypography.label,
+      fontSize: 11,
+      fontWeight: theme.typography.fontWeight.bold,
+      color: '#1D4ED8',
+    },
+    subtitle: {
+      ...auriaTypography.body,
+      fontSize: 12.5,
+      color: ds.gray500,
+      lineHeight: 17,
+    },
+    list: {
+      gap: 8,
+    },
+  });
+}

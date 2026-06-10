@@ -27,6 +27,7 @@ const FOOTER_ITEMS: FooterItem[] = [
   { id: 'tasks', label: 'Tasks', icon: 'document' },
   { id: 'specialists', label: 'Specialists', icon: 'users' },
   { id: 'integrations', label: 'Integrations', icon: 'library' },
+  { id: 'settings', label: 'Settings', icon: 'settings' },
 ];
 
 export const PRODUCT_NAV_BAR_HEIGHT = 58;

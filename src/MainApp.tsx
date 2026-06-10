@@ -1,12 +1,14 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useCallback, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { AppShell } from './components/navigation/AppShell';
+import { AuriaSettingsModal } from './components/auria/AuriaSettingsModal';
 import { ScreenTransition } from './components/ui/transitions';
 import { ProductTabId } from './data/productNavigation';
 import { PlaceholderModuleScreen } from './screens/PlaceholderModuleScreen';
 
 const HomeScreen = lazy(() => import('./screens/HomeScreen').then((m) => ({ default: m.HomeScreen })));
 const AuriaScreen = lazy(() => import('./screens/AuriaScreen').then((m) => ({ default: m.AuriaScreen })));
+const TasksScreen = lazy(() => import('./screens/TasksScreen').then((m) => ({ default: m.TasksScreen })));
 
 type MainAppProps = {
   activeTab: ProductTabId;
@@ -14,35 +16,78 @@ type MainAppProps = {
 };
 
 export default function MainApp({ activeTab, onTabChange }: MainAppProps) {
-  const renderProductScreen = (tab: ProductTabId) => (
-    <Suspense fallback={<TabFallback />}>{renderTab(tab)}</Suspense>
+  const [auriaSidebarOpen, setAuriaSidebarOpen] = useState(false);
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+
+  const handleAuriaSidebarOpenChange = useCallback((open: boolean) => {
+    setAuriaSidebarOpen(open);
+  }, []);
+
+  const openSettingsModal = useCallback(() => {
+    setSettingsModalOpen(true);
+  }, []);
+
+  const handleTabChange = useCallback(
+    (tab: ProductTabId) => {
+      if (tab === 'settings') {
+        setSettingsModalOpen(true);
+        return;
+      }
+      onTabChange(tab);
+    },
+    [onTabChange],
+  );
+
+  const renderProductScreen = useCallback(
+    (tab: ProductTabId) => (
+      <Suspense fallback={<TabFallback />}>
+        {renderTab(tab, handleAuriaSidebarOpenChange, openSettingsModal)}
+      </Suspense>
+    ),
+    [handleAuriaSidebarOpenChange, openSettingsModal],
   );
 
   return (
     <ScreenTransition key="main">
       <AppShell
         activeTab={activeTab}
-        onTabChange={onTabChange}
+        onTabChange={handleTabChange}
         renderScreen={renderProductScreen}
+        auriaSidebarOpen={auriaSidebarOpen}
+      />
+      <AuriaSettingsModal
+        visible={settingsModalOpen}
+        onClose={() => setSettingsModalOpen(false)}
       />
     </ScreenTransition>
   );
 }
 
-function renderTab(tab: ProductTabId) {
+function renderTab(
+  tab: ProductTabId,
+  onAuriaSidebarOpenChange: (open: boolean) => void,
+  onOpenSettings: () => void,
+) {
   switch (tab) {
     case 'insights':
       return <HomeScreen />;
     case 'auria':
-      return <AuriaScreen />;
+      return (
+        <AuriaScreen
+          onSidebarOpenChange={onAuriaSidebarOpenChange}
+          onOpenSettings={onOpenSettings}
+        />
+      );
     case 'tasks':
-      return <PlaceholderModuleScreen title="Tasks" subtitle="Kanban, roadmap, and workload" />;
+      return <TasksScreen />;
     case 'specialists':
       return <PlaceholderModuleScreen title="Specialists" subtitle="Chat with professionals" />;
     case 'integrations':
       return (
         <PlaceholderModuleScreen title="Integrations" subtitle="Mail, calendar, and connectors" />
       );
+    case 'settings':
+      return null;
     default:
       return null;
   }

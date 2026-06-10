@@ -1,71 +1,64 @@
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { auriaTypography, useTheme } from '../../theme';
 import type { TasksSummary } from '../../data/tasksMockData';
-import { AuriaIcon } from '../icons';
+import { auriaTypography, myceoCornerStyle, useTheme } from '../../theme';
+import { AuriaIcon, AURIA_ICON_SIZE, type AuriaIconName } from '../icons';
 
-type SummaryKey = keyof TasksSummary;
+export type TaskQuickAction = 'today' | 'overdue' | 'aiSuggestions' | 'waiting';
 
-type CardSpec = {
-  key: SummaryKey;
+type ActionSpec = {
+  key: TaskQuickAction;
   title: string;
-  description: (n: number) => string;
-  bg: string;
-  valueColor: string;
+  description: string;
+  icon: AuriaIconName;
 };
 
-const CARDS: CardSpec[] = [
-  { key: 'today', title: 'Today', description: (n) => `${n} need attention`, bg: '#E9EBFF', valueColor: '#1E2BFF' },
-  { key: 'overdue', title: 'Overdue', description: (n) => `${n} behind schedule`, bg: '#FFE3E3', valueColor: '#E0353B' },
-  { key: 'inProgress', title: 'In progress', description: (n) => `${n} active right now`, bg: '#EFF6E1', valueColor: '#3F6712' },
-  { key: 'waiting', title: 'Waiting', description: (n) => `${n} on others`, bg: '#FFF1D6', valueColor: '#7A4A0E' },
-  { key: 'blocked', title: 'Blocked', description: (n) => `${n} need unblocking`, bg: '#F4DCDC', valueColor: '#B0282C' },
-  { key: 'aiSuggestions', title: 'AI suggested', description: (n) => `${n} for review`, bg: '#E6F4FF', valueColor: '#1F66B0' },
+const ACTIONS: ActionSpec[] = [
+  { key: 'today', title: 'Today focus', description: 'Open priority work', icon: 'clock' },
+  { key: 'overdue', title: 'Overdue', description: 'Resolve late tasks', icon: 'arrowPath' },
+  { key: 'aiSuggestions', title: 'Review Auria', description: 'Review detected actions', icon: 'sparkles' },
+  { key: 'waiting', title: 'Delegated', description: 'Check waiting tasks', icon: 'users' },
 ];
 
 export function TasksSummaryCards({
   summary,
-  activeKey,
-  onSelect,
+  onAction,
 }: {
   summary: TasksSummary;
-  activeKey?: SummaryKey | null;
-  onSelect?: (key: SummaryKey) => void;
+  onAction: (action: TaskQuickAction) => void;
 }) {
   const { ds, theme } = useTheme();
   const styles = useMemo(() => createStyles(ds, theme), [ds, theme]);
 
   return (
-    <View style={styles.grid}>
-      {CARDS.map((card) => {
-        const value = summary[card.key];
-        const isActive = activeKey === card.key;
-        return (
+    <View>
+      <View style={styles.heading}>
+        <Text style={styles.headingTitle}>Quick actions</Text>
+        <Text style={styles.headingHint}>Tasks tools</Text>
+      </View>
+      <View style={styles.grid}>
+        {ACTIONS.map((action) => (
           <Pressable
-            key={card.key}
-            onPress={() => onSelect?.(card.key)}
-            style={({ pressed }) => [
-              styles.card,
-              { backgroundColor: card.bg },
-              isActive && styles.cardActive,
-              pressed && styles.cardPressed,
-            ]}
+            key={action.key}
+            onPress={() => onAction(action.key)}
+            style={({ pressed }) => [styles.action, pressed && styles.actionPressed]}
             accessibilityRole="button"
-            accessibilityLabel={`${card.title}: ${value}`}
+            accessibilityLabel={`${action.title}: ${summary[action.key]}`}
           >
-            <View style={styles.topRow}>
-              <Text style={styles.label}>{card.title}</Text>
-              <View style={styles.arrowBadge}>
-                <AuriaIcon name="arrowUp" size={11} color="#0F1216" strokeWidth={2.2} />
-              </View>
+            <View style={styles.icon}>
+              <AuriaIcon name={action.icon} size={AURIA_ICON_SIZE.xs} color={ds.gray700} strokeWidth={1.9} />
             </View>
-            <Text style={[styles.value, { color: card.valueColor }]}>{value}</Text>
-            <Text style={styles.description} numberOfLines={1}>
-              {card.description(value)}
-            </Text>
+            <View style={styles.copy}>
+              <View style={styles.titleRow}>
+                <Text style={styles.title} numberOfLines={1}>{action.title}</Text>
+                <Text style={styles.count}>{summary[action.key]}</Text>
+              </View>
+              <Text style={styles.description} numberOfLines={1}>{action.description}</Text>
+            </View>
+            <AuriaIcon name="chevronRight" size={12} color={ds.gray400} strokeWidth={2} />
           </Pressable>
-        );
-      })}
+        ))}
+      </View>
     </View>
   );
 }
@@ -75,57 +68,81 @@ function createStyles(
   theme: ReturnType<typeof useTheme>['theme'],
 ) {
   return StyleSheet.create({
+    heading: {
+      flexDirection: 'row',
+      alignItems: 'baseline',
+      justifyContent: 'space-between',
+      marginBottom: 9,
+    },
+    headingTitle: {
+      ...auriaTypography.title,
+      color: ds.gray900,
+      fontSize: 17,
+      fontWeight: theme.typography.fontWeight.bold,
+      letterSpacing: -0.2,
+    },
+    headingHint: {
+      ...auriaTypography.body,
+      color: ds.gray500,
+      fontSize: 11,
+    },
     grid: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      gap: 10,
+      gap: 7,
     },
-    card: {
-      flexBasis: '47%',
+    action: {
+      flexBasis: '48%',
       flexGrow: 1,
-      borderRadius: 22,
-      paddingHorizontal: 16,
-      paddingTop: 14,
-      paddingBottom: 14,
-      gap: 4,
-    },
-    cardActive: {
-      transform: [{ scale: 0.98 }],
-    },
-    cardPressed: {
-      opacity: 0.88,
-    },
-    topRow: {
+      minWidth: 0,
+      minHeight: 62,
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
+      gap: 8,
+      paddingHorizontal: 10,
+      paddingVertical: 9,
+      backgroundColor: ds.gray100,
+      ...myceoCornerStyle('inset'),
     },
-    label: {
-      ...auriaTypography.body,
-      fontSize: 12.5,
-      fontWeight: theme.typography.fontWeight.medium,
-      color: 'rgba(15,18,22,0.62)',
+    actionPressed: {
+      backgroundColor: ds.gray200,
+      transform: [{ scale: 0.985 }],
     },
-    arrowBadge: {
-      width: 22,
-      height: 22,
-      borderRadius: 11,
-      backgroundColor: 'rgba(255,255,255,0.7)',
+    icon: {
+      width: 28,
+      height: 28,
       alignItems: 'center',
       justifyContent: 'center',
-      transform: [{ rotate: '40deg' }],
+      backgroundColor: ds.white,
+      ...myceoCornerStyle('iconSm'),
     },
-    value: {
-      fontSize: 36,
+    copy: {
+      flex: 1,
+      minWidth: 0,
+      gap: 2,
+    },
+    titleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+    },
+    title: {
+      ...auriaTypography.body,
+      flexShrink: 1,
+      color: ds.gray900,
+      fontSize: 11.5,
+      fontWeight: theme.typography.fontWeight.semibold,
+    },
+    count: {
+      ...auriaTypography.label,
+      color: ds.gray500,
+      fontSize: 10,
       fontWeight: theme.typography.fontWeight.bold,
-      letterSpacing: -1,
-      marginTop: 2,
-      lineHeight: 40,
     },
     description: {
       ...auriaTypography.body,
-      fontSize: 12,
-      color: 'rgba(15,18,22,0.6)',
+      color: ds.gray500,
+      fontSize: 9,
     },
   });
 }

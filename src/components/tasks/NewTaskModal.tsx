@@ -3,7 +3,8 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { TaskItem, TaskPriority } from '../../data/tasksMockData';
 import { TASKS_USER, taskWorkspaces } from '../../data/tasksMockData';
-import { auriaTypography, useTheme } from '../../theme';
+import { auriaTypography, myceoCornerStyle, useTheme } from '../../theme';
+import { MYCEO_CORNER_RADIUS } from '../../theme/myceoCornerRadius';
 
 type NewTaskModalProps = {
   visible: boolean;
@@ -149,8 +150,8 @@ function createStyles(
       paddingHorizontal: 18,
       paddingBottom: Math.max(safeBottom + 16, 24),
       backgroundColor: ds.white,
-      borderTopLeftRadius: 26,
-      borderTopRightRadius: 26,
+      borderTopLeftRadius: MYCEO_CORNER_RADIUS.modal,
+      borderTopRightRadius: MYCEO_CORNER_RADIUS.modal,
     },
     header: {
       flexDirection: 'row',
@@ -200,7 +201,7 @@ function createStyles(
       paddingVertical: 14,
       color: '#0F1216',
       backgroundColor: '#F3F4F6',
-      borderRadius: 14,
+      ...myceoCornerStyle('inset'),
       fontSize: 15,
     },
     description: {
@@ -217,7 +218,7 @@ function createStyles(
       paddingHorizontal: 14,
       paddingVertical: 10,
       backgroundColor: '#F3F4F6',
-      borderRadius: 999,
+      ...myceoCornerStyle('chip'),
     },
     chipActive: {
       backgroundColor: '#B7F34A',
@@ -237,14 +238,14 @@ function createStyles(
       gap: 6,
       padding: 4,
       backgroundColor: '#F3F4F6',
-      borderRadius: 14,
+      ...myceoCornerStyle('inset'),
     },
     priorityChip: {
       flex: 1,
       paddingVertical: 10,
       alignItems: 'center',
       justifyContent: 'center',
-      borderRadius: 11,
+      ...myceoCornerStyle('chip'),
     },
     priorityChipActive: {
       backgroundColor: '#B7F34A',

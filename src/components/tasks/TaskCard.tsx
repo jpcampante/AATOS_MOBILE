@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { auriaTypography, useTheme } from '../../theme';
+import { auriaTypography, myceoCornerStyle, useTheme } from '../../theme';
 import { AuriaIcon, AURIA_ICON_SIZE, type AuriaIconName } from '../icons';
 import {
   formatDueLabel,
@@ -177,7 +177,7 @@ function createStyles(
 ) {
   return StyleSheet.create({
     card: {
-      borderRadius: 24,
+      ...myceoCornerStyle('card'),
       padding: 18,
       gap: 12,
     },
@@ -193,7 +193,7 @@ function createStyles(
     priorityChip: {
       paddingHorizontal: 12,
       paddingVertical: 5,
-      borderRadius: 999,
+      ...myceoCornerStyle('chip'),
     },
     priorityChipText: {
       ...auriaTypography.label,
@@ -207,7 +207,7 @@ function createStyles(
       gap: 4,
       paddingHorizontal: 8,
       paddingVertical: 4,
-      borderRadius: 999,
+      ...myceoCornerStyle('chip'),
       backgroundColor: 'rgba(255,255,255,0.7)',
     },
     aiBadgeText: {
@@ -280,7 +280,7 @@ function createStyles(
     statusChip: {
       paddingHorizontal: 10,
       paddingVertical: 4,
-      borderRadius: 999,
+      ...myceoCornerStyle('chip'),
     },
     statusChipText: {
       ...auriaTypography.label,

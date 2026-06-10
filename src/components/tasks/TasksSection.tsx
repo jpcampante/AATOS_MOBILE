@@ -1,6 +1,6 @@
 import { useMemo, type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { auriaTypography, useTheme } from '../../theme';
+import { auriaTypography, myceoCornerStyle, useTheme } from '../../theme';
 
 export function TasksSection({
   title,
@@ -61,7 +61,7 @@ function createStyles(
       minWidth: 24,
       paddingHorizontal: 8,
       paddingVertical: 3,
-      borderRadius: 999,
+      ...myceoCornerStyle('chip'),
       backgroundColor: '#0F1216',
       alignItems: 'center',
       justifyContent: 'center',

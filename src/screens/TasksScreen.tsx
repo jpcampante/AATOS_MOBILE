@@ -3,8 +3,9 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AnimatedScreenBlock } from '../components/navigation/AnimatedScreenBlock';
 import { NewTaskModal } from '../components/tasks/NewTaskModal';
 import { TaskCard } from '../components/tasks/TaskCard';
+import { TaskReviewModal } from '../components/tasks/TaskReviewModal';
 import { TasksSection } from '../components/tasks/TasksSection';
-import { TasksSummaryCards } from '../components/tasks/TasksSummaryCards';
+import { TasksSummaryCards, type TaskQuickAction } from '../components/tasks/TasksSummaryCards';
 import { AuriaIcon, AURIA_ICON_SIZE } from '../components/icons';
 import {
   aiSuggestionTasks,
@@ -18,7 +19,7 @@ import {
   type TaskItem,
 } from '../data/tasksMockData';
 import { auriaProfileInitials } from '../data/auriaMockData';
-import { auriaTypography, useTheme } from '../theme';
+import { auriaTypography, myceoCornerStyle, useTheme } from '../theme';
 
 type FilterId = (typeof taskFilters)[number]['id'];
 
@@ -28,6 +29,7 @@ export function TasksScreen() {
   const [filter, setFilter] = useState<FilterId>('all');
   const [workspace, setWorkspace] = useState('all');
   const [newTaskOpen, setNewTaskOpen] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
   const [localTasks, setLocalTasks] = useState<TaskItem[]>([]);
 
   const matchesWorkspace = (task: TaskItem) => workspace === 'all' || task.workspace === workspace;
@@ -35,6 +37,7 @@ export function TasksScreen() {
   const overdue = overdueTasks.filter(matchesWorkspace);
   const ai = aiSuggestionTasks.filter(matchesWorkspace);
   const waiting = waitingTasks.filter(matchesWorkspace);
+  const reviewSuggestions = [...ai, ...overdue, ...today.filter((task) => task.source !== 'Manual'), ...waiting];
   const showAll = filter === 'all';
   const workspaceLabel = taskWorkspaces.find((item) => item.id === workspace)?.label ?? 'All workspaces';
   const aiSummary = useMemo(() => {
@@ -44,6 +47,14 @@ export function TasksScreen() {
     }
     return `Auria read ${today.length + ai.length + waiting.length} tasks in ${workspaceLabel}. The queue is on schedule; ${ai.length} AI suggestions are ready for review.`;
   }, [ai.length, overdue, today, waiting.length, workspaceLabel]);
+
+  const handleQuickAction = (action: TaskQuickAction) => {
+    if (action === 'aiSuggestions') {
+      setReviewOpen(true);
+      return;
+    }
+    setFilter(action);
+  };
 
   return (
     <>
@@ -89,7 +100,7 @@ export function TasksScreen() {
             <Text style={styles.aiSummary}>{aiSummary}</Text>
             <Pressable
               style={({ pressed }) => [styles.aiAction, pressed && styles.aiActionPressed]}
-              onPress={() => setFilter(overdue.length ? 'overdue' : 'ai')}
+              onPress={() => setReviewOpen(true)}
               accessibilityRole="button"
             >
               <Text style={styles.aiActionText}>{tasksAiOverview.action}</Text>
@@ -125,7 +136,7 @@ export function TasksScreen() {
         </AnimatedScreenBlock>
 
         <AnimatedScreenBlock index={4}>
-          <TasksSummaryCards summary={tasksSummary} />
+          <TasksSummaryCards summary={tasksSummary} onAction={handleQuickAction} />
         </AnimatedScreenBlock>
 
         <AnimatedScreenBlock index={5}>
@@ -169,6 +180,12 @@ export function TasksScreen() {
         ) : null}
       </ScrollView>
       <NewTaskModal visible={newTaskOpen} workspace={workspace} onClose={() => setNewTaskOpen(false)} onCreate={(task) => setLocalTasks((items) => [task, ...items])} />
+      <TaskReviewModal
+        visible={reviewOpen}
+        suggestions={reviewSuggestions}
+        onClose={() => setReviewOpen(false)}
+        onCreateTask={(task) => setLocalTasks((items) => [task, ...items])}
+      />
     </>
   );
 }
@@ -191,10 +208,10 @@ function createStyles(ds: ReturnType<typeof useTheme>['ds'], theme: ReturnType<t
     avatar: {
       width: 42,
       height: 42,
-      borderRadius: 21,
       backgroundColor: ds.auriaBlue,
       alignItems: 'center',
       justifyContent: 'center',
+      ...myceoCornerStyle('iconLg'),
     },
     avatarText: {
       ...auriaTypography.label,
@@ -223,7 +240,7 @@ function createStyles(ds: ReturnType<typeof useTheme>['ds'], theme: ReturnType<t
       paddingHorizontal: 14,
       paddingVertical: 11,
       backgroundColor: '#0F1216',
-      borderRadius: 999,
+      ...myceoCornerStyle('chip'),
     },
     newTaskButtonPressed: {
       opacity: 0.85,
@@ -248,7 +265,7 @@ function createStyles(ds: ReturnType<typeof useTheme>['ds'], theme: ReturnType<t
       gap: 12,
       padding: 18,
       backgroundColor: '#DDE8FF',
-      borderRadius: 22,
+      ...myceoCornerStyle('card'),
     },
     aiHeader: {
       flexDirection: 'row',
@@ -262,6 +279,7 @@ function createStyles(ds: ReturnType<typeof useTheme>['ds'], theme: ReturnType<t
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: 'rgba(255,255,255,0.85)',
+      ...myceoCornerStyle('icon'),
     },
     aiHeaderText: {
       flex: 1,
@@ -296,7 +314,7 @@ function createStyles(ds: ReturnType<typeof useTheme>['ds'], theme: ReturnType<t
       paddingHorizontal: 14,
       paddingVertical: 10,
       backgroundColor: '#FFFFFF',
-      borderRadius: 999,
+      ...myceoCornerStyle('chip'),
     },
     aiActionPressed: {
       opacity: 0.8,
@@ -335,7 +353,7 @@ function createStyles(ds: ReturnType<typeof useTheme>['ds'], theme: ReturnType<t
       paddingRight: 8,
       paddingVertical: 8,
       backgroundColor: '#F3F4F6',
-      borderRadius: 999,
+      ...myceoCornerStyle('chip'),
     },
     workspaceChipActive: {
       backgroundColor: '#0F1216',
@@ -354,10 +372,10 @@ function createStyles(ds: ReturnType<typeof useTheme>['ds'], theme: ReturnType<t
       minWidth: 24,
       paddingHorizontal: 7,
       paddingVertical: 3,
-      borderRadius: 999,
       backgroundColor: 'rgba(15,18,22,0.08)',
       alignItems: 'center',
       justifyContent: 'center',
+      ...myceoCornerStyle('chip'),
     },
     workspaceBadgeActive: {
       backgroundColor: '#B7F34A',
@@ -376,7 +394,7 @@ function createStyles(ds: ReturnType<typeof useTheme>['ds'], theme: ReturnType<t
       paddingHorizontal: 14,
       paddingVertical: 8,
       backgroundColor: '#F3F4F6',
-      borderRadius: 999,
+      ...myceoCornerStyle('chip'),
     },
     filterChipActive: {
       backgroundColor: '#B7F34A',

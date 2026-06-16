@@ -99,25 +99,12 @@ export const auriaImageMock: AuriaChatMessage = {
 
 const initialState: WorkspaceState = {
   panel: 'chat',
-  showWelcome: false,
+  showWelcome: true,
   composerText: '',
-  activeConversationId: 'document-mock',
+  activeConversationId: null,
   projects: [...auriaProjects],
   projectRows: [...auriaSidebarProjects],
-  messages: [
-    {
-      id: 'document-mock-request',
-      role: 'user',
-      text: 'Create a product strategy working draft.',
-    },
-    auriaDocumentMock,
-    {
-      id: 'image-mock-request',
-      role: 'user',
-      text: 'Create a floating garden image.',
-    },
-    auriaImageMock,
-  ],
+  messages: [],
   pendingReply: null,
   newProjectOpen: false,
 };

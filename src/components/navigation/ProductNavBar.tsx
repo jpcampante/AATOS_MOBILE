@@ -5,7 +5,6 @@ import { useTheme } from '../../theme';
 import {
   AuriaIcon,
   AuriaIconName,
-  AURIA_ICON_SIZE,
   AURIA_ICON_STROKE_NAV,
   AURIA_ICON_STROKE_STRONG,
 } from '../icons';
@@ -25,13 +24,16 @@ const FOOTER_ITEMS: FooterItem[] = [
   { id: 'insights', label: 'Insights', icon: 'grid' },
   { id: 'auria', label: 'Auria', icon: 'messageSquare' },
   { id: 'tasks', label: 'Tasks', icon: 'document' },
-  { id: 'specialists', label: 'Specialists', icon: 'users' },
-  { id: 'integrations', label: 'Integrations', icon: 'library' },
-  { id: 'settings', label: 'Settings', icon: 'settings' },
+  { id: 'integrations', label: 'Integrations', icon: 'mail' },
+  { id: 'settings', label: 'Settings', icon: 'userCircle' },
 ];
 
-export const PRODUCT_NAV_BAR_HEIGHT = 58;
+export const PRODUCT_NAV_BAR_HEIGHT = 68;
 export const PRODUCT_NAV_FLOATING_HEIGHT = PRODUCT_NAV_BAR_HEIGHT;
+
+/** Bottom tab bar icons are sized for touch, larger than the web sidebar tokens. */
+const NAV_ICON_SIZE_ACTIVE = 27;
+const NAV_ICON_SIZE_INACTIVE = 25;
 
 export function ProductNavBar({ activeTab, onTabChange }: ProductNavBarProps) {
   const { ds, theme } = useTheme();
@@ -53,7 +55,7 @@ export function ProductNavBar({ activeTab, onTabChange }: ProductNavBarProps) {
             <View style={styles.iconSlot}>
               <AuriaIcon
                 name={item.icon}
-                size={active ? AURIA_ICON_SIZE.md : AURIA_ICON_SIZE.sm}
+                size={active ? NAV_ICON_SIZE_ACTIVE : NAV_ICON_SIZE_INACTIVE}
                 color={active ? ds.gray900 : ds.gray500}
                 strokeWidth={active ? AURIA_ICON_STROKE_STRONG : AURIA_ICON_STROKE_NAV}
               />
@@ -86,8 +88,8 @@ function createStyles(theme: ReturnType<typeof useTheme>['theme']) {
       transform: [{ scale: 0.94 }],
     },
     iconSlot: {
-      width: 46,
-      height: 42,
+      width: 56,
+      height: 50,
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: theme.radius.pill,

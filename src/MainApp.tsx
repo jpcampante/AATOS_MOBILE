@@ -4,11 +4,13 @@ import { AppShell } from './components/navigation/AppShell';
 import { AuriaSettingsModal } from './components/auria/AuriaSettingsModal';
 import { ScreenTransition } from './components/ui/transitions';
 import { ProductTabId } from './data/productNavigation';
-import { PlaceholderModuleScreen } from './screens/PlaceholderModuleScreen';
 
 const HomeScreen = lazy(() => import('./screens/HomeScreen').then((m) => ({ default: m.HomeScreen })));
 const AuriaScreen = lazy(() => import('./screens/AuriaScreen').then((m) => ({ default: m.AuriaScreen })));
 const TasksScreen = lazy(() => import('./screens/TasksScreen').then((m) => ({ default: m.TasksScreen })));
+const IntegrationsScreen = lazy(() =>
+  import('./screens/IntegrationsScreen').then((m) => ({ default: m.IntegrationsScreen })),
+);
 
 type MainAppProps = {
   activeTab: ProductTabId;
@@ -80,12 +82,8 @@ function renderTab(
       );
     case 'tasks':
       return <TasksScreen />;
-    case 'specialists':
-      return <PlaceholderModuleScreen title="Specialists" subtitle="Chat with professionals" />;
     case 'integrations':
-      return (
-        <PlaceholderModuleScreen title="Integrations" subtitle="Mail, calendar, and connectors" />
-      );
+      return <IntegrationsScreen onOpenSettings={onOpenSettings} />;
     case 'settings':
       return null;
     default:

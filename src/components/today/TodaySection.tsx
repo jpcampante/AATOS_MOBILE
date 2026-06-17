@@ -16,9 +16,10 @@ type TodaySectionProps = {
 };
 
 /**
- * The "Today" hub for the Insights landing page: a blue container on top that
- * opens the full agenda modal, then the today session (a preview of the most
- * important items) below it. Tapping any item redirects to its source.
+ * The "Today" hub for the Insights landing page: a single card whose header is
+ * the Today summary (counts + "View all" → full agenda modal) with a preview of
+ * the most important items directly below it. Tapping any item redirects to its
+ * source. (Header + preview are merged so "today / needs you" isn't shown twice.)
  */
 export function TodaySection({ onNavigate }: TodaySectionProps) {
   const { ds, theme } = useTheme();
@@ -38,23 +39,23 @@ export function TodaySection({ onNavigate }: TodaySectionProps) {
   const dateLabel = todayDateLabel();
 
   return (
-    <View style={styles.wrap}>
-      {/* Blue container — first */}
+    <View style={styles.card}>
+      {/* Today summary header — opens the full agenda */}
       <Pressable
         onPress={openModal}
-        style={({ pressed }) => [styles.banner, pressed && styles.bannerPressed]}
+        style={({ pressed }) => [styles.header, pressed && styles.headerPressed]}
         accessibilityRole="button"
         accessibilityLabel="Open today's agenda"
       >
-        <View style={styles.bannerIcon}>
+        <View style={styles.headerIcon}>
           <AuriaIcon name="calendar" size={AURIA_ICON_SIZE.sm} color={ds.auriaBlue} strokeWidth={1.9} />
         </View>
-        <View style={styles.bannerCopy}>
-          <View style={styles.bannerTop}>
-            <Text style={styles.bannerTitle}>Today</Text>
-            <Text style={styles.bannerDate}>{dateLabel}</Text>
+        <View style={styles.headerCopy}>
+          <View style={styles.headerTop}>
+            <Text style={styles.headerTitle}>Today</Text>
+            <Text style={styles.headerDate}>{dateLabel}</Text>
           </View>
-          <Text style={styles.bannerSummary} numberOfLines={1}>
+          <Text style={styles.headerSummary} numberOfLines={1}>
             {ranked.length} need you · {todayFeedSummary(ranked)}
           </Text>
         </View>
@@ -64,9 +65,10 @@ export function TodaySection({ onNavigate }: TodaySectionProps) {
         </View>
       </Pressable>
 
-      {/* Today session — after */}
-      <View style={styles.session}>
-        <Text style={styles.sessionLabel}>Needs you today</Text>
+      <View style={styles.divider} />
+
+      {/* Preview of the most important items */}
+      <View style={styles.list}>
         {preview.map((item) => (
           <Pressable
             key={item.id}
@@ -100,49 +102,55 @@ function createStyles(
   theme: ReturnType<typeof useTheme>['theme'],
 ) {
   return StyleSheet.create({
-    wrap: { gap: 12 },
+    card: {
+      padding: 12,
+      gap: 4,
+      backgroundColor: ds.white,
+      ...tasksCardCorner(),
+      ...theme.shadow.card,
+    },
 
-    // Blue container
-    banner: {
+    // Today summary header
+    header: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 12,
-      padding: 16,
-      backgroundColor: '#DDE8FF',
-      ...tasksCardCorner(),
+      paddingHorizontal: 4,
+      paddingTop: 2,
+      paddingBottom: 10,
     },
-    bannerPressed: { opacity: 0.92 },
-    bannerIcon: {
+    headerPressed: { opacity: 0.7 },
+    headerIcon: {
       width: 38,
       height: 38,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: 'rgba(255,255,255,0.85)',
+      backgroundColor: '#DDE8FF',
       ...myceoCornerStyle('icon'),
     },
-    bannerCopy: { flex: 1, gap: 3, minWidth: 0 },
-    bannerTop: {
+    headerCopy: { flex: 1, gap: 3, minWidth: 0 },
+    headerTop: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       gap: 8,
     },
-    bannerTitle: {
+    headerTitle: {
       ...auriaTypography.title,
       color: ds.gray900,
       fontSize: 17,
       fontWeight: theme.typography.fontWeight.bold,
       letterSpacing: -0.3,
     },
-    bannerDate: {
+    headerDate: {
       ...auriaTypography.body,
-      color: ds.gray600,
+      color: ds.gray500,
       fontSize: 12,
       fontWeight: theme.typography.fontWeight.medium,
     },
-    bannerSummary: {
+    headerSummary: {
       ...auriaTypography.body,
-      color: ds.gray700,
+      color: ds.gray500,
       fontSize: 12.5,
     },
     viewAll: {
@@ -162,25 +170,15 @@ function createStyles(
       fontWeight: theme.typography.fontWeight.semibold,
     },
 
-    // Today session
-    session: {
-      gap: 4,
-      padding: 12,
-      backgroundColor: ds.white,
-      ...tasksCardCorner(),
-      ...theme.shadow.card,
+    divider: {
+      height: 1,
+      backgroundColor: ds.gray100,
+      marginHorizontal: 4,
+      marginBottom: 2,
     },
-    sessionLabel: {
-      ...auriaTypography.label,
-      color: ds.gray500,
-      fontSize: 11,
-      fontWeight: theme.typography.fontWeight.bold,
-      letterSpacing: 0.4,
-      textTransform: 'uppercase',
-      paddingHorizontal: 6,
-      paddingTop: 2,
-      paddingBottom: 4,
-    },
+
+    // Preview list
+    list: { gap: 2 },
     row: {
       flexDirection: 'row',
       alignItems: 'center',

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { auriaTypography, myceoCornerStyle, useTheme } from '../../theme';
 import { AuriaIcon, AURIA_ICON_SIZE } from '../icons';
@@ -27,7 +27,11 @@ type TodayModalProps = {
 export function TodayModal({ visible, onClose, onNavigate }: TodayModalProps) {
   const { ds, theme } = useTheme();
   const safe = useSafeAreaInsets();
-  const styles = useMemo(() => createStyles(ds, theme, safe.bottom), [ds, theme, safe.bottom]);
+  const { height: windowHeight } = useWindowDimensions();
+  const styles = useMemo(
+    () => createStyles(ds, theme, safe.bottom, windowHeight),
+    [ds, theme, safe.bottom, windowHeight],
+  );
   const [filter, setFilter] = useState<TodayImportance | 'All'>('All');
 
   const items = useMemo(() => filterTodayFeed(todayFeed, filter), [filter]);
@@ -122,12 +126,18 @@ function createStyles(
   ds: ReturnType<typeof useTheme>['ds'],
   theme: ReturnType<typeof useTheme>['theme'],
   safeBottom: number,
+  windowHeight: number,
 ) {
+  // Bound the scrollable list with a pixel height (not flex) so the sheet hugs
+  // content when there are few items and scrolls when there are many. A pure
+  // `flex` child inside a `maxHeight`-only sheet has no definite height on
+  // native (Yoga), which collapses the list / leaves the sheet stuck.
+  const listMaxHeight = Math.round(windowHeight * 0.66);
   return StyleSheet.create({
     overlay: { flex: 1, justifyContent: 'flex-end' },
     backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: ds.offBlackOverlay },
     sheet: {
-      maxHeight: '88%',
+      maxHeight: Math.round(windowHeight * 0.88),
       backgroundColor: ds.white,
       ...tasksSheetCorner(),
       paddingBottom: Math.max(safeBottom, 8),
@@ -197,7 +207,7 @@ function createStyles(
       color: ds.white,
       fontWeight: theme.typography.fontWeight.semibold,
     },
-    list: { flexGrow: 0, flexShrink: 1 },
+    list: { maxHeight: listMaxHeight },
     listContent: {
       paddingHorizontal: 18,
       paddingBottom: 12,

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { TaskItem, TaskSource } from '../../data/tasksMockData';
 import { auriaTypography, myceoCornerStyle, useTheme } from '../../theme';
@@ -26,7 +26,11 @@ const SOURCE_ICONS: Record<TaskSource, AuriaIconName> = {
 export function TaskReviewModal({ visible, suggestions, onClose, onCreateTask }: TaskReviewModalProps) {
   const { ds, theme } = useTheme();
   const safe = useSafeAreaInsets();
-  const styles = useMemo(() => createStyles(ds, theme, safe.top, safe.bottom), [ds, safe.bottom, safe.top, theme]);
+  const { height: windowHeight } = useWindowDimensions();
+  const styles = useMemo(
+    () => createStyles(ds, theme, safe.top, safe.bottom, windowHeight),
+    [ds, safe.bottom, safe.top, theme, windowHeight],
+  );
   const [source, setSource] = useState<TaskSource | 'All'>('All');
   const [processed, setProcessed] = useState<string[]>([]);
 
@@ -191,7 +195,13 @@ function createStyles(
   theme: ReturnType<typeof useTheme>['theme'],
   safeTop: number,
   safeBottom: number,
+  windowHeight: number,
 ) {
+  // Bound the suggestion list with a pixel height (not flex). A `flex` child
+  // inside a `maxHeight`-only sheet has no definite height on native (Yoga),
+  // which leaves the sheet stuck / the list collapsed. This sheet has more
+  // chrome (header + stats + filters), so the list cap is smaller.
+  const listMaxHeight = Math.round(windowHeight * 0.55);
   return StyleSheet.create({
     overlay: {
       flex: 1,
@@ -202,7 +212,7 @@ function createStyles(
       backgroundColor: ds.offBlackOverlay,
     },
     sheet: {
-      maxHeight: '90%',
+      maxHeight: Math.round(windowHeight * 0.9),
       flexDirection: 'column',
       backgroundColor: ds.white,
       ...tasksSheetCorner(),
@@ -333,8 +343,7 @@ function createStyles(
 
     // List
     list: {
-      flexGrow: 0,
-      flexShrink: 1,
+      maxHeight: listMaxHeight,
     },
     listContent: {
       paddingHorizontal: 18,

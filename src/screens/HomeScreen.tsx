@@ -1,11 +1,18 @@
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { ScrollView, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 import { AnimatedScreenBlock } from '../components/navigation/AnimatedScreenBlock';
 import { InsightsExplorer } from '../components/insights/InsightsExplorer';
+import { MetricChartCard } from '../components/insights/MetricChartCard';
 import { ExecutiveBrief } from '../components/insights/briefing/ExecutiveBrief';
 import { NeedsYou } from '../components/insights/briefing/NeedsYou';
 import { AuriaImpact } from '../components/insights/briefing/AuriaImpact';
 import { AskAuria } from '../components/insights/briefing/AskAuria';
+import {
+  isMetricCard,
+  metricIdOf,
+  useVisibleHomeCards,
+  type LayoutCardId,
+} from '../data/insights/homeLayout';
 import type { NavigateFn } from '../data/productNavigation';
 import { useTheme } from '../theme';
 
@@ -21,6 +28,27 @@ type HomeScreenProps = {
 export function HomeScreen({ onNavigate }: HomeScreenProps) {
   const { insights, theme } = useTheme();
   const styles = useMemo(() => createStyles(insights, theme), [insights, theme]);
+  const visibleCards = useVisibleHomeCards();
+
+  // Order/visibility come from the layout store, driven by the Explorer's
+  // "Customize" sheet. Metric cards (`metric:<id>`) render a pinned chart.
+  const renderCard = (id: LayoutCardId): ReactNode => {
+    if (isMetricCard(id)) return <MetricChartCard metricId={metricIdOf(id)} />;
+    switch (id) {
+      case 'explorer':
+        return <InsightsExplorer />;
+      case 'brief':
+        return <ExecutiveBrief />;
+      case 'needsYou':
+        return <NeedsYou onNavigate={onNavigate} />;
+      case 'impact':
+        return <AuriaImpact />;
+      case 'askAuria':
+        return <AskAuria onNavigate={onNavigate} />;
+      default:
+        return null;
+    }
+  };
 
   return (
     <View style={styles.root}>
@@ -36,25 +64,11 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
           </View>
         </AnimatedScreenBlock>
 
-        <AnimatedScreenBlock index={1}>
-          <InsightsExplorer />
-        </AnimatedScreenBlock>
-
-        <AnimatedScreenBlock index={2}>
-          <ExecutiveBrief />
-        </AnimatedScreenBlock>
-
-        <AnimatedScreenBlock index={3}>
-          <NeedsYou onNavigate={onNavigate} />
-        </AnimatedScreenBlock>
-
-        <AnimatedScreenBlock index={4}>
-          <AuriaImpact />
-        </AnimatedScreenBlock>
-
-        <AnimatedScreenBlock index={5}>
-          <AskAuria onNavigate={onNavigate} />
-        </AnimatedScreenBlock>
+        {visibleCards.map((id, i) => (
+          <AnimatedScreenBlock key={id} index={i + 1}>
+            {renderCard(id)}
+          </AnimatedScreenBlock>
+        ))}
       </ScrollView>
     </View>
   );

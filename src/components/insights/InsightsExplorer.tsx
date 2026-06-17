@@ -10,9 +10,9 @@ import {
 import { insightSignals } from '../../data/insights/signals';
 import type { Period, Scope } from '../../data/insights/types';
 import { LineChart } from './LineChart';
-import { DataSourceBadge } from './DataSourceBadge';
+import { CustomizeHomeSheet } from './CustomizeHomeSheet';
+import { AuriaIcon } from '../icons';
 
-const USER_NAME = 'Marta';
 const GOOD = '#1D9E75';
 const BAD = '#E5484D';
 const OVERLAY_COLOR = '#2563EB';
@@ -57,6 +57,7 @@ export function InsightsExplorer() {
   const [scope, setScope] = useState<Scope>('company');
   const [period, setPeriod] = useState<Period>('month');
   const [compare, setCompare] = useState(false);
+  const [customizeOpen, setCustomizeOpen] = useState(false);
 
   const metric = getMetric(metricId);
   const series = metricSeries(metric, scope, period);
@@ -88,11 +89,19 @@ export function InsightsExplorer() {
       <View style={styles.headerRow}>
         <View style={styles.headerCopy}>
           <Text style={styles.headline}>
-            {USER_NAME}, here's {metricPhrase} {SCOPE_CONTEXT[scope]}.
+            Here's {metricPhrase} {SCOPE_CONTEXT[scope]}.
           </Text>
           <Text style={styles.subheadline}>Auria tracked this over the {PERIOD_SUB[period]}.</Text>
         </View>
-        <DataSourceBadge source={metric.source} />
+        <Pressable
+          onPress={() => setCustomizeOpen(true)}
+          style={({ pressed }) => [styles.customizeBtn, pressed && styles.customizePressed]}
+          accessibilityRole="button"
+          accessibilityLabel="Customize your insights"
+          hitSlop={6}
+        >
+          <AuriaIcon name="settings" size={16} color={insights.text} strokeWidth={1.9} />
+        </Pressable>
       </View>
 
       <View style={styles.statRow}>
@@ -192,6 +201,8 @@ export function InsightsExplorer() {
           </Pressable>
         ) : null}
       </View>
+
+      <CustomizeHomeSheet visible={customizeOpen} onClose={() => setCustomizeOpen(false)} />
     </View>
   );
 }
@@ -214,6 +225,15 @@ function createStyles(
       gap: 8,
     },
     headerCopy: { flex: 1, gap: 3 },
+    customizeBtn: {
+      width: 32,
+      height: 32,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: insights.heroSearchBg,
+      ...myceoCornerStyle('icon'),
+    },
+    customizePressed: { opacity: 0.6 },
     headline: {
       ...auriaTypography.title,
       fontSize: 18,

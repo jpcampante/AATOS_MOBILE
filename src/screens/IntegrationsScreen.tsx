@@ -398,6 +398,8 @@ export function IntegrationsScreen({ onOpenSettings }: IntegrationsScreenProps) 
         activeFolder={activeFolder}
         onSelectFolder={(id) => setActiveFolder(id)}
         onCreateNew={() => openCompose()}
+        onEmailContact={(email) => openCompose({ to: email, subject: '', body: '' })}
+        onOpenSettings={onOpenSettings}
         onClose={() => setSidebarOpen(false)}
       />
     </View>

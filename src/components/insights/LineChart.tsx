@@ -20,6 +20,10 @@ type LineChartProps = {
   height?: number;
   /** Number of horizontal gridlines / y-axis ticks. */
   ticks?: number;
+  /** Rounding step for the y-axis "nice" maximum (e.g. 250 for counts, 25 for %). */
+  step?: number;
+  /** Suffix appended to y-axis labels (e.g. "%"). */
+  valueSuffix?: string;
 };
 
 const PAD_LEFT = 34;
@@ -55,7 +59,7 @@ function buildSmoothPath(pts: ReadonlyArray<{ x: number; y: number }>, smoothing
  * `area_series` hero chart from AATOS_NEW_BRANDING: monotone curve, soft
  * gradient fill, dashed gridlines and axis labels.
  */
-export function LineChart({ data, color, height = 180, ticks = 4 }: LineChartProps) {
+export function LineChart({ data, color, height = 180, ticks = 4, step = 250, valueSuffix = '' }: LineChartProps) {
   const { insights } = useTheme();
   const stroke = color ?? insights.accent;
   const [width, setWidth] = useState(0);
@@ -80,7 +84,7 @@ export function LineChart({ data, color, height = 180, ticks = 4 }: LineChartPro
     const innerH = height - PAD_TOP - PAD_BOTTOM;
     const innerW = width - PAD_LEFT - PAD_RIGHT;
     const max = Math.max(...data.map((point) => point.value));
-    const yMax = niceMax(max);
+    const yMax = niceMax(max, step);
     const n = data.length;
     const xAt = (i: number) => PAD_LEFT + (n === 1 ? innerW / 2 : (i / (n - 1)) * innerW);
     const yAt = (value: number) => PAD_TOP + innerH - (value / yMax) * innerH;
@@ -90,7 +94,7 @@ export function LineChart({ data, color, height = 180, ticks = 4 }: LineChartPro
     const area = `${line} L ${pts[n - 1].x},${baseY} L ${pts[0].x},${baseY} Z`;
     const tickVals = Array.from({ length: ticks + 1 }, (_, i) => Math.round((yMax / ticks) * i));
     return { pts, line, area, tickVals, xAt, yAt };
-  }, [width, height, data, ticks]);
+  }, [width, height, data, ticks, step]);
 
   return (
     <Animated.View style={[styles.wrap, { height, opacity: fade }]} onLayout={onLayout}>
@@ -125,7 +129,7 @@ export function LineChart({ data, color, height = 180, ticks = 4 }: LineChartPro
               fill={insights.textHint}
               textAnchor="end"
             >
-              {value}
+              {`${value}${valueSuffix}`}
             </SvgText>
           ))}
 

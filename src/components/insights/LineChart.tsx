@@ -29,12 +29,10 @@ type LineChartProps = {
   color2?: string;
   /** Optional callout marking the most recent point. */
   annotationLabel?: string;
+  /** 'full' = axes + labels; 'spark' = compact line only (for the Brief hero). */
+  variant?: 'full' | 'spark';
 };
 
-const PAD_LEFT = 34;
-const PAD_RIGHT = 12;
-const PAD_TOP = 14;
-const PAD_BOTTOM = 22;
 const FILL_ID = 'aatosLineFill';
 
 function niceMax(max: number, step = 250) {
@@ -81,9 +79,15 @@ export function LineChart({
   series2,
   color2 = '#2563EB',
   annotationLabel,
+  variant = 'full',
 }: LineChartProps) {
   const { insights } = useTheme();
   const stroke = color ?? insights.accent;
+  const isSpark = variant === 'spark';
+  const padL = isSpark ? 6 : 34;
+  const padR = isSpark ? 6 : 12;
+  const padT = isSpark ? 8 : 14;
+  const padB = isSpark ? 6 : 22;
   const [width, setWidth] = useState(0);
   const fade = useRef(new Animated.Value(0)).current;
 
@@ -104,14 +108,14 @@ export function LineChart({
 
   const geo = useMemo(() => {
     if (width <= 0 || data.length === 0) return null;
-    const innerH = height - PAD_TOP - PAD_BOTTOM;
-    const innerW = width - PAD_LEFT - PAD_RIGHT;
+    const innerH = height - padT - padB;
+    const innerW = width - padL - padR;
     const n = data.length;
     const yMax = niceMax(Math.max(...data.map((p) => p.value)), step);
-    const xAt = (i: number) => PAD_LEFT + (n === 1 ? innerW / 2 : (i / (n - 1)) * innerW);
-    const yAt = (value: number) => PAD_TOP + innerH - (value / yMax) * innerH;
+    const xAt = (i: number) => padL + (n === 1 ? innerW / 2 : (i / (n - 1)) * innerW);
+    const yAt = (value: number) => padT + innerH - (value / yMax) * innerH;
     const pts = data.map((point, i) => ({ x: xAt(i), y: yAt(point.value) }));
-    const baseY = PAD_TOP + innerH;
+    const baseY = padT + innerH;
     const line = buildSmoothPath(pts);
     const area = `${line} L ${pts[n - 1].x},${baseY} L ${pts[0].x},${baseY} Z`;
     const tickVals = Array.from({ length: ticks + 1 }, (_, i) => (yMax / ticks) * i);
@@ -121,13 +125,13 @@ export function LineChart({
     if (series2 && series2.length > 1) {
       const max2 = Math.max(...series2.map((p) => p.value), 1);
       const m = series2.length;
-      const x2 = (i: number) => PAD_LEFT + (m === 1 ? innerW / 2 : (i / (m - 1)) * innerW);
-      const y2 = (value: number) => PAD_TOP + innerH - (value / max2) * innerH;
+      const x2 = (i: number) => padL + (m === 1 ? innerW / 2 : (i / (m - 1)) * innerW);
+      const y2 = (value: number) => padT + innerH - (value / max2) * innerH;
       line2 = buildSmoothPath(series2.map((p, i) => ({ x: x2(i), y: y2(p.value) })));
     }
 
     return { pts, line, area, tickVals, xAt, yAt, line2 };
-  }, [width, height, data, ticks, step, series2]);
+  }, [width, height, data, ticks, step, series2, padL, padR, padT, padB]);
 
   return (
     <Animated.View style={[styles.wrap, { height, opacity: fade }]} onLayout={onLayout}>
@@ -140,31 +144,35 @@ export function LineChart({
             </LinearGradient>
           </Defs>
 
-          {geo.tickVals.map((value, i) => (
-            <SvgLine
-              key={`grid-${i}`}
-              x1={PAD_LEFT}
-              y1={geo.yAt(value)}
-              x2={width - PAD_RIGHT}
-              y2={geo.yAt(value)}
-              stroke={insights.divider}
-              strokeWidth={1}
-              strokeDasharray="4 4"
-            />
-          ))}
+          {!isSpark
+            ? geo.tickVals.map((value, i) => (
+                <SvgLine
+                  key={`grid-${i}`}
+                  x1={padL}
+                  y1={geo.yAt(value)}
+                  x2={width - padR}
+                  y2={geo.yAt(value)}
+                  stroke={insights.divider}
+                  strokeWidth={1}
+                  strokeDasharray="4 4"
+                />
+              ))
+            : null}
 
-          {geo.tickVals.map((value, i) => (
-            <SvgText
-              key={`ylabel-${i}`}
-              x={PAD_LEFT - 6}
-              y={geo.yAt(value) + 3}
-              fontSize={9}
-              fill={insights.textHint}
-              textAnchor="end"
-            >
-              {`${formatTick(value)}${valueSuffix}`}
-            </SvgText>
-          ))}
+          {!isSpark
+            ? geo.tickVals.map((value, i) => (
+                <SvgText
+                  key={`ylabel-${i}`}
+                  x={padL - 6}
+                  y={geo.yAt(value) + 3}
+                  fontSize={9}
+                  fill={insights.textHint}
+                  textAnchor="end"
+                >
+                  {`${formatTick(value)}${valueSuffix}`}
+                </SvgText>
+              ))
+            : null}
 
           <Path d={geo.area} fill={`url(#${FILL_ID})`} />
           <Path
@@ -205,7 +213,7 @@ export function LineChart({
               />
               <SvgText
                 x={geo.pts[geo.pts.length - 1].x}
-                y={Math.max(geo.pts[geo.pts.length - 1].y - 12, PAD_TOP + 2)}
+                y={Math.max(geo.pts[geo.pts.length - 1].y - 12, padT + 2)}
                 fontSize={9}
                 fontWeight="600"
                 fill={stroke}
@@ -216,18 +224,20 @@ export function LineChart({
             </>
           ) : null}
 
-          {data.map((point, i) => (
-            <SvgText
-              key={`xlabel-${point.label}-${i}`}
-              x={geo.xAt(i)}
-              y={height - 6}
-              fontSize={9}
-              fill={insights.textHint}
-              textAnchor="middle"
-            >
-              {point.label}
-            </SvgText>
-          ))}
+          {!isSpark
+            ? data.map((point, i) => (
+                <SvgText
+                  key={`xlabel-${point.label}-${i}`}
+                  x={geo.xAt(i)}
+                  y={height - 6}
+                  fontSize={9}
+                  fill={insights.textHint}
+                  textAnchor="middle"
+                >
+                  {point.label}
+                </SvgText>
+              ))
+            : null}
         </Svg>
       ) : null}
     </Animated.View>

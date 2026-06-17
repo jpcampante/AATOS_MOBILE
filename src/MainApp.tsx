@@ -15,9 +15,11 @@ const IntegrationsScreen = lazy(() =>
 type MainAppProps = {
   activeTab: ProductTabId;
   onTabChange: (tab: ProductTabId) => void;
+  onBack?: () => void;
+  canGoBack?: boolean;
 };
 
-export default function MainApp({ activeTab, onTabChange }: MainAppProps) {
+export default function MainApp({ activeTab, onTabChange, onBack, canGoBack }: MainAppProps) {
   const [auriaSidebarOpen, setAuriaSidebarOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
 
@@ -56,6 +58,8 @@ export default function MainApp({ activeTab, onTabChange }: MainAppProps) {
         onTabChange={handleTabChange}
         renderScreen={renderProductScreen}
         auriaSidebarOpen={auriaSidebarOpen}
+        onBack={onBack}
+        canGoBack={canGoBack}
       />
       <AuriaSettingsModal
         visible={settingsModalOpen}

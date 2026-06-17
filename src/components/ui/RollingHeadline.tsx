@@ -137,6 +137,10 @@ type RollingWordProps = {
 
 function RollingWord({ words, direction, align, step, width, height, textStyle }: RollingWordProps) {
   const [index, setIndex] = useState(0);
+  // Only mount the incoming word while a roll is actually happening. At rest
+  // just the current word renders, so the two can never stack on top of each
+  // other on the boot screen (the overlap seen on the native app).
+  const [rolling, setRolling] = useState(false);
   const anim = useRef(new Animated.Value(0)).current;
   const mounted = useRef(false);
 
@@ -147,16 +151,22 @@ function RollingWord({ words, direction, align, step, width, height, textStyle }
       return;
     }
     let alive = true;
+    setRolling(true);
     const roll = Animated.timing(anim, {
       toValue: 1,
       duration: motionDuration.roll,
       easing: motionEasing.emphasized,
-      useNativeDriver: SUPPORTS_NATIVE_DRIVER,
+      // JS-driven on purpose: the native driver doesn't commit an interpolated
+      // transform until its first animation runs, so at rest (before the first
+      // roll) `next` would sit at translateY 0 and overlap `current` on the boot
+      // screen. JS applies the resting offset immediately — matching web.
+      useNativeDriver: false,
     });
     roll.start(({ finished }) => {
       if (!finished || !alive) return;
       setIndex((i) => (i + 1) % words.length);
       anim.setValue(0);
+      setRolling(false);
     });
     return () => {
       alive = false;
@@ -180,12 +190,14 @@ function RollingWord({ words, direction, align, step, width, height, textStyle }
       >
         {current}
       </Animated.Text>
-      <Animated.Text
-        numberOfLines={1}
-        style={[textStyle, styles.word, { textAlign: align, transform: [{ translateY: nextY }] }]}
-      >
-        {next}
-      </Animated.Text>
+      {rolling ? (
+        <Animated.Text
+          numberOfLines={1}
+          style={[textStyle, styles.word, { textAlign: align, transform: [{ translateY: nextY }] }]}
+        >
+          {next}
+        </Animated.Text>
+      ) : null}
     </View>
   );
 }

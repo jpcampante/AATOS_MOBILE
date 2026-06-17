@@ -1,5 +1,5 @@
 import { ReactNode, useEffect, useRef } from 'react';
-import { Animated, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Animated, PanResponder, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProductTabId } from '../../data/productNavigation';
@@ -13,6 +13,10 @@ type AppShellProps = {
   onTabChange: (tab: ProductTabId) => void;
   renderScreen: (tab: ProductTabId) => ReactNode;
   auriaSidebarOpen?: boolean;
+  /** Pop the navigation history (used by the edge swipe-back). */
+  onBack?: () => void;
+  /** Whether there is history to swipe back to. */
+  canGoBack?: boolean;
 };
 
 /** Visual gap between screen content and the floating product nav rail. */
@@ -25,11 +29,34 @@ export function AppShell({
   onTabChange,
   renderScreen,
   auriaSidebarOpen = false,
+  onBack,
+  canGoBack = false,
 }: AppShellProps) {
   const { theme, ds } = useTheme();
   const { width } = useWindowDimensions();
   const safeArea = useSafeAreaInsets();
   const navShift = useRef(new Animated.Value(0)).current;
+
+  // Edge swipe-back: from the left edge, drag right to return to the previous
+  // screen. Non-capturing on purpose — screens that own the left edge (the mail
+  // drawer, the Auria sidebar) declare their gesture deeper in the tree, so
+  // their responder wins first and this one quietly yields there.
+  const canGoBackRef = useRef(canGoBack);
+  canGoBackRef.current = canGoBack;
+  const onBackRef = useRef(onBack);
+  onBackRef.current = onBack;
+  const backSwipe = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_evt, g) =>
+        !!canGoBackRef.current &&
+        g.x0 < 24 &&
+        g.dx > 14 &&
+        Math.abs(g.dx) > Math.abs(g.dy) * 1.3,
+      onPanResponderRelease: (_evt, g) => {
+        if (g.dx > 64 || g.vx > 0.3) onBackRef.current?.();
+      },
+    }),
+  ).current;
   const sidebarWidth = getSidebarWidth(width);
   const shellBackground =
     activeTab === 'auria' || activeTab === 'settings' ? ds.gray50 : theme.colors.page;
@@ -48,7 +75,10 @@ export function AppShell({
     <View style={[styles.root, { backgroundColor: shellBackground }]}>
       <SafeAreaView style={styles.main} edges={['top']}>
         <StatusBar style={theme.colors.statusBar} />
-        <View style={[styles.content, { paddingBottom: bottomReservation }]}>
+        <View
+          style={[styles.content, { paddingBottom: bottomReservation }]}
+          {...backSwipe.panHandlers}
+        >
           <ProductTabTransition activeTab={activeTab} renderScreen={renderScreen} />
         </View>
       </SafeAreaView>

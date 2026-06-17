@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense, useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ScreenTransition } from './src/components/ui/transitions';
@@ -13,6 +13,26 @@ type AppPhase = 'login' | 'main';
 export default function App() {
   const [phase, setPhase] = useState<AppPhase>('login');
   const [activeTab, setActiveTab] = useState<ProductTabId>('insights');
+  const [tabHistory, setTabHistory] = useState<ProductTabId[]>([]);
+  const activeTabRef = useRef(activeTab);
+  activeTabRef.current = activeTab;
+  const tabHistoryRef = useRef(tabHistory);
+  tabHistoryRef.current = tabHistory;
+
+  // Remember where the user came from so an edge swipe-back can return there.
+  const navigateTab = useCallback((tab: ProductTabId) => {
+    if (tab !== activeTabRef.current) {
+      setTabHistory((h) => [...h, activeTabRef.current]);
+    }
+    setActiveTab(tab);
+  }, []);
+
+  const goBack = useCallback(() => {
+    const h = tabHistoryRef.current;
+    if (h.length === 0) return;
+    setActiveTab(h[h.length - 1]);
+    setTabHistory(h.slice(0, -1));
+  }, []);
 
   return (
     <SafeAreaProvider>
@@ -23,7 +43,12 @@ export default function App() {
           </ScreenTransition>
         ) : (
           <Suspense fallback={<BootFallback />}>
-            <MainApp activeTab={activeTab} onTabChange={setActiveTab} />
+            <MainApp
+              activeTab={activeTab}
+              onTabChange={navigateTab}
+              onBack={goBack}
+              canGoBack={tabHistory.length > 0}
+            />
           </Suspense>
         )}
       </ThemeProvider>

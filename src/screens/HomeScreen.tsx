@@ -2,21 +2,22 @@ import { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AnimatedScreenBlock } from '../components/navigation/AnimatedScreenBlock';
 import { InsightsHero } from '../components/insights/InsightsHero';
-import {
-  InsightsActivityCard,
-  InsightsComparisonCard,
-  InsightsInsightCard,
-  InsightsKpiGrid,
-} from '../components/insights/InsightsWidgets';
-import { TodaySection } from '../components/today/TodaySection';
-import { companyDashboard } from '../data/insightsMockData';
-import type { ProductTabId } from '../data/productNavigation';
-import { myceoCornerStyle, useTheme } from '../theme';
+import { ExecutiveBrief } from '../components/insights/briefing/ExecutiveBrief';
+import { NeedsYou } from '../components/insights/briefing/NeedsYou';
+import { AuriaImpact } from '../components/insights/briefing/AuriaImpact';
+import { AskAuria } from '../components/insights/briefing/AskAuria';
+import type { NavigateFn } from '../data/productNavigation';
+import { useTheme } from '../theme';
 
 type HomeScreenProps = {
-  onNavigate: (tab: ProductTabId) => void;
+  onNavigate: NavigateFn;
 };
 
+/**
+ * Insights = "Auria Briefing": Auria narrates (Brief, Impact, Ask), you act
+ * (Needs You), the chart proves (Explorer). One signals/metrics source — no
+ * repeated numbers.
+ */
 export function HomeScreen({ onNavigate }: HomeScreenProps) {
   const { insights, theme } = useTheme();
   const styles = useMemo(() => createStyles(insights, theme), [insights, theme]);
@@ -35,39 +36,23 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
       </AnimatedScreenBlock>
 
       <AnimatedScreenBlock index={1}>
-        <View style={styles.toolbar}>
-          <View style={styles.dashboardPill}>
-            <Text style={styles.dashboardPillText}>{companyDashboard.name}</Text>
-            <Text style={styles.dashboardChevron}>▾</Text>
-          </View>
-          <View style={styles.viewPill}>
-            <Text style={styles.viewPillText}>View: Default</Text>
-          </View>
-        </View>
+        <ExecutiveBrief />
       </AnimatedScreenBlock>
 
       <AnimatedScreenBlock index={2}>
-        <TodaySection onNavigate={onNavigate} />
+        <NeedsYou onNavigate={onNavigate} />
       </AnimatedScreenBlock>
 
       <AnimatedScreenBlock index={3}>
-        <InsightsHero />
+        <AuriaImpact />
       </AnimatedScreenBlock>
 
       <AnimatedScreenBlock index={4}>
-        <InsightsKpiGrid />
+        <InsightsHero />
       </AnimatedScreenBlock>
 
       <AnimatedScreenBlock index={5}>
-        <InsightsInsightCard />
-      </AnimatedScreenBlock>
-
-      <AnimatedScreenBlock index={6}>
-        <InsightsActivityCard />
-      </AnimatedScreenBlock>
-
-      <AnimatedScreenBlock index={7}>
-        <InsightsComparisonCard />
+        <AskAuria onNavigate={onNavigate} />
       </AnimatedScreenBlock>
     </ScrollView>
   );
@@ -98,40 +83,6 @@ function createStyles(
     pageSubtitle: {
       fontSize: theme.typography.fontSize.md,
       color: insights.textMuted,
-    },
-    toolbar: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: theme.spacing.sm,
-    },
-    dashboardPill: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-      ...myceoCornerStyle('chip'),
-      backgroundColor: insights.filterBarBg,
-    },
-    dashboardPillText: {
-      fontSize: theme.typography.fontSize.sm,
-      fontWeight: theme.typography.fontWeight.semibold,
-      color: insights.text,
-    },
-    dashboardChevron: {
-      fontSize: 10,
-      color: insights.textMuted,
-    },
-    viewPill: {
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-      ...myceoCornerStyle('chip'),
-      backgroundColor: insights.surface,
-    },
-    viewPillText: {
-      fontSize: theme.typography.fontSize.sm,
-      color: insights.textMuted,
-      fontWeight: theme.typography.fontWeight.medium,
     },
   });
 }

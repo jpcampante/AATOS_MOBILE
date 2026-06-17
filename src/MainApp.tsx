@@ -3,7 +3,7 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { AppShell } from './components/navigation/AppShell';
 import { AuriaSettingsModal } from './components/auria/AuriaSettingsModal';
 import { ScreenTransition } from './components/ui/transitions';
-import { ProductTabId } from './data/productNavigation';
+import { NavigateFn, ProductTabId } from './data/productNavigation';
 
 const HomeScreen = lazy(() => import('./screens/HomeScreen').then((m) => ({ default: m.HomeScreen })));
 const AuriaScreen = lazy(() => import('./screens/AuriaScreen').then((m) => ({ default: m.AuriaScreen })));
@@ -22,6 +22,7 @@ type MainAppProps = {
 export default function MainApp({ activeTab, onTabChange, onBack, canGoBack }: MainAppProps) {
   const [auriaSidebarOpen, setAuriaSidebarOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [pendingAuriaPrompt, setPendingAuriaPrompt] = useState<string | null>(null);
 
   const handleAuriaSidebarOpenChange = useCallback((open: boolean) => {
     setAuriaSidebarOpen(open);
@@ -42,13 +43,28 @@ export default function MainApp({ activeTab, onTabChange, onBack, canGoBack }: M
     [onTabChange],
   );
 
+  // Insights actions can deep-link to Auria with a pre-filled prompt.
+  const handleNavigate = useCallback<NavigateFn>(
+    (tab, opts) => {
+      if (tab === 'auria' && opts?.prompt) setPendingAuriaPrompt(opts.prompt);
+      handleTabChange(tab);
+    },
+    [handleTabChange],
+  );
+
   const renderProductScreen = useCallback(
     (tab: ProductTabId) => (
       <Suspense fallback={<TabFallback />}>
-        {renderTab(tab, handleAuriaSidebarOpenChange, openSettingsModal, handleTabChange)}
+        {renderTab(tab, {
+          onAuriaSidebarOpenChange: handleAuriaSidebarOpenChange,
+          onOpenSettings: openSettingsModal,
+          onNavigate: handleNavigate,
+          auriaPrompt: pendingAuriaPrompt,
+          onAuriaPromptConsumed: () => setPendingAuriaPrompt(null),
+        })}
       </Suspense>
     ),
-    [handleAuriaSidebarOpenChange, openSettingsModal, handleTabChange],
+    [handleAuriaSidebarOpenChange, openSettingsModal, handleNavigate, pendingAuriaPrompt],
   );
 
   return (
@@ -69,26 +85,31 @@ export default function MainApp({ activeTab, onTabChange, onBack, canGoBack }: M
   );
 }
 
-function renderTab(
-  tab: ProductTabId,
-  onAuriaSidebarOpenChange: (open: boolean) => void,
-  onOpenSettings: () => void,
-  onNavigate: (tab: ProductTabId) => void,
-) {
+type RenderTabHandlers = {
+  onAuriaSidebarOpenChange: (open: boolean) => void;
+  onOpenSettings: () => void;
+  onNavigate: NavigateFn;
+  auriaPrompt: string | null;
+  onAuriaPromptConsumed: () => void;
+};
+
+function renderTab(tab: ProductTabId, handlers: RenderTabHandlers) {
   switch (tab) {
     case 'insights':
-      return <HomeScreen onNavigate={onNavigate} />;
+      return <HomeScreen onNavigate={handlers.onNavigate} />;
     case 'auria':
       return (
         <AuriaScreen
-          onSidebarOpenChange={onAuriaSidebarOpenChange}
-          onOpenSettings={onOpenSettings}
+          onSidebarOpenChange={handlers.onAuriaSidebarOpenChange}
+          onOpenSettings={handlers.onOpenSettings}
+          initialPrompt={handlers.auriaPrompt}
+          onPromptConsumed={handlers.onAuriaPromptConsumed}
         />
       );
     case 'tasks':
       return <TasksScreen />;
     case 'integrations':
-      return <IntegrationsScreen onOpenSettings={onOpenSettings} />;
+      return <IntegrationsScreen onOpenSettings={handlers.onOpenSettings} />;
     case 'settings':
       return null;
     default:

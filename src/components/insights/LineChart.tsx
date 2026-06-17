@@ -11,7 +11,7 @@ import Svg, {
 } from 'react-native-svg';
 import { motionDuration, motionEasing, useTheme } from '../../theme';
 
-type Point = { month: string; value: number };
+type Point = { label: string; value: number };
 
 type LineChartProps = {
   data: ReadonlyArray<Point>;
@@ -24,16 +24,27 @@ type LineChartProps = {
   step?: number;
   /** Suffix appended to y-axis labels (e.g. "%"). */
   valueSuffix?: string;
+  /** Optional overlay series (correlation) — drawn dashed on its own scale. */
+  series2?: ReadonlyArray<Point>;
+  color2?: string;
+  /** Optional callout marking the most recent point. */
+  annotationLabel?: string;
 };
 
 const PAD_LEFT = 34;
 const PAD_RIGHT = 12;
-const PAD_TOP = 12;
+const PAD_TOP = 14;
 const PAD_BOTTOM = 22;
 const FILL_ID = 'aatosLineFill';
 
 function niceMax(max: number, step = 250) {
   return Math.max(step, Math.ceil(max / step) * step);
+}
+
+/** Integer when whole, one decimal otherwise — avoids "1, 1, 2, 2" on small ranges. */
+function formatTick(value: number): string {
+  const rounded = Math.round(value);
+  return Math.abs(value - rounded) < 0.05 ? `${rounded}` : value.toFixed(1);
 }
 
 /** Catmull-Rom → cubic bézier: a smooth (monotone-ish) curve like recharts. */
@@ -57,22 +68,34 @@ function buildSmoothPath(pts: ReadonlyArray<{ x: number; y: number }>, smoothing
 /**
  * Smooth area-line chart (react-native-svg) — the mobile port of the recharts
  * `area_series` hero chart from AATOS_NEW_BRANDING: monotone curve, soft
- * gradient fill, dashed gridlines and axis labels.
+ * gradient fill, dashed gridlines and axis labels. Supports an optional overlay
+ * series (correlation) and a callout on the latest point.
  */
-export function LineChart({ data, color, height = 180, ticks = 4, step = 250, valueSuffix = '' }: LineChartProps) {
+export function LineChart({
+  data,
+  color,
+  height = 180,
+  ticks = 4,
+  step = 250,
+  valueSuffix = '',
+  series2,
+  color2 = '#2563EB',
+  annotationLabel,
+}: LineChartProps) {
   const { insights } = useTheme();
   const stroke = color ?? insights.accent;
   const [width, setWidth] = useState(0);
   const fade = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    fade.setValue(0);
     Animated.timing(fade, {
       toValue: 1,
       duration: motionDuration.chart,
       easing: motionEasing.standard,
       useNativeDriver: true,
     }).start();
-  }, [fade]);
+  }, [fade, data, series2]);
 
   const onLayout = (event: LayoutChangeEvent) => {
     const next = Math.round(event.nativeEvent.layout.width);
@@ -83,18 +106,28 @@ export function LineChart({ data, color, height = 180, ticks = 4, step = 250, va
     if (width <= 0 || data.length === 0) return null;
     const innerH = height - PAD_TOP - PAD_BOTTOM;
     const innerW = width - PAD_LEFT - PAD_RIGHT;
-    const max = Math.max(...data.map((point) => point.value));
-    const yMax = niceMax(max, step);
     const n = data.length;
+    const yMax = niceMax(Math.max(...data.map((p) => p.value)), step);
     const xAt = (i: number) => PAD_LEFT + (n === 1 ? innerW / 2 : (i / (n - 1)) * innerW);
     const yAt = (value: number) => PAD_TOP + innerH - (value / yMax) * innerH;
     const pts = data.map((point, i) => ({ x: xAt(i), y: yAt(point.value) }));
     const baseY = PAD_TOP + innerH;
     const line = buildSmoothPath(pts);
     const area = `${line} L ${pts[n - 1].x},${baseY} L ${pts[0].x},${baseY} Z`;
-    const tickVals = Array.from({ length: ticks + 1 }, (_, i) => Math.round((yMax / ticks) * i));
-    return { pts, line, area, tickVals, xAt, yAt };
-  }, [width, height, data, ticks, step]);
+    const tickVals = Array.from({ length: ticks + 1 }, (_, i) => (yMax / ticks) * i);
+
+    // Overlay on its own scale (shape comparison, no second axis).
+    let line2: string | null = null;
+    if (series2 && series2.length > 1) {
+      const max2 = Math.max(...series2.map((p) => p.value), 1);
+      const m = series2.length;
+      const x2 = (i: number) => PAD_LEFT + (m === 1 ? innerW / 2 : (i / (m - 1)) * innerW);
+      const y2 = (value: number) => PAD_TOP + innerH - (value / max2) * innerH;
+      line2 = buildSmoothPath(series2.map((p, i) => ({ x: x2(i), y: y2(p.value) })));
+    }
+
+    return { pts, line, area, tickVals, xAt, yAt, line2 };
+  }, [width, height, data, ticks, step, series2]);
 
   return (
     <Animated.View style={[styles.wrap, { height, opacity: fade }]} onLayout={onLayout}>
@@ -107,9 +140,9 @@ export function LineChart({ data, color, height = 180, ticks = 4, step = 250, va
             </LinearGradient>
           </Defs>
 
-          {geo.tickVals.map((value) => (
+          {geo.tickVals.map((value, i) => (
             <SvgLine
-              key={`grid-${value}`}
+              key={`grid-${i}`}
               x1={PAD_LEFT}
               y1={geo.yAt(value)}
               x2={width - PAD_RIGHT}
@@ -120,16 +153,16 @@ export function LineChart({ data, color, height = 180, ticks = 4, step = 250, va
             />
           ))}
 
-          {geo.tickVals.map((value) => (
+          {geo.tickVals.map((value, i) => (
             <SvgText
-              key={`ylabel-${value}`}
+              key={`ylabel-${i}`}
               x={PAD_LEFT - 6}
               y={geo.yAt(value) + 3}
               fontSize={9}
               fill={insights.textHint}
               textAnchor="end"
             >
-              {`${value}${valueSuffix}`}
+              {`${formatTick(value)}${valueSuffix}`}
             </SvgText>
           ))}
 
@@ -142,23 +175,57 @@ export function LineChart({ data, color, height = 180, ticks = 4, step = 250, va
             strokeLinecap="round"
             strokeLinejoin="round"
           />
+
+          {geo.line2 ? (
+            <Path
+              d={geo.line2}
+              stroke={color2}
+              strokeWidth={2}
+              strokeDasharray="5 4"
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          ) : null}
+
           <Circle
             cx={geo.pts[geo.pts.length - 1].x}
             cy={geo.pts[geo.pts.length - 1].y}
-            r={4}
+            r={annotationLabel ? 5 : 4}
             fill={stroke}
           />
+          {annotationLabel ? (
+            <>
+              <Circle
+                cx={geo.pts[geo.pts.length - 1].x}
+                cy={geo.pts[geo.pts.length - 1].y}
+                r={9}
+                fill={stroke}
+                fillOpacity={0.14}
+              />
+              <SvgText
+                x={geo.pts[geo.pts.length - 1].x}
+                y={Math.max(geo.pts[geo.pts.length - 1].y - 12, PAD_TOP + 2)}
+                fontSize={9}
+                fontWeight="600"
+                fill={stroke}
+                textAnchor="end"
+              >
+                {annotationLabel}
+              </SvgText>
+            </>
+          ) : null}
 
           {data.map((point, i) => (
             <SvgText
-              key={`xlabel-${point.month}`}
+              key={`xlabel-${point.label}-${i}`}
               x={geo.xAt(i)}
               y={height - 6}
               fontSize={9}
               fill={insights.textHint}
               textAnchor="middle"
             >
-              {point.month}
+              {point.label}
             </SvgText>
           ))}
         </Svg>

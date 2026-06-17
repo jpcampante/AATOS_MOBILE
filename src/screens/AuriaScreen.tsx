@@ -42,9 +42,17 @@ import { SUPPORTS_NATIVE_DRIVER, motionDuration, motionEasing, useTheme } from '
 type AuriaScreenProps = {
   onSidebarOpenChange?: (open: boolean) => void;
   onOpenSettings?: () => void;
+  /** When set (deep-link from Insights), pre-fills the composer once. */
+  initialPrompt?: string | null;
+  onPromptConsumed?: () => void;
 };
 
-export function AuriaScreen({ onSidebarOpenChange, onOpenSettings }: AuriaScreenProps) {
+export function AuriaScreen({
+  onSidebarOpenChange,
+  onOpenSettings,
+  initialPrompt,
+  onPromptConsumed,
+}: AuriaScreenProps) {
   const { ds } = useTheme();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const safeBottom = useSafeAreaInsets().bottom;
@@ -52,6 +60,15 @@ export function AuriaScreen({ onSidebarOpenChange, onOpenSettings }: AuriaScreen
   const keyboardInset = useKeyboardInset(shellBottomInset);
   const composerRef = useRef<AuriaComposerHandle>(null);
   const workspace = useAuriaWorkspace();
+
+  // Deep-link from Insights "Ask Auria": seed the composer once, then clear it.
+  useEffect(() => {
+    if (initialPrompt) {
+      workspace.setComposerText(initialPrompt);
+      onPromptConsumed?.();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialPrompt]);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [createMenuOpen, setCreateMenuOpen] = useState(false);

@@ -5,6 +5,7 @@ import type { TaskItem, TaskSource } from '../../data/tasksMockData';
 import { auriaTypography, myceoCornerStyle, useTheme } from '../../theme';
 import { AuriaIcon, AURIA_ICON_SIZE, type AuriaIconName } from '../icons';
 import { tasksCardCorner, tasksSheetCorner } from './tasksCorners';
+import { recordSuggestionAccepted } from '../../data/insights/auriaAcceptance';
 
 type TaskReviewModalProps = {
   visible: boolean;
@@ -42,6 +43,8 @@ export function TaskReviewModal({ visible, suggestions, onClose, onCreateTask }:
   const createSuggestion = (item: TaskItem) => {
     onCreateTask({ ...item, id: `review-${Date.now()}-${item.id}`, isAiSuggestion: false, lastActivity: 'Created now' });
     setProcessed((items) => [...items, item.id]);
+    // Accepting an Auria suggestion is the in-app signal for acceptance rate.
+    recordSuggestionAccepted();
   };
 
   return (

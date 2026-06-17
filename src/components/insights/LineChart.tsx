@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Animated, LayoutChangeEvent, StyleSheet } from 'react-native';
 import Svg, {
   Circle,
@@ -84,6 +84,10 @@ export function LineChart({
   variant = 'full',
 }: LineChartProps) {
   const { insights } = useTheme();
+  // react-native-svg's web layer reconciles every chart's SVG children into a
+  // shared keyspace, so plain `grid-${i}` keys collide when more than one chart
+  // is on screen. A per-instance token keeps each list's keys globally unique.
+  const chartId = useId();
   const stroke = color ?? insights.accent;
   const isSpark = variant === 'spark';
   const padL = isSpark ? 6 : 34;
@@ -149,7 +153,7 @@ export function LineChart({
           {!isSpark
             ? geo.tickVals.map((value, i) => (
                 <SvgLine
-                  key={`grid-${i}`}
+                  key={`${chartId}-grid-${i}`}
                   x1={padL}
                   y1={geo.yAt(value)}
                   x2={width - padR}
@@ -164,7 +168,7 @@ export function LineChart({
           {!isSpark
             ? geo.tickVals.map((value, i) => (
                 <SvgText
-                  key={`ylabel-${i}`}
+                  key={`${chartId}-ylabel-${i}`}
                   x={padL - 6}
                   y={geo.yAt(value) + 3}
                   fontSize={9}
@@ -231,7 +235,7 @@ export function LineChart({
           {!isSpark
             ? data.map((point, i) => (
                 <SvgText
-                  key={`xlabel-${point.label}-${i}`}
+                  key={`${chartId}-xlabel-${point.label}-${i}`}
                   x={geo.xAt(i)}
                   y={height - 6}
                   fontSize={9}

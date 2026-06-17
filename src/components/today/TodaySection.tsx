@@ -6,20 +6,17 @@ import type { ProductTabId } from '../../data/productNavigation';
 import { filterTodayFeed, todayFeed, todayFeedSummary } from '../../data/todayFeedMockData';
 import { tasksCardCorner } from '../tasks/tasksCorners';
 import { TodayModal } from './TodayModal';
-import { TODAY_IMPORTANCE_DOT, TODAY_KIND_ICON, todayDateLabel } from './todayVisuals';
-
-const PREVIEW_COUNT = 4;
+import { todayDateLabel } from './todayVisuals';
 
 type TodaySectionProps = {
-  /** Redirect to the source tab when a row is tapped. */
+  /** Redirect to the source tab when an item is tapped (from the modal). */
   onNavigate: (tab: ProductTabId) => void;
 };
 
 /**
- * The "Today" hub for the Insights landing page: a single card whose header is
- * the Today summary (counts + "View all" → full agenda modal) with a preview of
- * the most important items directly below it. Tapping any item redirects to its
- * source. (Header + preview are merged so "today / needs you" isn't shown twice.)
+ * The "Today" hub for the Insights landing page: a single blue summary card
+ * (counts + "View all"). The full agenda — every item — lives inside the modal
+ * that View all opens, so the page itself stays compact.
  */
 export function TodaySection({ onNavigate }: TodaySectionProps) {
   const { ds, theme } = useTheme();
@@ -35,27 +32,25 @@ export function TodaySection({ onNavigate }: TodaySectionProps) {
   };
 
   const ranked = useMemo(() => filterTodayFeed(todayFeed, 'All'), []);
-  const preview = ranked.slice(0, PREVIEW_COUNT);
   const dateLabel = todayDateLabel();
 
   return (
-    <View style={styles.card}>
-      {/* Today summary header — opens the full agenda */}
+    <>
       <Pressable
         onPress={openModal}
-        style={({ pressed }) => [styles.header, pressed && styles.headerPressed]}
+        style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
         accessibilityRole="button"
         accessibilityLabel="Open today's agenda"
       >
-        <View style={styles.headerIcon}>
+        <View style={styles.icon}>
           <AuriaIcon name="calendar" size={AURIA_ICON_SIZE.sm} color={ds.auriaBlue} strokeWidth={1.9} />
         </View>
-        <View style={styles.headerCopy}>
-          <View style={styles.headerTop}>
-            <Text style={styles.headerTitle}>Today</Text>
-            <Text style={styles.headerDate}>{dateLabel}</Text>
+        <View style={styles.copy}>
+          <View style={styles.top}>
+            <Text style={styles.title}>Today</Text>
+            <Text style={styles.date}>{dateLabel}</Text>
           </View>
-          <Text style={styles.headerSummary} numberOfLines={1}>
+          <Text style={styles.summary} numberOfLines={1}>
             {ranked.length} need you · {todayFeedSummary(ranked)}
           </Text>
         </View>
@@ -65,33 +60,10 @@ export function TodaySection({ onNavigate }: TodaySectionProps) {
         </View>
       </Pressable>
 
-      {/* Preview of the most important items — nested inside the Today card */}
-      <View style={styles.list}>
-        {preview.map((item) => (
-          <Pressable
-            key={item.id}
-            onPress={() => onNavigate(item.target)}
-            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            accessibilityRole="button"
-            accessibilityLabel={`${item.title}. Open.`}
-          >
-            <View style={styles.iconTile}>
-              <AuriaIcon name={TODAY_KIND_ICON[item.kind]} size={AURIA_ICON_SIZE.xs} color={ds.gray700} strokeWidth={1.8} />
-            </View>
-            <View style={styles.rowCopy}>
-              <Text style={styles.rowTitle} numberOfLines={1}>{item.title}</Text>
-              <Text style={styles.rowMeta} numberOfLines={1}>{item.subtitle} · {item.time}</Text>
-            </View>
-            <View style={[styles.dot, { backgroundColor: TODAY_IMPORTANCE_DOT[item.importance] }]} />
-            <AuriaIcon name="chevronRight" size={13} color={ds.gray400} strokeWidth={2} />
-          </Pressable>
-        ))}
-      </View>
-
       {modalMounted ? (
         <TodayModal visible={modalOpen} onClose={() => setModalOpen(false)} onNavigate={onNavigate} />
       ) : null}
-    </View>
+    </>
   );
 }
 
@@ -100,26 +72,16 @@ function createStyles(
   theme: ReturnType<typeof useTheme>['theme'],
 ) {
   return StyleSheet.create({
-    // The whole card is the blue "Today" container; items sit inside it.
     card: {
-      padding: 12,
-      gap: 8,
-      backgroundColor: '#DDE8FF',
-      ...tasksCardCorner(),
-      ...theme.shadow.card,
-    },
-
-    // Today summary header
-    header: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 12,
-      paddingHorizontal: 4,
-      paddingTop: 2,
-      paddingBottom: 2,
+      padding: 16,
+      backgroundColor: '#DDE8FF',
+      ...tasksCardCorner(),
     },
-    headerPressed: { opacity: 0.7 },
-    headerIcon: {
+    cardPressed: { opacity: 0.92 },
+    icon: {
       width: 38,
       height: 38,
       alignItems: 'center',
@@ -127,27 +89,27 @@ function createStyles(
       backgroundColor: 'rgba(255,255,255,0.85)',
       ...myceoCornerStyle('icon'),
     },
-    headerCopy: { flex: 1, gap: 3, minWidth: 0 },
-    headerTop: {
+    copy: { flex: 1, gap: 3, minWidth: 0 },
+    top: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       gap: 8,
     },
-    headerTitle: {
+    title: {
       ...auriaTypography.title,
       color: ds.gray900,
       fontSize: 17,
       fontWeight: theme.typography.fontWeight.bold,
       letterSpacing: -0.3,
     },
-    headerDate: {
+    date: {
       ...auriaTypography.body,
       color: ds.gray600,
       fontSize: 12,
       fontWeight: theme.typography.fontWeight.medium,
     },
-    headerSummary: {
+    summary: {
       ...auriaTypography.body,
       color: ds.gray700,
       fontSize: 12.5,
@@ -168,40 +130,5 @@ function createStyles(
       fontSize: 12.5,
       fontWeight: theme.typography.fontWeight.semibold,
     },
-
-    // Preview list — white rows nested inside the blue card
-    list: { gap: 6 },
-    row: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 12,
-      paddingHorizontal: 10,
-      paddingVertical: 9,
-      backgroundColor: ds.white,
-      ...myceoCornerStyle('inset'),
-    },
-    rowPressed: { backgroundColor: ds.gray100 },
-    iconTile: {
-      width: 32,
-      height: 32,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: '#EEF3FF',
-      ...myceoCornerStyle('iconSm'),
-    },
-    rowCopy: { flex: 1, gap: 1, minWidth: 0 },
-    rowTitle: {
-      ...auriaTypography.body,
-      color: ds.gray900,
-      fontSize: 13.5,
-      fontWeight: theme.typography.fontWeight.semibold,
-      letterSpacing: -0.1,
-    },
-    rowMeta: {
-      ...auriaTypography.body,
-      color: ds.gray500,
-      fontSize: 11,
-    },
-    dot: { width: 8, height: 8, borderRadius: 4 },
   });
 }

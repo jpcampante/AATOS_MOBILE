@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import {
   Animated,
+  PanResponder,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -43,8 +44,21 @@ export function IntegrationsScreen({ onOpenSettings }: IntegrationsScreenProps) 
     }).start();
   }, [fabAnim]);
 
+  // Swipe right from the left edge to open the drawer.
+  const openSidebarRef = useRef(() => mb.setSidebarOpen(true));
+  openSidebarRef.current = () => mb.setSidebarOpen(true);
+  const edgeSwipe = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_e, g) =>
+        g.x0 < 28 && g.dx > 12 && g.dx > Math.abs(g.dy) * 1.3,
+      onPanResponderRelease: (_e, g) => {
+        if (g.dx > 56 || g.vx > 0.3) openSidebarRef.current();
+      },
+    }),
+  ).current;
+
   return (
-    <View style={styles.root}>
+    <View style={styles.root} {...edgeSwipe.panHandlers}>
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}

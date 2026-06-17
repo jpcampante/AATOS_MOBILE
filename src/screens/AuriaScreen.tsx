@@ -66,12 +66,19 @@ export function AuriaScreen({ onSidebarOpenChange, onOpenSettings }: AuriaScreen
   const slideProgress = useRef(new Animated.Value(0)).current;
   const sidebarOpenRef = useRef(sidebarOpen);
   sidebarOpenRef.current = sidebarOpen;
-  const sidebarCloseSwipe = useRef(
+  // Edge-swipe right to open the sidebar; swipe left to close it.
+  const sidebarSwipe = useRef(
     PanResponder.create({
-      onMoveShouldSetPanResponder: (_evt, g) =>
-        sidebarOpenRef.current && g.dx < -10 && Math.abs(g.dx) > Math.abs(g.dy) * 1.2,
+      onMoveShouldSetPanResponder: (_evt, g) => {
+        if (Math.abs(g.dx) < 10 || Math.abs(g.dx) < Math.abs(g.dy) * 1.2) return false;
+        return sidebarOpenRef.current ? g.dx < -10 : g.x0 < 28 && g.dx > 10;
+      },
       onPanResponderRelease: (_evt, g) => {
-        if (g.dx < -40 || g.vx < -0.3) setSidebarOpen(false);
+        if (sidebarOpenRef.current) {
+          if (g.dx < -40 || g.vx < -0.3) setSidebarOpen(false);
+        } else if (g.dx > 56 || g.vx > 0.3) {
+          setSidebarOpen(true);
+        }
       },
     }),
   ).current;
@@ -290,7 +297,7 @@ export function AuriaScreen({ onSidebarOpenChange, onOpenSettings }: AuriaScreen
         aria-hidden={sidebarOpen}
         accessibilityElementsHidden={sidebarOpen}
         importantForAccessibility={sidebarOpen ? 'no-hide-descendants' : 'auto'}
-        {...sidebarCloseSwipe.panHandlers}
+        {...sidebarSwipe.panHandlers}
       >
         <View style={styles.pushSurface}>
           <View style={styles.headerBar}>

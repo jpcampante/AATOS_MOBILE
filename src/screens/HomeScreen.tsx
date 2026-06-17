@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 import { AnimatedScreenBlock } from '../components/navigation/AnimatedScreenBlock';
 import { InsightsExplorer } from '../components/insights/InsightsExplorer';
 import { ExecutiveBrief } from '../components/insights/briefing/ExecutiveBrief';
@@ -23,38 +23,40 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
   const styles = useMemo(() => createStyles(insights, theme), [insights, theme]);
 
   return (
-    <ScrollView
-      style={styles.scroll}
-      contentContainerStyle={styles.scrollContent}
-      showsVerticalScrollIndicator={false}
-    >
-      <AnimatedScreenBlock index={0}>
-        <View style={styles.headerRow}>
-          <Text style={styles.pageTitle}>Insights</Text>
-          <Text style={styles.pageSubtitle}>Company command center</Text>
-        </View>
-      </AnimatedScreenBlock>
+    <View style={styles.root}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <AnimatedScreenBlock index={0}>
+          <View style={styles.headerRow}>
+            <Text style={styles.pageTitle}>Insights</Text>
+            <Text style={styles.pageSubtitle}>Company command center</Text>
+          </View>
+        </AnimatedScreenBlock>
 
-      <AnimatedScreenBlock index={1}>
-        <InsightsExplorer />
-      </AnimatedScreenBlock>
+        <AnimatedScreenBlock index={1}>
+          <InsightsExplorer />
+        </AnimatedScreenBlock>
 
-      <AnimatedScreenBlock index={2}>
-        <ExecutiveBrief />
-      </AnimatedScreenBlock>
+        <AnimatedScreenBlock index={2}>
+          <ExecutiveBrief />
+        </AnimatedScreenBlock>
 
-      <AnimatedScreenBlock index={3}>
-        <NeedsYou onNavigate={onNavigate} />
-      </AnimatedScreenBlock>
+        <AnimatedScreenBlock index={3}>
+          <NeedsYou onNavigate={onNavigate} />
+        </AnimatedScreenBlock>
 
-      <AnimatedScreenBlock index={4}>
-        <AuriaImpact />
-      </AnimatedScreenBlock>
+        <AnimatedScreenBlock index={4}>
+          <AuriaImpact />
+        </AnimatedScreenBlock>
 
-      <AnimatedScreenBlock index={5}>
-        <AskAuria onNavigate={onNavigate} />
-      </AnimatedScreenBlock>
-    </ScrollView>
+        <AnimatedScreenBlock index={5}>
+          <AskAuria onNavigate={onNavigate} />
+        </AnimatedScreenBlock>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -62,10 +64,26 @@ function createStyles(
   insights: ReturnType<typeof useTheme>['insights'],
   theme: ReturnType<typeof useTheme>['theme'],
 ) {
+  const gradient = {
+    backgroundImage:
+      theme.mode === 'dark'
+        ? 'linear-gradient(180deg, #0E1B31 0%, #111827 46%, #0D1117 100%)'
+        : 'linear-gradient(180deg, #EAF4FF 0%, #F7FBFF 44%, #F4F7FF 100%)',
+    experimental_backgroundImage:
+      theme.mode === 'dark'
+        ? 'linear-gradient(180deg, #0E1B31 0%, #111827 46%, #0D1117 100%)'
+        : 'linear-gradient(180deg, #EAF4FF 0%, #F7FBFF 44%, #F4F7FF 100%)',
+  } as unknown as ViewStyle;
+
   return StyleSheet.create({
+    root: {
+      flex: 1,
+      backgroundColor: theme.mode === 'dark' ? '#0E1B31' : '#EAF4FF',
+      ...gradient,
+    },
     scroll: {
       flex: 1,
-      backgroundColor: insights.page,
+      backgroundColor: 'transparent',
     },
     scrollContent: {
       padding: theme.spacing.lg,

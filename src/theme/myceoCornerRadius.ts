@@ -2,16 +2,16 @@ import { Platform, ViewStyle } from 'react-native';
 
 /** MyCEO Corner Radius tokens. Values mirror the main AATOS design system. */
 export const MYCEO_CORNER_RADIUS = {
-  page: 28,
-  modal: 28,
-  menu: 22,
-  card: 22,
-  panel: 20,
-  inset: 16,
-  iconLg: 16,
-  icon: 12,
-  iconSm: 10,
-  chip: 14,
+  page: 34,
+  modal: 34,
+  menu: 28,
+  card: 30,
+  panel: 28,
+  inset: 22,
+  iconLg: 22,
+  icon: 16,
+  iconSm: 14,
+  chip: 18,
 } as const;
 
 export type MyceoCornerRadiusToken = keyof typeof MYCEO_CORNER_RADIUS;

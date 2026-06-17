@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Easing, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AuriaIcon, AuriaIconName, AURIA_ICON_SIZE } from '../icons';
 import { connectedMailbox, type MailItem } from '../../data/integrationsMockData';
@@ -11,6 +11,13 @@ const REACTIONS = ['💖', '👍', '🎉', '😂', '🙌', '🙂'];
 type EmailDetailViewProps = {
   mail: MailItem;
   onBack: () => void;
+  onToggleStar?: () => void;
+  onArchive?: () => void;
+  onDelete?: () => void;
+  onMarkUnread?: () => void;
+  onSpam?: () => void;
+  onReply?: () => void;
+  onForward?: () => void;
 };
 
 type MenuItem = {
@@ -18,9 +25,20 @@ type MenuItem = {
   label: string;
   danger?: boolean;
   group?: number;
+  action?: () => void;
 };
 
-export function EmailDetailView({ mail, onBack }: EmailDetailViewProps) {
+export function EmailDetailView({
+  mail,
+  onBack,
+  onToggleStar,
+  onArchive,
+  onDelete,
+  onMarkUnread,
+  onSpam,
+  onReply,
+  onForward,
+}: EmailDetailViewProps) {
   const { ds, theme } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(ds, theme, insets), [ds, theme, insets]);
@@ -30,6 +48,13 @@ export function EmailDetailView({ mail, onBack }: EmailDetailViewProps) {
   const [topMenuOpen, setTopMenuOpen] = useState(false);
   const [msgMenuOpen, setMsgMenuOpen] = useState(false);
   const [reactionsOpen, setReactionsOpen] = useState(false);
+  const [snack, setSnack] = useState<string | null>(null);
+  const snackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const info = (text: string) => {
+    if (snackTimer.current) clearTimeout(snackTimer.current);
+    setSnack(text);
+    snackTimer.current = setTimeout(() => setSnack(null), 2600);
+  };
 
   const to = mail.to ?? [{ address: connectedMailbox }];
   const cc = mail.cc ?? [];
@@ -45,27 +70,38 @@ export function EmailDetailView({ mail, onBack }: EmailDetailViewProps) {
       : '');
 
   const topMenu: MenuItem[] = [
-    { icon: 'folder', label: 'Move to', group: 0 },
-    { icon: 'tag', label: 'Label', group: 0 },
-    { icon: 'flag', label: 'Mark as not important', group: 0 },
-    { icon: 'clock', label: 'Snooze', group: 1 },
-    { icon: 'checkCircle', label: 'Add to Tasks', group: 1 },
-    { icon: 'bellSlash', label: 'Mute', group: 1 },
-    { icon: 'sun', label: 'View in light theme', group: 2 },
-    { icon: 'printer', label: 'Print all', group: 2 },
-    { icon: 'frame', label: 'Revert auto-sizing', group: 2 },
-    { icon: 'exclaimCircle', label: 'Report spam', danger: true, group: 3 },
+    { icon: 'folder', label: 'Move to', group: 0, action: onArchive },
+    { icon: 'tag', label: 'Label', group: 0, action: () => info('Label applied') },
+    {
+      icon: 'flag',
+      label: 'Mark as not important',
+      group: 0,
+      action: () => info('Marked as not important'),
+    },
+    { icon: 'clock', label: 'Snooze', group: 1, action: () => info('Snoozed until tomorrow') },
+    { icon: 'checkCircle', label: 'Add to Tasks', group: 1, action: () => info('Added to Tasks') },
+    { icon: 'bellSlash', label: 'Mute', group: 1, action: () => info('Conversation muted') },
+    { icon: 'sun', label: 'View in light theme', group: 2, action: () => info('Already in light theme') },
+    { icon: 'printer', label: 'Print all', group: 2, action: () => info('Preparing to print…') },
+    { icon: 'frame', label: 'Revert auto-sizing', group: 2, action: () => info('Auto-sizing reverted') },
+    { icon: 'exclaimCircle', label: 'Report spam', danger: true, group: 3, action: onSpam },
   ];
 
   const msgMenu: MenuItem[] = [
-    { icon: 'reply', label: 'Reply', group: 0 },
-    { icon: 'replyAll', label: 'Reply all', group: 0 },
-    { icon: 'forward', label: 'Forward', group: 0 },
-    { icon: 'translate', label: 'Translate', group: 1 },
-    { icon: 'printer', label: 'Print', group: 1 },
-    { icon: 'messageSquare', label: 'Share in chat', group: 1 },
-    { icon: 'noSymbol', label: `Block "${mail.sender}"`, danger: true, group: 2 },
-    { icon: 'exclaimCircle', label: 'Report spam', danger: true, group: 2 },
+    { icon: 'reply', label: 'Reply', group: 0, action: onReply },
+    { icon: 'replyAll', label: 'Reply all', group: 0, action: onReply },
+    { icon: 'forward', label: 'Forward', group: 0, action: onForward },
+    { icon: 'translate', label: 'Translate', group: 1, action: () => info('Translating message…') },
+    { icon: 'printer', label: 'Print', group: 1, action: () => info('Preparing to print…') },
+    { icon: 'messageSquare', label: 'Share in chat', group: 1, action: () => info('Shared in chat') },
+    {
+      icon: 'noSymbol',
+      label: `Block "${mail.sender}"`,
+      danger: true,
+      group: 2,
+      action: () => info(`Blocked ${mail.sender}`),
+    },
+    { icon: 'exclaimCircle', label: 'Report spam', danger: true, group: 2, action: onSpam },
   ];
 
   return (
@@ -74,10 +110,16 @@ export function EmailDetailView({ mail, onBack }: EmailDetailViewProps) {
         <View style={styles.topBar}>
           <TopIcon icon="arrowLeft" label="Back" styles={styles} ds={ds} onPress={onBack} />
           <View style={styles.flex} />
-          <TopIcon icon="sparkles" label="Summarize" styles={styles} ds={ds} />
-          <TopIcon icon="archive" label="Archive" styles={styles} ds={ds} />
-          <TopIcon icon="trash" label="Delete" styles={styles} ds={ds} />
-          <TopIcon icon="mail" label="Mark unread" styles={styles} ds={ds} />
+          <TopIcon
+            icon="sparkles"
+            label="Summarize"
+            styles={styles}
+            ds={ds}
+            onPress={() => info('Summarizing conversation…')}
+          />
+          <TopIcon icon="archive" label="Archive" styles={styles} ds={ds} onPress={onArchive} />
+          <TopIcon icon="trash" label="Delete" styles={styles} ds={ds} onPress={onDelete} />
+          <TopIcon icon="mail" label="Mark unread" styles={styles} ds={ds} onPress={onMarkUnread} />
           <TopIcon
             icon="moreHorizontal"
             label="More options"
@@ -118,7 +160,10 @@ export function EmailDetailView({ mail, onBack }: EmailDetailViewProps) {
               </View>
             </View>
             <Pressable
-              onPress={() => setStarred((s) => !s)}
+              onPress={() => {
+                setStarred((s) => !s);
+                onToggleStar?.();
+              }}
               hitSlop={8}
               accessibilityRole="button"
               accessibilityLabel={starred ? 'Unstar' : 'Star'}
@@ -167,7 +212,13 @@ export function EmailDetailView({ mail, onBack }: EmailDetailViewProps) {
             >
               <AuriaIcon name="faceSmile" size={AURIA_ICON_SIZE.md} color={ds.gray600} strokeWidth={1.7} />
             </Pressable>
-            <Pressable hitSlop={6} style={styles.senderAction} accessibilityRole="button" accessibilityLabel="Reply">
+            <Pressable
+              onPress={onReply}
+              hitSlop={6}
+              style={styles.senderAction}
+              accessibilityRole="button"
+              accessibilityLabel="Reply"
+            >
               <AuriaIcon name="reply" size={AURIA_ICON_SIZE.md} color={ds.gray600} strokeWidth={1.7} />
             </Pressable>
             <Pressable
@@ -226,14 +277,29 @@ export function EmailDetailView({ mail, onBack }: EmailDetailViewProps) {
         </ScrollView>
 
         <View style={styles.bottomBar}>
-          <Pressable style={styles.replyIconBtn} accessibilityRole="button" accessibilityLabel="Reply">
+          <Pressable
+            onPress={onReply}
+            style={styles.replyIconBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Reply"
+          >
             <AuriaIcon name="reply" size={AURIA_ICON_SIZE.md} color={ds.gray700} strokeWidth={1.7} />
           </Pressable>
-          <Pressable style={styles.actionPill} accessibilityRole="button" accessibilityLabel="Reply all">
+          <Pressable
+            onPress={onReply}
+            style={styles.actionPill}
+            accessibilityRole="button"
+            accessibilityLabel="Reply all"
+          >
             <AuriaIcon name="replyAll" size={AURIA_ICON_SIZE.sm} color={ds.gray700} strokeWidth={1.7} />
             <Text style={styles.actionPillText}>Reply all</Text>
           </Pressable>
-          <Pressable style={styles.actionPill} accessibilityRole="button" accessibilityLabel="Forward">
+          <Pressable
+            onPress={onForward}
+            style={styles.actionPill}
+            accessibilityRole="button"
+            accessibilityLabel="Forward"
+          >
             <AuriaIcon name="forward" size={AURIA_ICON_SIZE.sm} color={ds.gray700} strokeWidth={1.7} />
             <Text style={styles.actionPillText}>Forward</Text>
           </Pressable>
@@ -242,14 +308,25 @@ export function EmailDetailView({ mail, onBack }: EmailDetailViewProps) {
           </Pressable>
         </View>
 
+        {snack ? (
+          <View style={styles.detailSnack} pointerEvents="none">
+            <Text style={styles.detailSnackText} numberOfLines={1}>
+              {snack}
+            </Text>
+          </View>
+        ) : null}
+
         {reactionsOpen ? (
           <>
             <Pressable style={styles.dismiss} onPress={() => setReactionsOpen(false)} accessibilityLabel="Close" />
-            <View style={styles.reactionBar}>
+            <Popover style={styles.reactionBar}>
               {REACTIONS.map((emoji) => (
                 <Pressable
                   key={emoji}
-                  onPress={() => setReactionsOpen(false)}
+                  onPress={() => {
+                    setReactionsOpen(false);
+                    info(`Reacted ${emoji}`);
+                  }}
                   style={styles.reactionBtn}
                   accessibilityRole="button"
                   accessibilityLabel={`React ${emoji}`}
@@ -260,7 +337,7 @@ export function EmailDetailView({ mail, onBack }: EmailDetailViewProps) {
               <View style={styles.reactionPlus}>
                 <AuriaIcon name="plus" size={AURIA_ICON_SIZE.sm} color={ds.gray700} strokeWidth={2} />
               </View>
-            </View>
+            </Popover>
           </>
         ) : null}
 
@@ -334,13 +411,16 @@ function Menu({
   return (
     <>
       <Pressable style={styles.dismiss} onPress={onClose} accessibilityLabel="Close menu" />
-      <View style={[styles.menu, anchor]}>
+      <Popover style={[styles.menu, anchor]}>
         {items.map((item, index) => {
           const showDivider = index > 0 && item.group !== items[index - 1].group;
           return (
             <Pressable
               key={item.label}
-              onPress={onClose}
+              onPress={() => {
+                item.action?.();
+                onClose();
+              }}
               style={({ pressed }) => [
                 styles.menuRow,
                 showDivider && styles.menuDivider,
@@ -361,8 +441,36 @@ function Menu({
             </Pressable>
           );
         })}
-      </View>
+      </Popover>
     </>
+  );
+}
+
+function Popover({ style, children }: { style?: object | object[]; children: React.ReactNode }) {
+  const a = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(a, {
+      toValue: 1,
+      duration: 150,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [a]);
+  return (
+    <Animated.View
+      style={[
+        style,
+        {
+          opacity: a,
+          transform: [
+            { scale: a.interpolate({ inputRange: [0, 1], outputRange: [0.96, 1] }) },
+            { translateY: a.interpolate({ inputRange: [0, 1], outputRange: [-6, 0] }) },
+          ],
+        },
+      ]}
+    >
+      {children}
+    </Animated.View>
   );
 }
 
@@ -551,6 +659,21 @@ function createStyles(
       color: ds.gray800,
       fontSize: 14,
       fontWeight: theme.typography.fontWeight.medium,
+    },
+    detailSnack: {
+      position: 'absolute',
+      left: 16,
+      bottom: insets.bottom + 84,
+      maxWidth: '88%',
+      backgroundColor: ds.gray900,
+      borderRadius: 10,
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+    },
+    detailSnackText: {
+      ...auriaTypography.body,
+      color: ds.white,
+      fontSize: 13.5,
     },
     dismiss: { ...StyleSheet.absoluteFillObject },
     reactionBar: {

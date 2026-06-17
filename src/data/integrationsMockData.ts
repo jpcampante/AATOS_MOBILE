@@ -5,6 +5,24 @@
 
 export type MailCategory = 'security' | 'updates' | 'team' | 'social';
 
+export type MailFolder = 'inbox' | 'archive' | 'trash' | 'sent' | 'spam' | 'draft';
+
+/** Drawer folder id → display name shown above the list. */
+export const FOLDER_LABELS: Record<string, string> = {
+  'all-inboxes': 'All inboxes',
+  inbox: 'Inbox',
+  starred: 'Starred',
+  snoozed: 'Snoozed',
+  important: 'Important',
+  sent: 'Sent',
+  scheduled: 'Scheduled',
+  outbox: 'Outbox',
+  drafts: 'Drafts',
+  'all-mail': 'All mail',
+  spam: 'Spam',
+  trash: 'Trash',
+};
+
 export type MailRecipient = {
   name?: string;
   address: string;
@@ -24,6 +42,8 @@ export type MailItem = {
   unread: boolean;
   starred: boolean;
   category: MailCategory;
+  /** Which folder the message lives in. Absent = inbox. */
+  folder?: MailFolder;
   /** Detail-view fields. Fall back to sensible defaults when absent. */
   senderEmail?: string;
   to?: MailRecipient[];

@@ -1,6 +1,7 @@
-import { useMemo } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useMemo, useRef } from 'react';
+import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import { ProductTabId } from '../../data/productNavigation';
+import { tapSelection } from '../../utils/haptics';
 import { useTheme } from '../../theme';
 import {
   AuriaIcon,
@@ -31,43 +32,81 @@ const FOOTER_ITEMS: FooterItem[] = [
 export const PRODUCT_NAV_BAR_HEIGHT = 68;
 export const PRODUCT_NAV_FLOATING_HEIGHT = PRODUCT_NAV_BAR_HEIGHT;
 
-/** Bottom tab bar icons are sized for touch, larger than the web sidebar tokens. */
-const NAV_ICON_SIZE_ACTIVE = 27;
-const NAV_ICON_SIZE_INACTIVE = 25;
+/** Single touch-friendly icon size; active emphasis comes from scale + pill. */
+const NAV_ICON_SIZE = 26;
 
 export function ProductNavBar({ activeTab, onTabChange }: ProductNavBarProps) {
   const { ds, theme } = useTheme();
-  const styles = useMemo(() => createStyles(theme), [theme]);
+  const styles = useMemo(() => createStyles(theme, ds), [theme, ds]);
 
   return (
     <View style={styles.bar}>
-      {FOOTER_ITEMS.map((item) => {
-        const active = item.id === activeTab;
-        return (
-          <Pressable
-            key={item.id}
-            onPress={() => onTabChange(item.id)}
-            style={({ pressed }) => [styles.item, pressed && styles.itemPressed]}
-            accessibilityRole="button"
-            accessibilityLabel={item.label}
-            accessibilityState={{ selected: active }}
-          >
-            <View style={styles.iconSlot}>
-              <AuriaIcon
-                name={item.icon}
-                size={active ? NAV_ICON_SIZE_ACTIVE : NAV_ICON_SIZE_INACTIVE}
-                color={active ? ds.gray900 : ds.gray500}
-                strokeWidth={active ? AURIA_ICON_STROKE_STRONG : AURIA_ICON_STROKE_NAV}
-              />
-            </View>
-          </Pressable>
-        );
-      })}
+      {FOOTER_ITEMS.map((item) => (
+        <NavItem
+          key={item.id}
+          item={item}
+          active={item.id === activeTab}
+          onPress={() => {
+            if (item.id !== activeTab) tapSelection();
+            onTabChange(item.id);
+          }}
+          ds={ds}
+          styles={styles}
+        />
+      ))}
     </View>
   );
 }
 
-function createStyles(theme: ReturnType<typeof useTheme>['theme']) {
+type NavItemProps = {
+  item: FooterItem;
+  active: boolean;
+  onPress: () => void;
+  ds: ReturnType<typeof useTheme>['ds'];
+  styles: ReturnType<typeof createStyles>;
+};
+
+function NavItem({ item, active, onPress, ds, styles }: NavItemProps) {
+  const progress = useRef(new Animated.Value(active ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.spring(progress, {
+      toValue: active ? 1 : 0,
+      friction: 7,
+      tension: 140,
+      useNativeDriver: true,
+    }).start();
+  }, [active, progress]);
+
+  const scale = progress.interpolate({ inputRange: [0, 1], outputRange: [1, 1.1] });
+
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.item, pressed && styles.itemPressed]}
+      accessibilityRole="button"
+      accessibilityLabel={item.label}
+      accessibilityState={{ selected: active }}
+    >
+      <View style={styles.iconSlot}>
+        <Animated.View style={[styles.activePill, { opacity: progress }]} />
+        <Animated.View style={{ transform: [{ scale }] }}>
+          <AuriaIcon
+            name={item.icon}
+            size={NAV_ICON_SIZE}
+            color={active ? ds.gray900 : ds.gray500}
+            strokeWidth={active ? AURIA_ICON_STROKE_STRONG : AURIA_ICON_STROKE_NAV}
+          />
+        </Animated.View>
+      </View>
+    </Pressable>
+  );
+}
+
+function createStyles(
+  theme: ReturnType<typeof useTheme>['theme'],
+  ds: ReturnType<typeof useTheme>['ds'],
+) {
   return StyleSheet.create({
     bar: {
       height: PRODUCT_NAV_BAR_HEIGHT,
@@ -85,14 +124,18 @@ function createStyles(theme: ReturnType<typeof useTheme>['theme']) {
     },
     itemPressed: {
       opacity: 0.55,
-      transform: [{ scale: 0.94 }],
     },
     iconSlot: {
       width: 56,
-      height: 50,
+      height: 40,
       alignItems: 'center',
       justifyContent: 'center',
-      borderRadius: theme.radius.pill,
+      borderRadius: 20,
+    },
+    activePill: {
+      ...StyleSheet.absoluteFillObject,
+      borderRadius: 20,
+      backgroundColor: ds.gray100,
     },
   });
 }

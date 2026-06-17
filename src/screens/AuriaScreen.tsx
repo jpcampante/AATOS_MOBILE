@@ -4,6 +4,7 @@ import {
   Easing,
   Keyboard,
   LayoutChangeEvent,
+  PanResponder,
   Platform,
   Pressable,
   StyleSheet,
@@ -63,6 +64,17 @@ export function AuriaScreen({ onSidebarOpenChange, onOpenSettings }: AuriaScreen
     getAuriaComposerOverlayHeight(),
   );
   const slideProgress = useRef(new Animated.Value(0)).current;
+  const sidebarOpenRef = useRef(sidebarOpen);
+  sidebarOpenRef.current = sidebarOpen;
+  const sidebarCloseSwipe = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_evt, g) =>
+        sidebarOpenRef.current && g.dx < -10 && Math.abs(g.dx) > Math.abs(g.dy) * 1.2,
+      onPanResponderRelease: (_evt, g) => {
+        if (g.dx < -40 || g.vx < -0.3) setSidebarOpen(false);
+      },
+    }),
+  ).current;
   const [panelKey, setPanelKey] = useState(0);
   const panelAnim = useRef(new Animated.Value(1)).current;
   const panelTransitionId = useRef(0);
@@ -278,6 +290,7 @@ export function AuriaScreen({ onSidebarOpenChange, onOpenSettings }: AuriaScreen
         aria-hidden={sidebarOpen}
         accessibilityElementsHidden={sidebarOpen}
         importantForAccessibility={sidebarOpen ? 'no-hide-descendants' : 'auto'}
+        {...sidebarCloseSwipe.panHandlers}
       >
         <View style={styles.pushSurface}>
           <View style={styles.headerBar}>

@@ -1,9 +1,11 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
+  Easing,
   Modal,
   PanResponder,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -20,14 +22,49 @@ import {
   composeDefaultFrom,
   composeFromAccounts,
   composeSignature,
+  FOLDER_LABELS,
   inboxMessages,
+  type MailFolder,
   type MailItem,
 } from '../data/integrationsMockData';
 import { auriaProfileInitials } from '../data/auriaMockData';
+import { tapLight, tapMedium, tapSuccess } from '../utils/haptics';
 import { auriaTypography, myceoCornerStyle, useTheme } from '../theme';
 
 const STAR_ACTIVE = '#F5A524';
 const FAB_SURFACE = '#DDE8FF';
+
+const HELP_DRAFT =
+  'Hi,\n\nThanks for the update — this looks great. I went through the details and everything aligns with what we discussed. I just have one quick question before we move forward, and I can share more context on a call if helpful.\n\nLet me know what works best for you.\n\nBest,';
+
+type ComposeDraft = { to: string; subject: string; body: string };
+
+/** Whether a message belongs in the given drawer folder. */
+function inFolder(m: MailItem, folder: string): boolean {
+  const f = m.folder ?? 'inbox';
+  switch (folder) {
+    case 'starred':
+      return m.starred && f !== 'trash' && f !== 'spam';
+    case 'all-mail':
+      return f !== 'trash' && f !== 'spam';
+    case 'all-inboxes':
+    case 'important':
+      return f === 'inbox';
+    case 'drafts':
+      return f === 'draft';
+    case 'snoozed':
+    case 'scheduled':
+    case 'outbox':
+      return false;
+    default:
+      return f === folder;
+  }
+}
+
+function nowTime(): string {
+  const d = new Date();
+  return `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
 
 type IntegrationsScreenProps = {
   onOpenSettings?: () => void;
@@ -37,30 +74,112 @@ export function IntegrationsScreen({ onOpenSettings }: IntegrationsScreenProps) 
   const { ds, theme } = useTheme();
   const styles = useMemo(() => createStyles(ds, theme), [ds, theme]);
 
-  const [messages, setMessages] = useState<MailItem[]>(inboxMessages);
+  const [messages, setMessages] = useState<MailItem[]>(() =>
+    inboxMessages.map((m) => ({ ...m, folder: m.folder ?? 'inbox' })),
+  );
+  const [activeFolder, setActiveFolder] = useState('inbox');
   const [query, setQuery] = useState('');
   const [composeOpen, setComposeOpen] = useState(false);
+  const [composeDraft, setComposeDraft] = useState<ComposeDraft | null>(null);
   const [openMail, setOpenMail] = useState<MailItem | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [snack, setSnack] = useState<{ text: string; undo?: () => void } | null>(null);
+  const snackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fabAnim = useRef(new Animated.Value(0)).current;
+
+  const showSnack = (text: string, undo?: () => void) => {
+    if (snackTimer.current) clearTimeout(snackTimer.current);
+    setSnack({ text, undo });
+    snackTimer.current = setTimeout(() => setSnack(null), 3600);
+  };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 900);
+  };
+
+  useEffect(() => {
+    Animated.spring(fabAnim, {
+      toValue: 1,
+      friction: 6,
+      tension: 120,
+      delay: 160,
+      useNativeDriver: true,
+    }).start();
+  }, [fabAnim]);
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return messages;
-    return messages.filter(
-      (m) =>
+    return messages.filter((m) => {
+      if (!inFolder(m, activeFolder)) return false;
+      if (!q) return true;
+      return (
         m.sender.toLowerCase().includes(q) ||
         m.subject.toLowerCase().includes(q) ||
-        m.preview.toLowerCase().includes(q),
-    );
-  }, [messages, query]);
+        m.preview.toLowerCase().includes(q)
+      );
+    });
+  }, [messages, query, activeFolder]);
 
   const markRead = (id: string) =>
     setMessages((items) => items.map((m) => (m.id === id ? { ...m, unread: false } : m)));
-
+  const setUnread = (id: string, value: boolean) =>
+    setMessages((items) => items.map((m) => (m.id === id ? { ...m, unread: value } : m)));
   const toggleStar = (id: string) =>
     setMessages((items) => items.map((m) => (m.id === id ? { ...m, starred: !m.starred } : m)));
 
-  const removeMail = (id: string) => setMessages((items) => items.filter((m) => m.id !== id));
+  const moveMail = (id: string, to: MailFolder, label: string) => {
+    const prev = messages.find((m) => m.id === id)?.folder ?? 'inbox';
+    setMessages((items) => items.map((m) => (m.id === id ? { ...m, folder: to } : m)));
+    showSnack(label, () =>
+      setMessages((items) => items.map((m) => (m.id === id ? { ...m, folder: prev } : m))),
+    );
+  };
+  const archiveMail = (id: string) => moveMail(id, 'archive', 'Archived');
+  const trashMail = (id: string) => moveMail(id, 'trash', 'Deleted');
+  const spamMail = (id: string) => moveMail(id, 'spam', 'Reported spam');
+
+  const openCompose = (draft: ComposeDraft | null = null) => {
+    setComposeDraft(draft);
+    setComposeOpen(true);
+  };
+  const sendMail = (draft: ComposeDraft) => {
+    const newMsg: MailItem = {
+      id: `sent-${Date.now()}`,
+      sender: 'me',
+      initial: auriaProfileInitials,
+      accent: '#2B7CD8',
+      subject: draft.subject.trim() || '(no subject)',
+      preview: draft.body.trim().replace(/\s+/g, ' ').slice(0, 90) || 'No content',
+      time: nowTime(),
+      unread: false,
+      starred: false,
+      category: 'team',
+      folder: 'sent',
+      senderEmail: composeDefaultFrom,
+      to: [{ address: draft.to.trim() || 'recipient' }],
+      dateLabel: 'Just now',
+      labels: ['Sent'],
+      bodyFull: draft.body,
+    };
+    setMessages((items) => [newMsg, ...items]);
+    showSnack('Message sent');
+  };
+  const replyTo = (mail: MailItem) => {
+    const subject = /^re:/i.test(mail.subject) ? mail.subject : `Re: ${mail.subject}`;
+    const quote = `\n\n———\nOn ${mail.dateLabel ?? mail.time}, ${mail.sender} wrote:\n${
+      mail.bodyFull ?? mail.preview
+    }`;
+    openCompose({ to: mail.senderEmail ?? '', subject, body: quote });
+  };
+  const forwardMail = (mail: MailItem) => {
+    const subject = /^fwd:/i.test(mail.subject) ? mail.subject : `Fwd: ${mail.subject}`;
+    const quote = `\n\n———\nForwarded message\nFrom: ${mail.sender} <${mail.senderEmail ?? ''}>\nSubject: ${
+      mail.subject
+    }\n\n${mail.bodyFull ?? mail.preview}`;
+    openCompose({ to: '', subject, body: quote });
+  };
 
   return (
     <View style={styles.root}>
@@ -69,6 +188,14 @@ export function IntegrationsScreen({ onOpenSettings }: IntegrationsScreenProps) 
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={ds.gray500}
+            colors={[ds.auriaBlue]}
+          />
+        }
       >
         <AnimatedScreenBlock index={0}>
           <View style={styles.searchBar}>
@@ -109,7 +236,7 @@ export function IntegrationsScreen({ onOpenSettings }: IntegrationsScreenProps) 
         </AnimatedScreenBlock>
 
         <AnimatedScreenBlock index={1}>
-          <Text style={styles.inboxLabel}>Inbox</Text>
+          <Text style={styles.inboxLabel}>{FOLDER_LABELS[activeFolder] ?? 'Inbox'}</Text>
         </AnimatedScreenBlock>
 
         <AnimatedScreenBlock index={2}>
@@ -124,8 +251,8 @@ export function IntegrationsScreen({ onOpenSettings }: IntegrationsScreenProps) 
                 <SwipeableRow
                   key={mail.id}
                   styles={styles}
-                  onArchive={() => removeMail(mail.id)}
-                  onDelete={() => removeMail(mail.id)}
+                  onArchive={() => archiveMail(mail.id)}
+                  onDelete={() => trashMail(mail.id)}
                 >
                   <View style={styles.row}>
                   <Pressable
@@ -163,20 +290,12 @@ export function IntegrationsScreen({ onOpenSettings }: IntegrationsScreenProps) 
                       </Text>
                     </View>
                   </Pressable>
-                  <Pressable
-                    onPress={() => toggleStar(mail.id)}
+                  <StarButton
+                    starred={mail.starred}
+                    onToggle={() => toggleStar(mail.id)}
+                    ds={ds}
                     style={styles.starButton}
-                    hitSlop={8}
-                    accessibilityLabel={mail.starred ? 'Unstar' : 'Star'}
-                    accessibilityRole="button"
-                  >
-                    <AuriaIcon
-                      name="star"
-                      size={AURIA_ICON_SIZE.md}
-                      color={mail.starred ? STAR_ACTIVE : ds.gray400}
-                      strokeWidth={mail.starred ? 2 : 1.6}
-                    />
-                  </Pressable>
+                  />
                   </View>
                 </SwipeableRow>
               ))
@@ -185,33 +304,116 @@ export function IntegrationsScreen({ onOpenSettings }: IntegrationsScreenProps) 
         </AnimatedScreenBlock>
       </ScrollView>
 
-      <Pressable
-        onPress={() => setComposeOpen(true)}
-        style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
-        accessibilityLabel="Compose"
-        accessibilityRole="button"
+      <Animated.View
+        style={[
+          styles.fabWrap,
+          {
+            opacity: fabAnim,
+            transform: [{ scale: fabAnim.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) }],
+          },
+        ]}
       >
-        <AuriaIcon name="squarePen" size={AURIA_ICON_SIZE.md} color={ds.gray900} strokeWidth={1.9} />
-        <Text style={styles.fabText}>Compose</Text>
-      </Pressable>
+        <Pressable
+          onPress={() => openCompose()}
+          style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
+          accessibilityLabel="Compose"
+          accessibilityRole="button"
+        >
+          <AuriaIcon name="squarePen" size={AURIA_ICON_SIZE.md} color={ds.gray900} strokeWidth={1.9} />
+          <Text style={styles.fabText}>Compose</Text>
+        </Pressable>
+      </Animated.View>
 
-      <ComposeModal visible={composeOpen} onClose={() => setComposeOpen(false)} ds={ds} theme={theme} />
+      {snack ? (
+        <View style={styles.snackbar} pointerEvents="box-none">
+          <View style={styles.snackInner}>
+            <Text style={styles.snackText} numberOfLines={1}>
+              {snack.text}
+            </Text>
+            {snack.undo ? (
+              <Pressable
+                onPress={() => {
+                  snack.undo?.();
+                  setSnack(null);
+                }}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel="Undo"
+              >
+                <Text style={styles.snackUndo}>Undo</Text>
+              </Pressable>
+            ) : null}
+          </View>
+        </View>
+      ) : null}
 
-      {openMail ? <EmailDetailView mail={openMail} onBack={() => setOpenMail(null)} /> : null}
+      <ComposeModal
+        visible={composeOpen}
+        initialDraft={composeDraft}
+        onSend={sendMail}
+        onClose={() => {
+          setComposeOpen(false);
+          setComposeDraft(null);
+        }}
+        ds={ds}
+        theme={theme}
+      />
 
-      <MailSidebar visible={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      {openMail ? (
+        <EmailDetailView
+          mail={openMail}
+          onBack={() => setOpenMail(null)}
+          onToggleStar={() => toggleStar(openMail.id)}
+          onArchive={() => {
+            archiveMail(openMail.id);
+            setOpenMail(null);
+          }}
+          onDelete={() => {
+            trashMail(openMail.id);
+            setOpenMail(null);
+          }}
+          onMarkUnread={() => {
+            setUnread(openMail.id, true);
+            setOpenMail(null);
+          }}
+          onSpam={() => {
+            spamMail(openMail.id);
+            setOpenMail(null);
+          }}
+          onReply={() => {
+            const m = openMail;
+            setOpenMail(null);
+            replyTo(m);
+          }}
+          onForward={() => {
+            const m = openMail;
+            setOpenMail(null);
+            forwardMail(m);
+          }}
+        />
+      ) : null}
+
+      <MailSidebar
+        visible={sidebarOpen}
+        activeFolder={activeFolder}
+        onSelectFolder={(id) => setActiveFolder(id)}
+        onCreateNew={() => openCompose()}
+        onClose={() => setSidebarOpen(false)}
+      />
     </View>
   );
 }
 
 type ComposeModalProps = {
   visible: boolean;
+  initialDraft: ComposeDraft | null;
+  onSend: (draft: ComposeDraft) => void;
   onClose: () => void;
   ds: ReturnType<typeof useTheme>['ds'];
   theme: ReturnType<typeof useTheme>['theme'];
 };
 
-function ComposeModal({ visible, onClose, ds, theme }: ComposeModalProps) {
+function ComposeModal({ visible, initialDraft, onSend, onClose, ds, theme }: ComposeModalProps) {
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => createComposeStyles(ds, theme, insets.top), [ds, theme, insets.top]);
   const [to, setTo] = useState('');
@@ -223,6 +425,28 @@ function ComposeModal({ visible, onClose, ds, theme }: ComposeModalProps) {
   const [from, setFrom] = useState(composeDefaultFrom);
   const [fromOpen, setFromOpen] = useState(false);
   const [fromAnchor, setFromAnchor] = useState(0);
+  const [snack, setSnack] = useState<string | null>(null);
+  const snackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const info = (text: string) => {
+    if (snackTimer.current) clearTimeout(snackTimer.current);
+    setSnack(text);
+    snackTimer.current = setTimeout(() => setSnack(null), 2400);
+  };
+
+  useEffect(() => {
+    if (visible) {
+      setTo(initialDraft?.to ?? '');
+      setSubject(initialDraft?.subject ?? '');
+      setBody(initialDraft?.body ?? '');
+      setCc('');
+      setBcc('');
+      setRecipientsExpanded(false);
+      setFrom(composeDefaultFrom);
+      setFromOpen(false);
+    }
+  }, [visible, initialDraft]);
+
+  const canSend = to.trim().length > 0 || subject.trim().length > 0 || body.trim().length > 0;
 
   const close = () => {
     setTo('');
@@ -234,6 +458,15 @@ function ComposeModal({ visible, onClose, ds, theme }: ComposeModalProps) {
     setFrom(composeDefaultFrom);
     setFromOpen(false);
     onClose();
+  };
+
+  const send = () => {
+    if (!canSend) {
+      close();
+      return;
+    }
+    onSend({ to, subject, body });
+    close();
   };
 
   return (
@@ -251,10 +484,34 @@ function ComposeModal({ visible, onClose, ds, theme }: ComposeModalProps) {
               <AuriaIcon name="close" size={AURIA_ICON_SIZE.md} color={ds.gray700} strokeWidth={2} />
             </Pressable>
             <View style={styles.flex} />
-            <HeaderAction icon="pencil" label="Formatting" color={ds.gray800} styles={styles} />
-            <HeaderAction icon="paperclip" label="Attach file" color={ds.gray800} styles={styles} />
-            <HeaderAction icon="send" label="Send" color={ds.gray400} styles={styles} onPress={close} />
-            <HeaderAction icon="moreCircle" label="More options" color={ds.gray800} styles={styles} />
+            <HeaderAction
+              icon="pencil"
+              label="Formatting"
+              color={ds.gray800}
+              styles={styles}
+              onPress={() => info('Formatting options')}
+            />
+            <HeaderAction
+              icon="paperclip"
+              label="Attach file"
+              color={ds.gray800}
+              styles={styles}
+              onPress={() => info('Attach a file')}
+            />
+            <HeaderAction
+              icon="send"
+              label="Send"
+              color={canSend ? ds.auriaBlue : ds.gray400}
+              styles={styles}
+              onPress={send}
+            />
+            <HeaderAction
+              icon="moreCircle"
+              label="More options"
+              color={ds.gray800}
+              styles={styles}
+              onPress={() => info('More options')}
+            />
           </View>
 
           <ScrollView
@@ -353,13 +610,18 @@ function ComposeModal({ visible, onClose, ds, theme }: ComposeModalProps) {
                   textAlignVertical="top"
                 />
                 {body.length === 0 ? (
-                  <View style={styles.helpRow} pointerEvents="none">
+                  <Pressable
+                    style={styles.helpRow}
+                    onPress={() => setBody(HELP_DRAFT)}
+                    accessibilityRole="button"
+                    accessibilityLabel="Help me write"
+                  >
                     <AuriaIcon name="pencil" size={16} color={ds.auriaBlue} strokeWidth={1.7} />
                     <Text style={styles.helpText}>Help me write</Text>
                     <View style={styles.swipeChip}>
                       <Text style={styles.swipeText}>Swipe →</Text>
                     </View>
-                  </View>
+                  </Pressable>
                 ) : null}
               </View>
               <Text style={styles.signature}>{composeSignature}</Text>
@@ -372,7 +634,7 @@ function ComposeModal({ visible, onClose, ds, theme }: ComposeModalProps) {
                   onPress={() => setFromOpen(false)}
                   accessibilityLabel="Close account picker"
                 />
-                <View style={[styles.dropdown, { top: fromAnchor }]}>
+                <Popover style={[styles.dropdown, { top: fromAnchor }]}>
                   {composeFromAccounts.map((account, index) => (
                     <Pressable
                       key={account.id}
@@ -392,10 +654,18 @@ function ComposeModal({ visible, onClose, ds, theme }: ComposeModalProps) {
                       </Text>
                     </Pressable>
                   ))}
-                </View>
+                </Popover>
               </>
             ) : null}
           </ScrollView>
+
+          {snack ? (
+            <View style={styles.composeSnack} pointerEvents="none">
+              <Text style={styles.composeSnackText} numberOfLines={1}>
+                {snack}
+              </Text>
+            </View>
+          ) : null}
         </View>
       </View>
     </Modal>
@@ -420,6 +690,72 @@ function HeaderAction({ icon, label, color, styles, onPress }: HeaderActionProps
       hitSlop={6}
     >
       <AuriaIcon name={icon} size={AURIA_ICON_SIZE.md} color={color} strokeWidth={1.8} />
+    </Pressable>
+  );
+}
+
+function Popover({ style, children }: { style?: object | object[]; children: React.ReactNode }) {
+  const a = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(a, {
+      toValue: 1,
+      duration: 150,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [a]);
+  return (
+    <Animated.View
+      style={[
+        style,
+        {
+          opacity: a,
+          transform: [
+            { scale: a.interpolate({ inputRange: [0, 1], outputRange: [0.97, 1] }) },
+            { translateY: a.interpolate({ inputRange: [0, 1], outputRange: [-5, 0] }) },
+          ],
+        },
+      ]}
+    >
+      {children}
+    </Animated.View>
+  );
+}
+
+function StarButton({
+  starred,
+  onToggle,
+  ds,
+  style,
+}: {
+  starred: boolean;
+  onToggle: () => void;
+  ds: ReturnType<typeof useTheme>['ds'];
+  style?: object;
+}) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const handle = () => {
+    tapLight();
+    onToggle();
+    scale.setValue(0.6);
+    Animated.spring(scale, { toValue: 1, friction: 4, tension: 140, useNativeDriver: true }).start();
+  };
+  return (
+    <Pressable
+      onPress={handle}
+      style={style}
+      hitSlop={8}
+      accessibilityRole="button"
+      accessibilityLabel={starred ? 'Unstar' : 'Star'}
+    >
+      <Animated.View style={{ transform: [{ scale }] }}>
+        <AuriaIcon
+          name="star"
+          size={AURIA_ICON_SIZE.md}
+          color={starred ? STAR_ACTIVE : ds.gray400}
+          strokeWidth={starred ? 2 : 1.6}
+        />
+      </Animated.View>
     </Pressable>
   );
 }
@@ -454,10 +790,12 @@ function SwipeableRow({ children, styles, onArchive, onDelete }: SwipeableRowPro
       onPanResponderRelease: (_evt, g) => {
         const threshold = 110;
         if (g.dx <= -threshold) {
+          tapMedium();
           Animated.timing(translateX, { toValue: -width, duration: 200, useNativeDriver: false }).start(
             () => onDelete(),
           );
         } else if (g.dx >= threshold) {
+          tapSuccess();
           Animated.timing(translateX, { toValue: width, duration: 200, useNativeDriver: false }).start(
             () => onArchive(),
           );
@@ -615,10 +953,8 @@ function createStyles(
     starButton: { padding: 6, alignSelf: 'center' },
     empty: { alignItems: 'center', gap: 10, paddingVertical: 60 },
     emptyText: { ...auriaTypography.body, color: ds.gray500, fontSize: 13 },
+    fabWrap: { position: 'absolute', right: 16, bottom: 16 },
     fab: {
-      position: 'absolute',
-      right: 16,
-      bottom: 16,
       flexDirection: 'row',
       alignItems: 'center',
       gap: 8,
@@ -635,6 +971,36 @@ function createStyles(
       fontSize: 14,
       fontWeight: theme.typography.fontWeight.semibold,
       letterSpacing: -0.1,
+    },
+    snackbar: {
+      position: 'absolute',
+      left: 16,
+      right: 16,
+      bottom: 80,
+      alignItems: 'flex-start',
+    },
+    snackInner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 18,
+      maxWidth: '100%',
+      paddingHorizontal: 16,
+      paddingVertical: 13,
+      backgroundColor: ds.gray900,
+      borderRadius: 10,
+      ...theme.shadow.card,
+    },
+    snackText: {
+      ...auriaTypography.body,
+      flexShrink: 1,
+      color: ds.white,
+      fontSize: 13.5,
+    },
+    snackUndo: {
+      ...auriaTypography.body,
+      color: '#9CC4FF',
+      fontSize: 13.5,
+      fontWeight: theme.typography.fontWeight.bold,
     },
   });
 }
@@ -787,6 +1153,21 @@ function createComposeStyles(
       color: ds.gray900,
       fontSize: 16,
       lineHeight: 22,
+    },
+    composeSnack: {
+      position: 'absolute',
+      left: 16,
+      bottom: 28,
+      maxWidth: '88%',
+      backgroundColor: ds.gray900,
+      borderRadius: 10,
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+    },
+    composeSnackText: {
+      ...auriaTypography.body,
+      color: ds.white,
+      fontSize: 13.5,
     },
   });
 }

@@ -3,7 +3,7 @@ import {
   Animated,
   Easing,
   Modal,
-  Platform,
+  PanResponder,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -46,10 +46,19 @@ const FOLDERS: FolderItem[] = [
 
 type MailSidebarProps = {
   visible: boolean;
+  activeFolder: string;
+  onSelectFolder: (id: string) => void;
   onClose: () => void;
+  onCreateNew?: () => void;
 };
 
-export function MailSidebar({ visible, onClose }: MailSidebarProps) {
+export function MailSidebar({
+  visible,
+  activeFolder,
+  onSelectFolder,
+  onClose,
+  onCreateNew,
+}: MailSidebarProps) {
   const { ds, theme } = useTheme();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -59,33 +68,66 @@ export function MailSidebar({ visible, onClose }: MailSidebarProps) {
     [ds, theme, insets, panelWidth],
   );
 
-  const [active, setActive] = useState('inbox');
   const [statusOpen, setStatusOpen] = useState(true);
-  const slide = useRef(new Animated.Value(0)).current;
+  const translateX = useRef(new Animated.Value(-panelWidth)).current;
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     if (visible) {
-      slide.setValue(0);
-      Animated.timing(slide, {
-        toValue: 1,
-        duration: 240,
+      translateX.setValue(-panelWidth);
+      Animated.timing(translateX, {
+        toValue: 0,
+        duration: 260,
         easing: Easing.out(Easing.cubic),
-        useNativeDriver: Platform.OS !== 'web',
+        useNativeDriver: false,
       }).start();
     }
-  }, [visible, slide]);
+  }, [visible, translateX, panelWidth]);
 
-  const translateX = slide.interpolate({ inputRange: [0, 1], outputRange: [-panelWidth, 0] });
-  const backdropOpacity = slide.interpolate({ inputRange: [0, 1], outputRange: [0, 1] });
+  const requestClose = useRef(() => {
+    Animated.timing(translateX, {
+      toValue: -panelWidth,
+      duration: 200,
+      easing: Easing.in(Easing.cubic),
+      useNativeDriver: false,
+    }).start(() => onCloseRef.current());
+  }).current;
+
+  const pan = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_evt, g) =>
+        g.dx < -8 && Math.abs(g.dx) > Math.abs(g.dy) * 1.2,
+      onPanResponderMove: (_evt, g) => {
+        translateX.setValue(Math.max(-panelWidth, Math.min(0, g.dx)));
+      },
+      onPanResponderRelease: (_evt, g) => {
+        if (g.dx < -panelWidth * 0.33 || g.vx < -0.5) {
+          requestClose();
+        } else {
+          Animated.spring(translateX, { toValue: 0, bounciness: 0, useNativeDriver: false }).start();
+        }
+      },
+      onPanResponderTerminate: () => {
+        Animated.spring(translateX, { toValue: 0, bounciness: 0, useNativeDriver: false }).start();
+      },
+    }),
+  ).current;
+
+  const backdropOpacity = translateX.interpolate({
+    inputRange: [-panelWidth, 0],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  });
 
   return (
-    <Modal visible={visible} transparent animationType="none" statusBarTranslucent onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="none" statusBarTranslucent onRequestClose={requestClose}>
       <View style={styles.root}>
         <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]}>
-          <Pressable style={styles.flex} onPress={onClose} accessibilityLabel="Close menu" />
+          <Pressable style={styles.flex} onPress={requestClose} accessibilityLabel="Close menu" />
         </Animated.View>
 
-        <Animated.View style={[styles.panel, { transform: [{ translateX }] }]}>
+        <Animated.View style={[styles.panel, { transform: [{ translateX }] }]} {...pan.panHandlers}>
           <View style={styles.brandRow}>
             <View style={styles.brandMark}>
               <AuriaIcon name="mail" size={AURIA_ICON_SIZE.md} color={INBOX_RED} strokeWidth={1.9} />
@@ -118,15 +160,16 @@ export function MailSidebar({ visible, onClose }: MailSidebarProps) {
             ) : null}
 
             {FOLDERS.map((item, index) => {
-              const isActive = item.id === active;
+              const isActive = item.id === activeFolder;
               const showDivider = index > 0 && item.group !== FOLDERS[index - 1].group;
               return (
                 <View key={item.id}>
                   {showDivider ? <View style={styles.divider} /> : null}
                   <Pressable
                     onPress={() => {
-                      setActive(item.id);
-                      onClose();
+                      requestClose();
+                      if (item.id === 'create') onCreateNew?.();
+                      else if (item.id !== 'subscriptions') onSelectFolder(item.id);
                     }}
                     style={({ pressed }) => [
                       styles.row,

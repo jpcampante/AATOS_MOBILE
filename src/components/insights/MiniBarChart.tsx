@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useRef } from 'react';
+import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import { myceoCornerStyle, useTheme } from '../../theme';
 
 type MiniBarChartProps = {
@@ -14,22 +14,39 @@ export function MiniBarChart({ data, barColor, maxHeight = 96 }: MiniBarChartPro
   const fill = barColor ?? insights.accent;
   const maxValue = Math.max(...data.map((point) => point.value), 1);
 
+  const grows = useRef(data.map(() => new Animated.Value(0))).current;
+  useEffect(() => {
+    const animations = grows.map((value) =>
+      Animated.timing(value, {
+        toValue: 1,
+        duration: 480,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: false,
+      }),
+    );
+    Animated.stagger(45, animations).start();
+  }, [grows]);
+
   return (
     <View style={styles.wrap}>
       <View style={[styles.chartRow, { height: maxHeight }]}>
-        {data.map((point) => (
-          <View key={point.month} style={styles.barColumn}>
-            <View
-              style={[
-                styles.bar,
-                {
-                  height: Math.max(8, (point.value / maxValue) * maxHeight),
-                  backgroundColor: fill,
-                },
-              ]}
-            />
-          </View>
-        ))}
+        {data.map((point, index) => {
+          const target = Math.max(8, (point.value / maxValue) * maxHeight);
+          const grow = grows[index] ?? grows[grows.length - 1];
+          return (
+            <View key={point.month} style={styles.barColumn}>
+              <Animated.View
+                style={[
+                  styles.bar,
+                  {
+                    backgroundColor: fill,
+                    height: grow.interpolate({ inputRange: [0, 1], outputRange: [0, target] }),
+                  },
+                ]}
+              />
+            </View>
+          );
+        })}
       </View>
       <View style={styles.labelsRow}>
         {data.map((point, index) => (

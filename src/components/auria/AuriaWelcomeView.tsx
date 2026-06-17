@@ -1,17 +1,18 @@
 import { useMemo, useRef, useState } from 'react';
-import { Animated, Easing, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { auriaWelcomeName, auriaWelcomeSuggestionPool } from '../../data/auriaMockData';
 import { AURIA_CONTENT_HORIZONTAL_INSET } from './auriaLayout';
 import { AnimatedScreenBlock } from '../navigation/AnimatedScreenBlock';
 import {
+  SUPPORTS_NATIVE_DRIVER,
   auriaTypography,
+  motionDuration,
+  motionEasing,
   myceoCornerStyle,
   useTheme,
 } from '../../theme';
 import { AuriaBloomMark } from './AuriaBloomMark';
 import { AuriaRefreshButton } from './AuriaRefreshButton';
-
-const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
 type AuriaWelcomeViewProps = {
   contentMaxWidth?: number;
@@ -60,15 +61,15 @@ export function AuriaWelcomeView({
     Animated.parallel([
       Animated.timing(listOpacity, {
         toValue: 0,
-        duration: 160,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: USE_NATIVE_DRIVER,
+        duration: motionDuration.micro,
+        easing: motionEasing.decelerate,
+        useNativeDriver: SUPPORTS_NATIVE_DRIVER,
       }),
       Animated.timing(listShift, {
         toValue: 8,
-        duration: 160,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: USE_NATIVE_DRIVER,
+        duration: motionDuration.micro,
+        easing: motionEasing.decelerate,
+        useNativeDriver: SUPPORTS_NATIVE_DRIVER,
       }),
     ]).start(({ finished }) => {
       if (!finished || refreshTransitionId.current !== transitionId) {
@@ -82,15 +83,15 @@ export function AuriaWelcomeView({
       Animated.parallel([
         Animated.timing(listOpacity, {
           toValue: 1,
-          duration: 240,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: USE_NATIVE_DRIVER,
+          duration: motionDuration.swift,
+          easing: motionEasing.standard,
+          useNativeDriver: SUPPORTS_NATIVE_DRIVER,
         }),
         Animated.timing(listShift, {
           toValue: 0,
-          duration: 240,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: USE_NATIVE_DRIVER,
+          duration: motionDuration.swift,
+          easing: motionEasing.standard,
+          useNativeDriver: SUPPORTS_NATIVE_DRIVER,
         }),
       ]).start();
     });

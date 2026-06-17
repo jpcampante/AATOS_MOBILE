@@ -43,10 +43,10 @@ export default function MainApp({ activeTab, onTabChange }: MainAppProps) {
   const renderProductScreen = useCallback(
     (tab: ProductTabId) => (
       <Suspense fallback={<TabFallback />}>
-        {renderTab(tab, handleAuriaSidebarOpenChange, openSettingsModal)}
+        {renderTab(tab, handleAuriaSidebarOpenChange, openSettingsModal, handleTabChange)}
       </Suspense>
     ),
-    [handleAuriaSidebarOpenChange, openSettingsModal],
+    [handleAuriaSidebarOpenChange, openSettingsModal, handleTabChange],
   );
 
   return (
@@ -69,10 +69,11 @@ function renderTab(
   tab: ProductTabId,
   onAuriaSidebarOpenChange: (open: boolean) => void,
   onOpenSettings: () => void,
+  onNavigate: (tab: ProductTabId) => void,
 ) {
   switch (tab) {
     case 'insights':
-      return <HomeScreen />;
+      return <HomeScreen onNavigate={onNavigate} />;
     case 'auria':
       return (
         <AuriaScreen

@@ -11,7 +11,13 @@ import {
 import { AuriaIcon, AURIA_ICON_SIZE } from '../icons';
 import { type MailItem } from '../../data/integrationsMockData';
 import { tapLight, tapMedium, tapSuccess } from '../../utils/haptics';
-import { auriaTypography, useTheme } from '../../theme';
+import {
+  SUPPORTS_NATIVE_DRIVER,
+  auriaTypography,
+  motionDuration,
+  motionSpring,
+  useTheme,
+} from '../../theme';
 
 const STAR_ACTIVE = '#F5A524';
 
@@ -43,16 +49,16 @@ export function MailRow({ mail, onOpen, onToggleStar, onArchive, onDelete }: Mai
         const threshold = 110;
         if (g.dx <= -threshold) {
           tapMedium();
-          Animated.timing(translateX, { toValue: -width, duration: 200, useNativeDriver: false }).start(() => onDelete());
+          Animated.timing(translateX, { toValue: -width, duration: motionDuration.fast, useNativeDriver: false }).start(() => onDelete());
         } else if (g.dx >= threshold) {
           tapSuccess();
-          Animated.timing(translateX, { toValue: width, duration: 200, useNativeDriver: false }).start(() => onArchive());
+          Animated.timing(translateX, { toValue: width, duration: motionDuration.fast, useNativeDriver: false }).start(() => onArchive());
         } else {
-          Animated.spring(translateX, { toValue: 0, bounciness: 0, useNativeDriver: false }).start();
+          Animated.spring(translateX, { toValue: 0, ...motionSpring.settle, useNativeDriver: false }).start();
         }
       },
       onPanResponderTerminate: () => {
-        Animated.spring(translateX, { toValue: 0, bounciness: 0, useNativeDriver: false }).start();
+        Animated.spring(translateX, { toValue: 0, ...motionSpring.settle, useNativeDriver: false }).start();
       },
     }),
   ).current;
@@ -61,7 +67,7 @@ export function MailRow({ mail, onOpen, onToggleStar, onArchive, onDelete }: Mai
     tapLight();
     onToggleStar();
     starScale.setValue(0.6);
-    Animated.spring(starScale, { toValue: 1, friction: 4, tension: 140, useNativeDriver: true }).start();
+    Animated.spring(starScale, { toValue: 1, ...motionSpring.popSharp, useNativeDriver: SUPPORTS_NATIVE_DRIVER }).start();
   };
 
   return (

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
-import { myceoCornerStyle, useTheme } from '../../theme';
+import { Animated, StyleSheet, Text, View } from 'react-native';
+import { motionDuration, motionEasing, myceoCornerStyle, useTheme } from '../../theme';
 
 type MiniBarChartProps = {
   data: ReadonlyArray<{ month: string; value: number }>;
@@ -19,8 +19,8 @@ export function MiniBarChart({ data, barColor, maxHeight = 96 }: MiniBarChartPro
     const animations = grows.map((value) =>
       Animated.timing(value, {
         toValue: 1,
-        duration: 480,
-        easing: Easing.out(Easing.cubic),
+        duration: motionDuration.chart,
+        easing: motionEasing.standard,
         useNativeDriver: false,
       }),
     );

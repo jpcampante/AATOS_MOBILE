@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AnimatedScreenBlock } from '../components/navigation/AnimatedScreenBlock';
+import { ActionFab } from '../components/ui/ActionFab';
 import { NewTaskModal } from '../components/tasks/NewTaskModal';
 import { TaskCard } from '../components/tasks/TaskCard';
 import { TaskReviewModal } from '../components/tasks/TaskReviewModal';
 import { TasksSection } from '../components/tasks/TasksSection';
 import { TasksSummaryCards, type TaskQuickAction } from '../components/tasks/TasksSummaryCards';
+import { tasksCardCorner } from '../components/tasks/tasksCorners';
 import { AuriaIcon, AURIA_ICON_SIZE } from '../components/icons';
 import {
   aiSuggestionTasks,
@@ -18,8 +20,9 @@ import {
   waitingTasks,
   type TaskItem,
 } from '../data/tasksMockData';
-import { auriaProfileInitials } from '../data/auriaMockData';
 import { auriaTypography, myceoCornerStyle, useTheme } from '../theme';
+
+const MOCK_AVATAR = require('../../assets/mock-avatar.jpg');
 
 type FilterId = (typeof taskFilters)[number]['id'];
 
@@ -57,28 +60,19 @@ export function TasksScreen() {
   };
 
   return (
-    <>
+    <View style={styles.root}>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <AnimatedScreenBlock index={0}>
           <View style={styles.topRow}>
             <View style={styles.greetingBlock}>
               <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{auriaProfileInitials}</Text>
+                <Image source={MOCK_AVATAR} style={styles.avatarImage} resizeMode="cover" accessibilityLabel="Marta" />
               </View>
               <View>
                 <Text style={styles.greeting}>Good morning,</Text>
                 <Text style={styles.greetingName}>Marta</Text>
               </View>
             </View>
-            <Pressable
-              onPress={() => setNewTaskOpen(true)}
-              style={({ pressed }) => [styles.newTaskButton, pressed && styles.newTaskButtonPressed]}
-              accessibilityLabel="New task"
-              accessibilityRole="button"
-            >
-              <AuriaIcon name="plus" size={AURIA_ICON_SIZE.sm} color={ds.white} strokeWidth={2.4} />
-              <Text style={styles.newTaskText}>New task</Text>
-            </Pressable>
           </View>
         </AnimatedScreenBlock>
 
@@ -90,7 +84,7 @@ export function TasksScreen() {
           <View style={styles.aiCard}>
             <View style={styles.aiHeader}>
               <View style={styles.aiIcon}>
-                <AuriaIcon name="sparkles" size={AURIA_ICON_SIZE.sm} color="#0F1216" strokeWidth={1.9} />
+                <AuriaIcon name="sparkles" size={AURIA_ICON_SIZE.sm} color={ds.auriaBlue} strokeWidth={1.9} />
               </View>
               <View style={styles.aiHeaderText}>
                 <Text style={styles.aiKicker}>Auria</Text>
@@ -104,7 +98,7 @@ export function TasksScreen() {
               accessibilityRole="button"
             >
               <Text style={styles.aiActionText}>{tasksAiOverview.action}</Text>
-              <AuriaIcon name="chevronRight" size={AURIA_ICON_SIZE.xs} color="#0F1216" strokeWidth={2.2} />
+              <AuriaIcon name="chevronRight" size={AURIA_ICON_SIZE.xs} color={ds.auriaBlue} strokeWidth={2.2} />
             </Pressable>
           </View>
         </AnimatedScreenBlock>
@@ -179,6 +173,7 @@ export function TasksScreen() {
           </TasksSection>
         ) : null}
       </ScrollView>
+      <ActionFab icon="plus" label="New task" onPress={() => setNewTaskOpen(true)} />
       <NewTaskModal visible={newTaskOpen} workspace={workspace} onClose={() => setNewTaskOpen(false)} onCreate={(task) => setLocalTasks((items) => [task, ...items])} />
       <TaskReviewModal
         visible={reviewOpen}
@@ -186,14 +181,15 @@ export function TasksScreen() {
         onClose={() => setReviewOpen(false)}
         onCreateTask={(task) => setLocalTasks((items) => [task, ...items])}
       />
-    </>
+    </View>
   );
 }
 
 function createStyles(ds: ReturnType<typeof useTheme>['ds'], theme: ReturnType<typeof useTheme>['theme']) {
   return StyleSheet.create({
+    root: { flex: 1, backgroundColor: ds.pageSurface },
     scroll: { flex: 1, backgroundColor: ds.pageSurface },
-    scrollContent: { padding: 18, paddingBottom: 40, gap: 20 },
+    scrollContent: { padding: 18, paddingBottom: 96, gap: 20 },
     topRow: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -211,51 +207,29 @@ function createStyles(ds: ReturnType<typeof useTheme>['ds'], theme: ReturnType<t
       backgroundColor: ds.auriaBlue,
       alignItems: 'center',
       justifyContent: 'center',
+      overflow: 'hidden',
       ...myceoCornerStyle('iconLg'),
     },
-    avatarText: {
-      ...auriaTypography.label,
-      color: ds.white,
-      fontSize: 13,
-      fontWeight: theme.typography.fontWeight.bold,
-      letterSpacing: -0.3,
+    avatarImage: {
+      width: '100%',
+      height: '100%',
     },
     greeting: {
       ...auriaTypography.body,
-      color: 'rgba(15,18,22,0.55)',
+      color: ds.gray500,
       fontSize: 12,
       fontWeight: theme.typography.fontWeight.medium,
     },
     greetingName: {
       ...auriaTypography.title,
-      color: '#0F1216',
+      color: ds.gray900,
       fontSize: 16,
       fontWeight: theme.typography.fontWeight.bold,
       letterSpacing: -0.2,
     },
-    newTaskButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-      paddingHorizontal: 14,
-      paddingVertical: 11,
-      backgroundColor: '#0F1216',
-      ...myceoCornerStyle('chip'),
-    },
-    newTaskButtonPressed: {
-      opacity: 0.85,
-      transform: [{ scale: 0.97 }],
-    },
-    newTaskText: {
-      ...auriaTypography.body,
-      color: ds.white,
-      fontSize: 13,
-      fontWeight: theme.typography.fontWeight.semibold,
-      letterSpacing: -0.1,
-    },
     pageTitle: {
       ...auriaTypography.title,
-      color: '#0F1216',
+      color: ds.gray900,
       fontSize: 30,
       fontWeight: theme.typography.fontWeight.bold,
       letterSpacing: -0.6,
@@ -265,7 +239,7 @@ function createStyles(ds: ReturnType<typeof useTheme>['ds'], theme: ReturnType<t
       gap: 12,
       padding: 18,
       backgroundColor: '#DDE8FF',
-      ...myceoCornerStyle('card'),
+      ...tasksCardCorner(),
     },
     aiHeader: {
       flexDirection: 'row',
@@ -275,7 +249,6 @@ function createStyles(ds: ReturnType<typeof useTheme>['ds'], theme: ReturnType<t
     aiIcon: {
       width: 36,
       height: 36,
-      borderRadius: 18,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: 'rgba(255,255,255,0.85)',
@@ -287,7 +260,7 @@ function createStyles(ds: ReturnType<typeof useTheme>['ds'], theme: ReturnType<t
     },
     aiKicker: {
       ...auriaTypography.label,
-      color: 'rgba(15,18,22,0.55)',
+      color: ds.gray600,
       fontSize: 10,
       fontWeight: theme.typography.fontWeight.bold,
       letterSpacing: 0.6,
@@ -295,14 +268,14 @@ function createStyles(ds: ReturnType<typeof useTheme>['ds'], theme: ReturnType<t
     },
     aiTitle: {
       ...auriaTypography.title,
-      color: '#0F1216',
+      color: ds.gray900,
       fontSize: 16,
       fontWeight: theme.typography.fontWeight.bold,
       letterSpacing: -0.2,
     },
     aiSummary: {
       ...auriaTypography.body,
-      color: 'rgba(15,18,22,0.78)',
+      color: ds.gray700,
       fontSize: 13.5,
       lineHeight: 19,
     },
@@ -313,7 +286,7 @@ function createStyles(ds: ReturnType<typeof useTheme>['ds'], theme: ReturnType<t
       gap: 6,
       paddingHorizontal: 14,
       paddingVertical: 10,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: ds.white,
       ...myceoCornerStyle('chip'),
     },
     aiActionPressed: {
@@ -321,7 +294,7 @@ function createStyles(ds: ReturnType<typeof useTheme>['ds'], theme: ReturnType<t
     },
     aiActionText: {
       ...auriaTypography.body,
-      color: '#0F1216',
+      color: ds.auriaBlue,
       fontSize: 12.5,
       fontWeight: theme.typography.fontWeight.semibold,
       letterSpacing: -0.1,
@@ -334,14 +307,14 @@ function createStyles(ds: ReturnType<typeof useTheme>['ds'], theme: ReturnType<t
     },
     sectionLabel: {
       ...auriaTypography.title,
-      color: '#0F1216',
+      color: ds.gray900,
       fontSize: 17,
       fontWeight: theme.typography.fontWeight.bold,
       letterSpacing: -0.2,
     },
     sectionHint: {
       ...auriaTypography.body,
-      color: 'rgba(15,18,22,0.55)',
+      color: ds.gray500,
       fontSize: 12,
     },
     workspaceRow: { gap: 8, paddingRight: 18 },
@@ -352,61 +325,61 @@ function createStyles(ds: ReturnType<typeof useTheme>['ds'], theme: ReturnType<t
       paddingLeft: 14,
       paddingRight: 8,
       paddingVertical: 8,
-      backgroundColor: '#F3F4F6',
+      backgroundColor: ds.gray100,
       ...myceoCornerStyle('chip'),
     },
     workspaceChipActive: {
-      backgroundColor: '#0F1216',
+      backgroundColor: ds.auriaBlue,
     },
     workspaceText: {
       ...auriaTypography.body,
-      color: 'rgba(15,18,22,0.75)',
+      color: ds.gray700,
       fontSize: 13,
       fontWeight: theme.typography.fontWeight.medium,
     },
     workspaceTextActive: {
-      color: '#FFFFFF',
+      color: ds.white,
       fontWeight: theme.typography.fontWeight.semibold,
     },
     workspaceBadge: {
       minWidth: 24,
       paddingHorizontal: 7,
       paddingVertical: 3,
-      backgroundColor: 'rgba(15,18,22,0.08)',
+      backgroundColor: ds.gray200,
       alignItems: 'center',
       justifyContent: 'center',
       ...myceoCornerStyle('chip'),
     },
     workspaceBadgeActive: {
-      backgroundColor: '#B7F34A',
+      backgroundColor: 'rgba(255,255,255,0.22)',
     },
     workspaceCount: {
       ...auriaTypography.label,
-      color: 'rgba(15,18,22,0.7)',
+      color: ds.gray700,
       fontSize: 11,
       fontWeight: theme.typography.fontWeight.bold,
     },
     workspaceCountActive: {
-      color: '#1F2A1A',
+      color: ds.white,
     },
     filterRow: { gap: 8, paddingRight: 18 },
     filterChip: {
       paddingHorizontal: 14,
       paddingVertical: 8,
-      backgroundColor: '#F3F4F6',
+      backgroundColor: ds.gray100,
       ...myceoCornerStyle('chip'),
     },
     filterChipActive: {
-      backgroundColor: '#B7F34A',
+      backgroundColor: ds.auriaBlue,
     },
     filterText: {
       ...auriaTypography.body,
-      color: 'rgba(15,18,22,0.7)',
+      color: ds.gray700,
       fontSize: 13,
       fontWeight: theme.typography.fontWeight.medium,
     },
     filterTextActive: {
-      color: '#1F2A1A',
+      color: ds.white,
       fontWeight: theme.typography.fontWeight.bold,
     },
   });

@@ -8,10 +8,16 @@ import {
   InsightsInsightCard,
   InsightsKpiGrid,
 } from '../components/insights/InsightsWidgets';
+import { TodaySection } from '../components/today/TodaySection';
 import { companyDashboard } from '../data/insightsMockData';
+import type { ProductTabId } from '../data/productNavigation';
 import { myceoCornerStyle, useTheme } from '../theme';
 
-export function HomeScreen() {
+type HomeScreenProps = {
+  onNavigate: (tab: ProductTabId) => void;
+};
+
+export function HomeScreen({ onNavigate }: HomeScreenProps) {
   const { insights, theme } = useTheme();
   const styles = useMemo(() => createStyles(insights, theme), [insights, theme]);
 
@@ -41,22 +47,26 @@ export function HomeScreen() {
       </AnimatedScreenBlock>
 
       <AnimatedScreenBlock index={2}>
-        <InsightsHero />
+        <TodaySection onNavigate={onNavigate} />
       </AnimatedScreenBlock>
 
       <AnimatedScreenBlock index={3}>
-        <InsightsKpiGrid />
+        <InsightsHero />
       </AnimatedScreenBlock>
 
       <AnimatedScreenBlock index={4}>
-        <InsightsInsightCard />
+        <InsightsKpiGrid />
       </AnimatedScreenBlock>
 
       <AnimatedScreenBlock index={5}>
-        <InsightsActivityCard />
+        <InsightsInsightCard />
       </AnimatedScreenBlock>
 
       <AnimatedScreenBlock index={6}>
+        <InsightsActivityCard />
+      </AnimatedScreenBlock>
+
+      <AnimatedScreenBlock index={7}>
         <InsightsComparisonCard />
       </AnimatedScreenBlock>
     </ScrollView>

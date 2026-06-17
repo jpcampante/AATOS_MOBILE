@@ -1,5 +1,6 @@
 import { ReactNode, useEffect, useRef } from 'react';
-import { Animated, Easing, StyleProp, ViewStyle } from 'react-native';
+import { Animated, StyleProp, ViewStyle } from 'react-native';
+import { SUPPORTS_NATIVE_DRIVER, motionDuration, motionEasing } from '../../theme';
 
 type PopoverProps = {
   style?: StyleProp<ViewStyle>;
@@ -16,9 +17,9 @@ export function Popover({ style, children }: PopoverProps) {
   useEffect(() => {
     Animated.timing(progress, {
       toValue: 1,
-      duration: 150,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
+      duration: motionDuration.micro,
+      easing: motionEasing.standard,
+      useNativeDriver: SUPPORTS_NATIVE_DRIVER,
     }).start();
   }, [progress]);
 

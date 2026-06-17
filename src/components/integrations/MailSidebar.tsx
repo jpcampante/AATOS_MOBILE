@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
-  Easing,
   Modal,
   PanResponder,
   Pressable,
@@ -16,7 +15,13 @@ import { AuriaIcon, AuriaIconName, AURIA_ICON_SIZE } from '../icons';
 import { CalendarView } from './CalendarView';
 import { ContactsView } from './ContactsView';
 import { auriaProfileInitials } from '../../data/auriaMockData';
-import { auriaTypography, useTheme } from '../../theme';
+import {
+  auriaTypography,
+  motionDuration,
+  motionEasing,
+  motionSpring,
+  useTheme,
+} from '../../theme';
 
 const INBOX_RED = '#D93025';
 const INBOX_TINT = '#FCE8E6';
@@ -95,8 +100,8 @@ export function MailSidebar({
       translateX.setValue(-drawerWidth);
       Animated.timing(translateX, {
         toValue: 0,
-        duration: 260,
-        easing: Easing.out(Easing.cubic),
+        duration: motionDuration.base,
+        easing: motionEasing.standard,
         useNativeDriver: false,
       }).start();
     }
@@ -105,8 +110,8 @@ export function MailSidebar({
   const requestClose = useRef(() => {
     Animated.timing(translateX, {
       toValue: -drawerWidth,
-      duration: 200,
-      easing: Easing.in(Easing.cubic),
+      duration: motionDuration.fast,
+      easing: motionEasing.accelerate,
       useNativeDriver: false,
     }).start(() => onCloseRef.current());
   }).current;
@@ -122,11 +127,11 @@ export function MailSidebar({
         if (g.dx < -drawerWidth * 0.33 || g.vx < -0.5) {
           requestClose();
         } else {
-          Animated.spring(translateX, { toValue: 0, bounciness: 0, useNativeDriver: false }).start();
+          Animated.spring(translateX, { toValue: 0, ...motionSpring.settle, useNativeDriver: false }).start();
         }
       },
       onPanResponderTerminate: () => {
-        Animated.spring(translateX, { toValue: 0, bounciness: 0, useNativeDriver: false }).start();
+        Animated.spring(translateX, { toValue: 0, ...motionSpring.settle, useNativeDriver: false }).start();
       },
     }),
   ).current;

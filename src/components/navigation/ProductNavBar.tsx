@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import { ProductTabId } from '../../data/productNavigation';
 import { tapSelection } from '../../utils/haptics';
-import { useTheme } from '../../theme';
+import { SUPPORTS_NATIVE_DRIVER, motionSpring, useTheme } from '../../theme';
 import {
   AuriaIcon,
   AuriaIconName,
@@ -72,9 +72,8 @@ function NavItem({ item, active, onPress, ds, styles }: NavItemProps) {
   useEffect(() => {
     Animated.spring(progress, {
       toValue: active ? 1 : 0,
-      friction: 7,
-      tension: 140,
-      useNativeDriver: true,
+      ...motionSpring.pop,
+      useNativeDriver: SUPPORTS_NATIVE_DRIVER,
     }).start();
   }, [active, progress]);
 

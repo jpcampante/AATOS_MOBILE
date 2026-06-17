@@ -1,8 +1,6 @@
 import { ReactNode, useEffect, useRef } from 'react';
-import { Animated, Easing, StyleProp, StyleSheet, ViewStyle } from 'react-native';
-
-/** Strong ease-out (Emil's UI curve) — instant feedback, settles gently. */
-const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
+import { Animated, StyleProp, StyleSheet, ViewStyle } from 'react-native';
+import { SUPPORTS_NATIVE_DRIVER, motionDuration, motionEasing } from '../../theme';
 
 type ScreenTransitionProps = {
   children: ReactNode;
@@ -22,9 +20,9 @@ export function ScreenTransition({ children, style, distance = 14 }: ScreenTrans
   useEffect(() => {
     Animated.timing(progress, {
       toValue: 1,
-      duration: 460,
-      easing: EASE_OUT,
-      useNativeDriver: true,
+      duration: motionDuration.reveal,
+      easing: motionEasing.emphasized,
+      useNativeDriver: SUPPORTS_NATIVE_DRIVER,
     }).start();
   }, [progress]);
 

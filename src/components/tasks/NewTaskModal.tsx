@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { TaskItem, TaskPriority } from '../../data/tasksMockData';
 import { TASKS_USER, taskWorkspaces } from '../../data/tasksMockData';
 import { auriaTypography, myceoCornerStyle, useTheme } from '../../theme';
-import { MYCEO_CORNER_RADIUS } from '../../theme/myceoCornerRadius';
+import { tasksSheetCorner } from './tasksCorners';
 
 type NewTaskModalProps = {
   visible: boolean;
@@ -76,7 +76,7 @@ export function NewTaskModal({ visible, workspace, onClose, onCreate }: NewTaskM
                 value={title}
                 onChangeText={setTitle}
                 placeholder="Enter task title"
-                placeholderTextColor="rgba(15,18,22,0.35)"
+                placeholderTextColor={ds.gray400}
                 style={styles.input}
                 autoFocus
               />
@@ -88,7 +88,7 @@ export function NewTaskModal({ visible, workspace, onClose, onCreate }: NewTaskM
                 value={description}
                 onChangeText={setDescription}
                 placeholder="Add context for this task"
-                placeholderTextColor="rgba(15,18,22,0.35)"
+                placeholderTextColor={ds.gray400}
                 multiline
                 style={[styles.input, styles.description]}
               />
@@ -143,15 +143,14 @@ function createStyles(
 ) {
   return StyleSheet.create({
     overlay: { flex: 1, justifyContent: 'flex-end' },
-    backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(15,18,22,0.32)' },
+    backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: ds.offBlackOverlay },
     sheet: {
       maxHeight: '92%',
       paddingTop: 16,
       paddingHorizontal: 18,
       paddingBottom: Math.max(safeBottom + 16, 24),
       backgroundColor: ds.white,
-      borderTopLeftRadius: MYCEO_CORNER_RADIUS.modal,
-      borderTopRightRadius: MYCEO_CORNER_RADIUS.modal,
+      ...tasksSheetCorner(),
     },
     header: {
       flexDirection: 'row',
@@ -161,14 +160,14 @@ function createStyles(
     },
     title: {
       ...auriaTypography.title,
-      color: '#0F1216',
+      color: ds.gray900,
       fontSize: 17,
       fontWeight: theme.typography.fontWeight.semibold,
       letterSpacing: -0.2,
     },
     cancelText: {
       ...auriaTypography.body,
-      color: 'rgba(15,18,22,0.7)',
+      color: ds.gray700,
       fontSize: 15,
     },
     doneText: {
@@ -189,7 +188,7 @@ function createStyles(
     },
     label: {
       ...auriaTypography.body,
-      color: '#0F1216',
+      color: ds.gray900,
       fontSize: 13,
       fontWeight: theme.typography.fontWeight.semibold,
       letterSpacing: -0.1,
@@ -199,8 +198,8 @@ function createStyles(
       minHeight: 48,
       paddingHorizontal: 16,
       paddingVertical: 14,
-      color: '#0F1216',
-      backgroundColor: '#F3F4F6',
+      color: ds.gray900,
+      backgroundColor: ds.gray100,
       ...myceoCornerStyle('inset'),
       fontSize: 15,
     },
@@ -217,27 +216,27 @@ function createStyles(
     chip: {
       paddingHorizontal: 14,
       paddingVertical: 10,
-      backgroundColor: '#F3F4F6',
+      backgroundColor: ds.gray100,
       ...myceoCornerStyle('chip'),
     },
     chipActive: {
-      backgroundColor: '#B7F34A',
+      backgroundColor: ds.auriaBlue,
     },
     chipText: {
       ...auriaTypography.body,
-      color: 'rgba(15,18,22,0.7)',
+      color: ds.gray700,
       fontSize: 13,
       fontWeight: theme.typography.fontWeight.medium,
     },
     chipTextActive: {
-      color: '#1F2A1A',
+      color: ds.white,
       fontWeight: theme.typography.fontWeight.bold,
     },
     priorityRow: {
       flexDirection: 'row',
       gap: 6,
       padding: 4,
-      backgroundColor: '#F3F4F6',
+      backgroundColor: ds.gray100,
       ...myceoCornerStyle('inset'),
     },
     priorityChip: {
@@ -248,16 +247,16 @@ function createStyles(
       ...myceoCornerStyle('chip'),
     },
     priorityChipActive: {
-      backgroundColor: '#B7F34A',
+      backgroundColor: ds.auriaBlue,
     },
     priorityText: {
       ...auriaTypography.body,
-      color: 'rgba(15,18,22,0.7)',
+      color: ds.gray700,
       fontSize: 13,
       fontWeight: theme.typography.fontWeight.medium,
     },
     priorityTextActive: {
-      color: '#1F2A1A',
+      color: ds.white,
       fontWeight: theme.typography.fontWeight.bold,
     },
   });

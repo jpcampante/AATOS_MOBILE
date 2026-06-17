@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { TaskItem, TaskSource } from '../../data/tasksMockData';
 import { auriaTypography, myceoCornerStyle, useTheme } from '../../theme';
 import { AuriaIcon, AURIA_ICON_SIZE, type AuriaIconName } from '../icons';
+import { tasksCardCorner, tasksSheetCorner } from './tasksCorners';
 
 type TaskReviewModalProps = {
   visible: boolean;
@@ -198,14 +199,13 @@ function createStyles(
     },
     backdrop: {
       ...StyleSheet.absoluteFillObject,
-      backgroundColor: 'rgba(15,18,22,0.42)',
+      backgroundColor: ds.offBlackOverlay,
     },
     sheet: {
       maxHeight: '90%',
       flexDirection: 'column',
       backgroundColor: ds.white,
-      borderTopLeftRadius: 28,
-      borderTopRightRadius: 28,
+      ...tasksSheetCorner(),
       paddingBottom: Math.max(safeBottom, 8),
       overflow: 'hidden',
     },
@@ -233,14 +233,14 @@ function createStyles(
     },
     title: {
       ...auriaTypography.title,
-      color: '#0F1216',
+      color: ds.gray900,
       fontSize: 17,
       fontWeight: theme.typography.fontWeight.bold,
       letterSpacing: -0.2,
     },
     subtitle: {
       ...auriaTypography.body,
-      color: 'rgba(15,18,22,0.55)',
+      color: ds.gray500,
       fontSize: 11.5,
       lineHeight: 16,
     },
@@ -279,7 +279,7 @@ function createStyles(
     },
     statValue: {
       ...auriaTypography.title,
-      color: '#0F1216',
+      color: ds.gray900,
       fontSize: 26,
       fontWeight: theme.typography.fontWeight.bold,
       letterSpacing: -0.5,
@@ -293,7 +293,7 @@ function createStyles(
     },
     statLabel: {
       ...auriaTypography.body,
-      color: 'rgba(15,18,22,0.55)',
+      color: ds.gray500,
       fontSize: 10,
     },
     statLabelAccent: {
@@ -315,19 +315,19 @@ function createStyles(
       ...myceoCornerStyle('chip'),
     },
     filterActive: {
-      backgroundColor: '#0F1216',
+      backgroundColor: ds.auriaBlue,
     },
     filterPressed: {
       opacity: 0.75,
     },
     filterText: {
       ...auriaTypography.body,
-      color: 'rgba(15,18,22,0.65)',
+      color: ds.gray600,
       fontSize: 11.5,
       fontWeight: theme.typography.fontWeight.medium,
     },
     filterTextActive: {
-      color: '#FFFFFF',
+      color: ds.white,
       fontWeight: theme.typography.fontWeight.semibold,
     },
 
@@ -346,7 +346,7 @@ function createStyles(
     },
     emptyText: {
       ...auriaTypography.body,
-      color: 'rgba(15,18,22,0.4)',
+      color: ds.gray400,
       fontSize: 13,
     },
 
@@ -355,7 +355,7 @@ function createStyles(
       gap: 10,
       padding: 14,
       backgroundColor: ds.gray100,
-      ...myceoCornerStyle('card'),
+      ...tasksCardCorner(),
     },
     suggestionProcessed: {
       opacity: 0.45,
@@ -379,7 +379,7 @@ function createStyles(
     },
     suggestionTitle: {
       ...auriaTypography.body,
-      color: '#0F1216',
+      color: ds.gray900,
       fontSize: 13,
       fontWeight: theme.typography.fontWeight.semibold,
       letterSpacing: -0.1,
@@ -387,7 +387,7 @@ function createStyles(
     },
     suggestionSource: {
       ...auriaTypography.body,
-      color: 'rgba(15,18,22,0.5)',
+      color: ds.gray500,
       fontSize: 10.5,
     },
     priorityBadge: {
@@ -398,13 +398,13 @@ function createStyles(
     },
     priorityText: {
       ...auriaTypography.label,
-      color: 'rgba(15,18,22,0.65)',
+      color: ds.gray600,
       fontSize: 9,
       fontWeight: theme.typography.fontWeight.semibold,
     },
     reason: {
       ...auriaTypography.body,
-      color: 'rgba(15,18,22,0.6)',
+      color: ds.gray600,
       fontSize: 11,
       lineHeight: 15.5,
     },
@@ -423,7 +423,7 @@ function createStyles(
     createButton: {
       paddingHorizontal: 12,
       paddingVertical: 7,
-      backgroundColor: '#0F1216',
+      backgroundColor: ds.auriaBlue,
       ...myceoCornerStyle('chip'),
     },
     createButtonPressed: {
@@ -434,12 +434,12 @@ function createStyles(
     },
     createButtonText: {
       ...auriaTypography.body,
-      color: '#FFFFFF',
+      color: ds.white,
       fontSize: 11,
       fontWeight: theme.typography.fontWeight.semibold,
     },
     createButtonTextDone: {
-      color: 'rgba(15,18,22,0.45)',
+      color: ds.gray400,
     },
 
     // Footer
@@ -450,11 +450,11 @@ function createStyles(
       paddingHorizontal: 18,
       paddingVertical: 14,
       borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: 'rgba(15,18,22,0.1)',
+      borderTopColor: ds.gray200,
     },
     footerText: {
       ...auriaTypography.body,
-      color: 'rgba(15,18,22,0.55)',
+      color: ds.gray500,
       fontSize: 12,
       fontWeight: theme.typography.fontWeight.medium,
     },
@@ -469,7 +469,7 @@ function createStyles(
     },
     doneText: {
       ...auriaTypography.body,
-      color: '#FFFFFF',
+      color: ds.white,
       fontSize: 13,
       fontWeight: theme.typography.fontWeight.bold,
     },

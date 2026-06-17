@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
-  Easing,
   LayoutChangeEvent,
   StyleProp,
   StyleSheet,
@@ -10,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { tapLight } from '../../utils/haptics';
+import { SUPPORTS_NATIVE_DRIVER, motionDuration, motionEasing } from '../../theme';
 
 type RollingHeadlineProps = {
   /** Left column — rolls upward. */
@@ -23,7 +23,8 @@ type RollingHeadlineProps = {
   started?: boolean;
 };
 
-const ROLL_EASE = Easing.bezier(0.22, 1, 0.36, 1);
+/** Headline fade-in once the boot sequence reaches its beat. */
+const ENTER_DURATION = 420;
 
 /**
  * Two-word slot machine: the lead word rolls up and the trail word rolls down,
@@ -59,9 +60,9 @@ export function RollingHeadline({
     if (!started) return;
     const anim = Animated.timing(enter, {
       toValue: 1,
-      duration: 420,
-      easing: ROLL_EASE,
-      useNativeDriver: true,
+      duration: ENTER_DURATION,
+      easing: motionEasing.emphasized,
+      useNativeDriver: SUPPORTS_NATIVE_DRIVER,
     });
     anim.start();
     return () => anim.stop();
@@ -148,9 +149,9 @@ function RollingWord({ words, direction, align, step, width, height, textStyle }
     let alive = true;
     const roll = Animated.timing(anim, {
       toValue: 1,
-      duration: 540,
-      easing: ROLL_EASE,
-      useNativeDriver: true,
+      duration: motionDuration.roll,
+      easing: motionEasing.emphasized,
+      useNativeDriver: SUPPORTS_NATIVE_DRIVER,
     });
     roll.start(({ finished }) => {
       if (!finished || !alive) return;

@@ -17,7 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { welcomeContent } from '../data/welcomeContent';
 import { AppleLogo, GoogleLogo } from '../components/ui/SocialLogos';
 import { RollingHeadline } from '../components/ui/RollingHeadline';
-import { contentColors, dsFromTheme, useTheme, type AatosTheme } from '../theme';
+import { SUPPORTS_NATIVE_DRIVER, contentColors, dsFromTheme, useTheme, type AatosTheme } from '../theme';
 import { tapLight, tapMedium, tapSuccess } from '../utils/haptics';
 
 type EmailMode = 'login' | 'register' | null;
@@ -73,7 +73,7 @@ export function LoginScreen({ onContinue }: LoginScreenProps) {
         stiffness: 170,
         damping: 13,
         mass: 0.9,
-        useNativeDriver: true,
+        useNativeDriver: SUPPORTS_NATIVE_DRIVER,
       }).start();
     }, BOOT.logo);
 
@@ -90,7 +90,7 @@ export function LoginScreen({ onContinue }: LoginScreenProps) {
         damping: 18,
         mass: 1,
         restDisplacementThreshold: 0.4,
-        useNativeDriver: true,
+        useNativeDriver: SUPPORTS_NATIVE_DRIVER,
       }).start();
     }, BOOT.sheet);
 

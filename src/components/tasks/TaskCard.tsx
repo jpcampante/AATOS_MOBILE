@@ -10,6 +10,7 @@ import {
   type TaskStatus,
 } from '../../data/tasksMockData';
 import { StripedProgress } from './StripedProgress';
+import { tasksCardCorner } from './tasksCorners';
 
 const STATUS_LABEL: Record<TaskStatus, string> = {
   todo: 'To do',
@@ -33,14 +34,14 @@ const SOURCE_ICON: Record<TaskSource, AuriaIconName> = {
 const PRIORITY_CHIP_BG: Record<TaskPriority, string> = {
   Urgent: '#FF4D4F',
   High: '#4169E1',
-  Normal: '#B7F34A',
+  Normal: '#DDE8FF',
   Low: '#E5E7EB',
 };
 
 const PRIORITY_CHIP_FG: Record<TaskPriority, string> = {
   Urgent: '#FFFFFF',
   High: '#FFFFFF',
-  Normal: '#1F2A1A',
+  Normal: '#2B7CD8',
   Low: '#4B5563',
 };
 
@@ -51,7 +52,7 @@ function cardBackground(priority: TaskPriority): string {
     case 'High':
       return '#E9EBFF';
     case 'Normal':
-      return '#EFF6E1';
+      return '#EEF3FF';
     case 'Low':
       return '#F3F4F6';
   }
@@ -64,7 +65,7 @@ function progressColor(priority: TaskPriority): string {
     case 'High':
       return '#4169E1';
     case 'Normal':
-      return '#9CCE3F';
+      return '#6BA8FF';
     case 'Low':
       return '#9CA3AF';
   }
@@ -81,7 +82,7 @@ function statusChip(status: TaskStatus): { bg: string; fg: string } {
     case 'waiting':
       return { bg: 'rgba(146,64,14,0.14)', fg: '#92400E' };
     case 'done':
-      return { bg: 'rgba(22,101,52,0.16)', fg: '#166534' };
+      return { bg: 'rgba(43,124,216,0.16)', fg: '#1D4ED8' };
     case 'todo':
     default:
       return { bg: 'rgba(0,0,0,0.06)', fg: '#374151' };
@@ -125,7 +126,7 @@ export function TaskCard({ item, onPress }: { item: TaskItem; onPress?: () => vo
 
       <View style={styles.metaRow}>
         <View style={styles.metaItem}>
-          <AuriaIcon name={SOURCE_ICON[item.source]} size={AURIA_ICON_SIZE.xs} color={'rgba(15,18,22,0.55)'} strokeWidth={1.7} />
+          <AuriaIcon name={SOURCE_ICON[item.source]} size={AURIA_ICON_SIZE.xs} color={ds.gray500} strokeWidth={1.7} />
           <Text style={styles.metaText} numberOfLines={1}>
             {item.relatedItem ?? item.source}
           </Text>
@@ -177,7 +178,7 @@ function createStyles(
 ) {
   return StyleSheet.create({
     card: {
-      ...myceoCornerStyle('card'),
+      ...tasksCardCorner(),
       padding: 18,
       gap: 12,
     },
@@ -221,7 +222,7 @@ function createStyles(
       ...auriaTypography.title,
       fontSize: 18,
       fontWeight: theme.typography.fontWeight.bold,
-      color: '#0F1216',
+      color: ds.gray900,
       letterSpacing: -0.3,
       lineHeight: 22,
     },
@@ -239,13 +240,13 @@ function createStyles(
     metaText: {
       ...auriaTypography.body,
       fontSize: 12,
-      color: 'rgba(15,18,22,0.65)',
+      color: ds.gray600,
       flexShrink: 1,
     },
     due: {
       ...auriaTypography.body,
       fontSize: 12,
-      color: 'rgba(15,18,22,0.65)',
+      color: ds.gray600,
       fontWeight: theme.typography.fontWeight.medium,
     },
     dueOverdue: {
@@ -261,13 +262,13 @@ function createStyles(
     },
     progressLabel: {
       ...auriaTypography.body,
-      color: 'rgba(15,18,22,0.55)',
+      color: ds.gray500,
       fontSize: 11,
       fontWeight: theme.typography.fontWeight.medium,
     },
     progressValue: {
       ...auriaTypography.body,
-      color: '#0F1216',
+      color: ds.gray900,
       fontSize: 11,
       fontWeight: theme.typography.fontWeight.bold,
     },
@@ -292,12 +293,12 @@ function createStyles(
       ...auriaTypography.body,
       flex: 1,
       fontSize: 12,
-      color: 'rgba(15,18,22,0.68)',
+      color: ds.gray700,
       lineHeight: 16,
     },
     contextLabel: {
       fontWeight: theme.typography.fontWeight.semibold,
-      color: '#0F1216',
+      color: ds.gray900,
     },
     contextReview: {
       fontStyle: 'italic',

@@ -54,7 +54,7 @@ function createStyles(
       ...auriaTypography.title,
       fontSize: 19,
       fontWeight: theme.typography.fontWeight.bold,
-      color: '#0F1216',
+      color: ds.gray900,
       letterSpacing: -0.4,
     },
     countPill: {
@@ -62,7 +62,7 @@ function createStyles(
       paddingHorizontal: 8,
       paddingVertical: 3,
       ...myceoCornerStyle('chip'),
-      backgroundColor: '#0F1216',
+      backgroundColor: ds.auriaBlue,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -70,12 +70,12 @@ function createStyles(
       ...auriaTypography.label,
       fontSize: 11,
       fontWeight: theme.typography.fontWeight.bold,
-      color: '#FFFFFF',
+      color: ds.white,
     },
     subtitle: {
       ...auriaTypography.body,
       fontSize: 13,
-      color: 'rgba(15,18,22,0.55)',
+      color: ds.gray500,
       lineHeight: 18,
     },
     list: {

@@ -19,6 +19,13 @@ export {
   type LiquidGlassElevation,
   type LiquidGlassTokens,
 } from './liquidGlass';
+export {
+  SUPPORTS_NATIVE_DRIVER,
+  motionDuration,
+  motionEasing,
+  motionSpring,
+  type MotionDurationToken,
+} from './motion';
 export { radius, spacing } from './spacing';
 export { typography } from './typography';
 export {

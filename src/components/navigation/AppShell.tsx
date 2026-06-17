@@ -1,9 +1,9 @@
 import { ReactNode, useEffect, useRef } from 'react';
-import { Animated, Easing, Platform, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Animated, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProductTabId } from '../../data/productNavigation';
-import { useTheme } from '../../theme';
+import { SUPPORTS_NATIVE_DRIVER, motionDuration, motionEasing, useTheme } from '../../theme';
 import { PRODUCT_NAV_FLOATING_HEIGHT, ProductNavBar } from './ProductNavBar';
 import { ProductTabTransition } from './ProductTabTransition';
 import { getSidebarWidth } from '../auria/auriaLayout';
@@ -38,9 +38,9 @@ export function AppShell({
   useEffect(() => {
     Animated.timing(navShift, {
       toValue: activeTab === 'auria' && auriaSidebarOpen ? sidebarWidth : 0,
-      duration: 280,
-      easing: auriaSidebarOpen ? Easing.out(Easing.cubic) : Easing.in(Easing.cubic),
-      useNativeDriver: Platform.OS !== 'web',
+      duration: motionDuration.base,
+      easing: auriaSidebarOpen ? motionEasing.standard : motionEasing.accelerate,
+      useNativeDriver: SUPPORTS_NATIVE_DRIVER,
     }).start();
   }, [activeTab, auriaSidebarOpen, navShift, sidebarWidth]);
 

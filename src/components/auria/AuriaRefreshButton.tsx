@@ -1,9 +1,13 @@
 import { useMemo, useRef } from 'react';
-import { Animated, Easing, Platform, Pressable, StyleSheet } from 'react-native';
-
-const USE_NATIVE_DRIVER = Platform.OS !== 'web';
+import { Animated, Pressable, StyleSheet } from 'react-native';
 import { AuriaIcon, AURIA_ICON_SIZE, AURIA_ICON_STROKE_NAV } from '../icons';
-import { liquidGlassTokens, useTheme } from '../../theme';
+import {
+  SUPPORTS_NATIVE_DRIVER,
+  liquidGlassTokens,
+  motionDuration,
+  motionEasing,
+  useTheme,
+} from '../../theme';
 
 type AuriaRefreshButtonProps = {
   onPress?: () => void;
@@ -27,9 +31,9 @@ export function AuriaRefreshButton({
 
     Animated.timing(spin, {
       toValue: 1,
-      duration: 620,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: USE_NATIVE_DRIVER,
+      duration: motionDuration.spin,
+      easing: motionEasing.standard,
+      useNativeDriver: SUPPORTS_NATIVE_DRIVER,
     }).start(({ finished }) => {
       spinning.current = false;
       if (finished) {

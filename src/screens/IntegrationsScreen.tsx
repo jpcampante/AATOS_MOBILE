@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import {
-  Animated,
   PanResponder,
   Pressable,
   RefreshControl,
@@ -15,14 +14,13 @@ import { ComposeModal } from '../components/integrations/ComposeModal';
 import { EmailDetailView } from '../components/integrations/EmailDetailView';
 import { MailRow } from '../components/integrations/MailRow';
 import { MailSidebar } from '../components/integrations/MailSidebar';
+import { ActionFab } from '../components/ui/ActionFab';
 import { Snackbar } from '../components/ui/Snackbar';
 import { AuriaIcon, AURIA_ICON_SIZE } from '../components/icons';
 import { FOLDER_LABELS } from '../data/integrationsMockData';
 import { auriaProfileInitials } from '../data/auriaMockData';
 import { useMailbox } from '../features/integrations/useMailbox';
 import { auriaTypography, myceoCornerStyle, useTheme } from '../theme';
-
-const FAB_SURFACE = '#DDE8FF';
 
 type IntegrationsScreenProps = {
   onOpenSettings?: () => void;
@@ -32,17 +30,6 @@ export function IntegrationsScreen({ onOpenSettings }: IntegrationsScreenProps) 
   const { ds, theme } = useTheme();
   const styles = useMemo(() => createStyles(ds, theme), [ds, theme]);
   const mb = useMailbox();
-  const fabAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.spring(fabAnim, {
-      toValue: 1,
-      friction: 6,
-      tension: 120,
-      delay: 160,
-      useNativeDriver: true,
-    }).start();
-  }, [fabAnim]);
 
   // Swipe right from the left edge to open the drawer.
   const openSidebarRef = useRef(() => mb.setSidebarOpen(true));
@@ -141,25 +128,7 @@ export function IntegrationsScreen({ onOpenSettings }: IntegrationsScreenProps) 
         </AnimatedScreenBlock>
       </ScrollView>
 
-      <Animated.View
-        style={[
-          styles.fabWrap,
-          {
-            opacity: fabAnim,
-            transform: [{ scale: fabAnim.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) }],
-          },
-        ]}
-      >
-        <Pressable
-          onPress={() => mb.openCompose()}
-          style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
-          accessibilityLabel="Compose"
-          accessibilityRole="button"
-        >
-          <AuriaIcon name="squarePen" size={AURIA_ICON_SIZE.md} color={ds.gray900} strokeWidth={1.9} />
-          <Text style={styles.fabText}>Compose</Text>
-        </Pressable>
-      </Animated.View>
+      <ActionFab icon="squarePen" label="Compose" onPress={() => mb.openCompose()} />
 
       {mb.snack ? (
         <Snackbar
@@ -283,24 +252,5 @@ function createStyles(
     list: { gap: 2 },
     empty: { alignItems: 'center', gap: 10, paddingVertical: 60 },
     emptyText: { ...auriaTypography.body, color: ds.gray500, fontSize: 13 },
-    fabWrap: { position: 'absolute', right: 16, bottom: 16 },
-    fab: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-      paddingHorizontal: 18,
-      paddingVertical: 15,
-      backgroundColor: FAB_SURFACE,
-      ...myceoCornerStyle('iconLg'),
-      ...theme.shadow.card,
-    },
-    fabPressed: { opacity: 0.9, transform: [{ scale: 0.97 }] },
-    fabText: {
-      ...auriaTypography.body,
-      color: ds.gray900,
-      fontSize: 14,
-      fontWeight: theme.typography.fontWeight.semibold,
-      letterSpacing: -0.1,
-    },
   });
 }

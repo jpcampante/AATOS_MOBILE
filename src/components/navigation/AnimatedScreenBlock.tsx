@@ -1,7 +1,7 @@
 import { ReactNode, useEffect, useRef } from 'react';
-import { Animated, Easing, Platform, StyleSheet } from 'react-native';
+import { Animated, Platform, StyleSheet } from 'react-native';
+import { SUPPORTS_NATIVE_DRIVER, motionDuration, motionEasing } from '../../theme';
 
-const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 const CAN_ANIMATE_OPACITY = Platform.OS !== 'ios';
 
 type AnimatedScreenBlockProps = {
@@ -34,16 +34,16 @@ export function AnimatedScreenBlock({
       Animated.timing(opacity, {
         toValue: 1,
         delay: index * delayStep,
-        duration: 320,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: USE_NATIVE_DRIVER,
+        duration: motionDuration.gentle,
+        easing: motionEasing.standard,
+        useNativeDriver: SUPPORTS_NATIVE_DRIVER,
       }),
       Animated.timing(translateY, {
         toValue: 0,
         delay: index * delayStep,
-        duration: 320,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: USE_NATIVE_DRIVER,
+        duration: motionDuration.gentle,
+        easing: motionEasing.standard,
+        useNativeDriver: SUPPORTS_NATIVE_DRIVER,
       }),
     ]);
 

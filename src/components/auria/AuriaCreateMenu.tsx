@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import * as DocumentPicker from 'expo-document-picker';
 import {
   Animated,
-  Easing,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -14,8 +13,11 @@ import {
   View,
 } from 'react-native';
 import {
+  SUPPORTS_NATIVE_DRIVER,
   auriaTypography,
   liquidGlassTokens,
+  motionDuration,
+  motionEasing,
   MYCEO_CORNER_RADIUS,
   myceoCornerStyle,
   useTheme,
@@ -99,9 +101,9 @@ export function AuriaCreateMenu({
     }
     Animated.timing(anim, {
       toValue: 1,
-      duration: 240,
-      easing: Easing.bezier(0.23, 1, 0.32, 1),
-      useNativeDriver: Platform.OS !== 'web',
+      duration: motionDuration.swift,
+      easing: motionEasing.emphasized,
+      useNativeDriver: SUPPORTS_NATIVE_DRIVER,
     }).start();
   }, [anim, visible]);
 

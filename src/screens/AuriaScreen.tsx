@@ -1,11 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
-  Easing,
   Keyboard,
   LayoutChangeEvent,
   PanResponder,
-  Platform,
   Pressable,
   StyleSheet,
   useWindowDimensions,
@@ -39,10 +37,7 @@ import { AuriaPanel } from '../data/auriaMockData';
 import { useAuriaWorkspace } from '../features/auria/useAuriaWorkspace';
 import { useKeyboardInset } from '../hooks/useKeyboardInset';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme } from '../theme';
-
-const SLIDE_DURATION = 280;
-const USE_NATIVE_DRIVER = Platform.OS !== 'web';
+import { SUPPORTS_NATIVE_DRIVER, motionDuration, motionEasing, useTheme } from '../theme';
 
 type AuriaScreenProps = {
   onSidebarOpenChange?: (open: boolean) => void;
@@ -111,9 +106,9 @@ export function AuriaScreen({ onSidebarOpenChange, onOpenSettings }: AuriaScreen
     slideProgress.stopAnimation();
     Animated.timing(slideProgress, {
       toValue: sidebarOpen ? 1 : 0,
-      duration: SLIDE_DURATION,
-      easing: sidebarOpen ? Easing.out(Easing.cubic) : Easing.in(Easing.cubic),
-      useNativeDriver: USE_NATIVE_DRIVER,
+      duration: motionDuration.base,
+      easing: sidebarOpen ? motionEasing.standard : motionEasing.accelerate,
+      useNativeDriver: SUPPORTS_NATIVE_DRIVER,
     }).start();
     onSidebarOpenChange?.(sidebarOpen);
   }, [onSidebarOpenChange, sidebarOpen, slideProgress]);
@@ -156,9 +151,9 @@ export function AuriaScreen({ onSidebarOpenChange, onOpenSettings }: AuriaScreen
 
     panelTransitionRef.current = Animated.timing(panelAnim, {
       toValue: 0,
-      duration: 180,
-      easing: Easing.out(Easing.quad),
-      useNativeDriver: USE_NATIVE_DRIVER,
+      duration: motionDuration.fast,
+      easing: motionEasing.decelerate,
+      useNativeDriver: SUPPORTS_NATIVE_DRIVER,
     });
 
     panelTransitionRef.current.start(() => {
@@ -171,9 +166,9 @@ export function AuriaScreen({ onSidebarOpenChange, onOpenSettings }: AuriaScreen
       panelAnim.setValue(0);
       panelTransitionRef.current = Animated.timing(panelAnim, {
         toValue: 1,
-        duration: 220,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: USE_NATIVE_DRIVER,
+        duration: motionDuration.fast,
+        easing: motionEasing.standard,
+        useNativeDriver: SUPPORTS_NATIVE_DRIVER,
       });
       panelTransitionRef.current.start();
     });

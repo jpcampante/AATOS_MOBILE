@@ -344,7 +344,6 @@ function createStyles(
   theme: ReturnType<typeof useTheme>['theme'],
   drawerWidth: number,
 ) {
-  const rowActiveBorder = {} as const;
   const glass = liquidGlassTokens(theme);
   const rimSubtle = liquidGlassBorder(theme, true);
 
@@ -410,7 +409,6 @@ function createStyles(
     },
     headerActionBtnActive: {
       backgroundColor: glass.fillStrong,
-      ...rowActiveBorder,
     },
     headerActionBtnPressed: {
       opacity: 0.75,
@@ -463,7 +461,6 @@ function createStyles(
     },
     rowActive: {
       backgroundColor: glass.pressed,
-      ...rowActiveBorder,
     },
     rowPressed: {
       opacity: 0.82,

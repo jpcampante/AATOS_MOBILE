@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AnimatedScreenBlock } from '../components/navigation/AnimatedScreenBlock';
 import { InsightsExplorer } from '../components/insights/InsightsExplorer';
-import { AuriaBriefHero } from '../components/insights/briefing/AuriaBriefHero';
+import { ExecutiveBrief } from '../components/insights/briefing/ExecutiveBrief';
 import { NeedsYou } from '../components/insights/briefing/NeedsYou';
 import { AuriaImpact } from '../components/insights/briefing/AuriaImpact';
 import { AskAuria } from '../components/insights/briefing/AskAuria';
@@ -36,19 +36,19 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
       </AnimatedScreenBlock>
 
       <AnimatedScreenBlock index={1}>
-        <AuriaBriefHero />
+        <InsightsExplorer />
       </AnimatedScreenBlock>
 
       <AnimatedScreenBlock index={2}>
-        <NeedsYou onNavigate={onNavigate} />
+        <ExecutiveBrief />
       </AnimatedScreenBlock>
 
       <AnimatedScreenBlock index={3}>
-        <AuriaImpact />
+        <NeedsYou onNavigate={onNavigate} />
       </AnimatedScreenBlock>
 
       <AnimatedScreenBlock index={4}>
-        <InsightsExplorer />
+        <AuriaImpact />
       </AnimatedScreenBlock>
 
       <AnimatedScreenBlock index={5}>

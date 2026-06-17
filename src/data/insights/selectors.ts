@@ -1,4 +1,4 @@
-import { getMetric, insightMetrics } from './metrics';
+import { getMetric } from './metrics';
 import { insightSignals } from './signals';
 import { getAcceptance } from './auriaAcceptance';
 import type { DataSource, Metric, Severity, Signal } from './types';
@@ -120,33 +120,4 @@ export function auriaImpact(acceptanceLocal?: number): AuriaImpact {
     ],
     acceptanceRate: { value: acceptance, source: 'local' },
   };
-}
-
-/** Metric with the largest relative month-over-month move (the biggest mover). */
-function biggestMover(): Metric {
-  let best = insightMetrics[0];
-  let bestScore = -1;
-  for (const metric of insightMetrics) {
-    const score = Math.abs(latest(metric) - previous(metric)) / Math.max(previous(metric), 1);
-    if (score > bestScore) {
-      bestScore = score;
-      best = metric;
-    }
-  }
-  return best;
-}
-
-export type HeroFocus = { signal?: Signal; metric: Metric; annotation?: string };
-
-/**
- * What the Brief hero chart should show — tied to the day's story:
- * top actionable signal with a metric → top trend with a metric → biggest mover.
- */
-export function heroFocus(signals: ReadonlyArray<Signal> = insightSignals): HeroFocus {
-  const withMetric = (list: Signal[]) => list.find((s) => s.metricId);
-  const signal = withMetric(needsYou(signals)) ?? withMetric(risks(signals));
-  const metric = signal?.metricId ? getMetric(signal.metricId) : biggestMover();
-  const annoSignal =
-    signals.find((s) => s.metricId === metric.id && s.delta) ?? signal;
-  return { signal, metric, annotation: annoSignal?.delta };
 }

@@ -66,8 +66,7 @@ export function InsightsExplorer() {
     <View style={styles.shell}>
       <View style={styles.headerRow}>
         <View style={styles.headerCopy}>
-          <Text style={styles.eyebrow}>Explore</Text>
-          <Text style={styles.headline}>{`${metric.metaLabel}`}</Text>
+          <Text style={styles.headline}>{`Here's a line graph of ${metric.headline}.`}</Text>
           <Text style={styles.subheadline}>{PERIOD_SUB[period]}</Text>
         </View>
         <DataSourceBadge source={metric.source} />
@@ -177,9 +176,8 @@ function createStyles(
 ) {
   return StyleSheet.create({
     shell: {
-      backgroundColor: insights.surface,
+      backgroundColor: insights.heroShell,
       ...myceoCornerStyle('card'),
-      ...theme.shadow.card,
       padding: theme.spacing.lg,
       gap: 12,
     },
@@ -189,16 +187,9 @@ function createStyles(
       justifyContent: 'space-between',
       gap: 8,
     },
-    headerCopy: { flex: 1, gap: 2 },
-    eyebrow: {
-      fontSize: 11,
-      fontWeight: '700',
-      letterSpacing: 0.4,
-      textTransform: 'uppercase',
-      color: insights.textHint,
-    },
-    headline: { fontSize: 17, lineHeight: 22, fontWeight: '800', color: insights.text, letterSpacing: -0.2 },
-    subheadline: { fontSize: 12.5, color: insights.textMuted, fontWeight: '500' },
+    headerCopy: { flex: 1, gap: 4 },
+    headline: { fontSize: 18, lineHeight: 24, fontWeight: '700', color: insights.text },
+    subheadline: { fontSize: 13, color: insights.textMuted, fontWeight: '500' },
     controls: {
       flexDirection: 'row',
       flexWrap: 'wrap',
@@ -207,7 +198,7 @@ function createStyles(
     },
     segment: {
       flexDirection: 'row',
-      backgroundColor: insights.page,
+      backgroundColor: insights.heroSearchBg,
       ...myceoCornerStyle('chip'),
       padding: 2,
     },

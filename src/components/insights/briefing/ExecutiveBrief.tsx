@@ -2,15 +2,12 @@ import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { myceoCornerStyle, useTheme } from '../../../theme';
 import { AuriaIcon } from '../../icons';
-import { healthScore, heroFocus, pulse } from '../../../data/insights/selectors';
-import { formatMetricValue, metricSeries } from '../../../data/insights/metrics';
-import { LineChart } from '../LineChart';
+import { healthScore, pulse } from '../../../data/insights/selectors';
 import { DataSourceBadge } from '../DataSourceBadge';
 
 const USER_NAME = 'Marta';
 const GOOD = '#1D9E75';
 const BAD = '#E5484D';
-const HERO_LINE = '#1D4ED8';
 
 function greetingFor(date = new Date()): string {
   const h = date.getHours();
@@ -19,28 +16,14 @@ function greetingFor(date = new Date()): string {
   return 'Good evening';
 }
 
-/**
- * Zone 1 — the blue Brief hero: Auria narrates (greeting + pulse + health) with
- * a curated sparkline that proves the day's story (heroFocus). The full,
- * interactive Explorer lives lower as a neutral tool.
- */
-export function AuriaBriefHero() {
+/** Auria's narrative: greeting + pulse + health score (components tap-to-expand). No chart. */
+export function ExecutiveBrief() {
   const { insights, theme } = useTheme();
   const styles = useMemo(() => createStyles(insights, theme), [insights, theme]);
   const [expanded, setExpanded] = useState(false);
 
   const { attentionCount, topBlocker, movers } = pulse();
   const health = healthScore();
-  const focus = heroFocus();
-
-  const series = metricSeries(focus.metric, 'company', 'month');
-  const lastValue = series[series.length - 1]?.value ?? 0;
-  const prevValue = series[series.length - 2]?.value ?? lastValue;
-  const diff = lastValue - prevValue;
-  const deltaGood = focus.metric.goodDirection === 'up' ? diff >= 0 : diff <= 0;
-  const deltaPct = prevValue ? Math.round((diff / prevValue) * 100) : 0;
-
-  const topTitle = focus.signal?.title ?? topBlocker?.title;
   const bandColor = health.score >= 75 ? GOOD : health.score >= 50 ? '#B45309' : BAD;
 
   return (
@@ -49,7 +32,7 @@ export function AuriaBriefHero() {
       <Text style={styles.headline}>
         {attentionCount} {attentionCount === 1 ? 'thing needs' : 'things need'} attention today
       </Text>
-      {topTitle ? <Text style={styles.subline}>Top: {topTitle}</Text> : null}
+      {topBlocker ? <Text style={styles.subline}>Top: {topBlocker.title}</Text> : null}
 
       <View style={styles.moversRow}>
         {movers.map((mover, i) => (
@@ -62,13 +45,13 @@ export function AuriaBriefHero() {
 
       <View style={styles.divider} />
 
-      <View style={styles.row}>
-        <Pressable
-          onPress={() => setExpanded((v) => !v)}
-          style={styles.healthBlock}
-          accessibilityRole="button"
-          accessibilityLabel="Company health breakdown"
-        >
+      <Pressable
+        onPress={() => setExpanded((v) => !v)}
+        style={styles.healthRow}
+        accessibilityRole="button"
+        accessibilityLabel="Company health breakdown"
+      >
+        <View style={styles.healthLeft}>
           <Text style={styles.healthLabel}>Company health</Text>
           <View style={styles.scoreRow}>
             <Text style={[styles.score, { color: bandColor }]}>{health.score}</Text>
@@ -80,29 +63,9 @@ export function AuriaBriefHero() {
               strokeWidth={2.2}
             />
           </View>
-          <DataSourceBadge source={health.source} />
-        </Pressable>
-
-        <View style={styles.sparkBlock}>
-          <View style={styles.sparkTop}>
-            <Text style={styles.sparkLabel} numberOfLines={1}>{focus.metric.metaLabel}</Text>
-            <DataSourceBadge source={focus.metric.source} />
-          </View>
-          <LineChart
-            data={series}
-            color={HERO_LINE}
-            height={52}
-            step={focus.metric.step}
-            variant="spark"
-          />
-          <View style={styles.sparkBottom}>
-            <Text style={styles.sparkValue}>{formatMetricValue(focus.metric, lastValue)}</Text>
-            <Text style={[styles.sparkDelta, { color: deltaGood ? GOOD : BAD }]}>
-              {diff >= 0 ? '+' : ''}{deltaPct}%
-            </Text>
-          </View>
         </View>
-      </View>
+        <DataSourceBadge source={health.source} />
+      </Pressable>
 
       {expanded ? (
         <View style={styles.components}>
@@ -125,7 +88,7 @@ function createStyles(
 ) {
   return StyleSheet.create({
     card: {
-      backgroundColor: insights.heroShell,
+      backgroundColor: insights.surface,
       ...myceoCornerStyle('card'),
       ...theme.shadow.card,
       padding: theme.spacing.lg,
@@ -143,23 +106,17 @@ function createStyles(
     moversRow: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 6 },
     moverText: { fontSize: 12.5, fontWeight: '600' },
     moverDot: { color: insights.textHint },
-    divider: { height: 1, backgroundColor: insights.divider, marginVertical: 12, opacity: 0.6 },
-    row: { flexDirection: 'row', gap: 14, alignItems: 'stretch' },
-    healthBlock: { width: 112, gap: 3, justifyContent: 'center' },
+    divider: { height: 1, backgroundColor: insights.divider, marginVertical: 12 },
+    healthRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    healthLeft: { gap: 1 },
     healthLabel: { fontSize: 12, fontWeight: '600', color: insights.textMuted },
     scoreRow: { flexDirection: 'row', alignItems: 'baseline', gap: 2 },
     score: { fontSize: 30, fontWeight: '800', letterSpacing: -0.5 },
     scoreMax: { fontSize: 13, fontWeight: '600', color: insights.textHint },
-    sparkBlock: { flex: 1, gap: 2, minWidth: 0 },
-    sparkTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 },
-    sparkLabel: { flex: 1, fontSize: 11.5, fontWeight: '600', color: insights.textMuted },
-    sparkBottom: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
-    sparkValue: { fontSize: 18, fontWeight: '800', color: insights.text },
-    sparkDelta: { fontSize: 12, fontWeight: '700' },
     components: { flexDirection: 'row', gap: 8, marginTop: 12 },
     component: {
       flex: 1,
-      backgroundColor: 'rgba(255,255,255,0.55)',
+      backgroundColor: insights.page,
       ...myceoCornerStyle('inset'),
       paddingVertical: 8,
       paddingHorizontal: 8,

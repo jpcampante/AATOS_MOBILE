@@ -365,6 +365,9 @@ function createStyles(ds: ReturnType<typeof dsFromTheme>, theme: AatosTheme, saf
       paddingHorizontal: 20,
       paddingTop: 26,
       paddingBottom: Math.max(safeBottom, 16) + 14,
+      // Keep the rounded layer crisp so its antialiased edge doesn't bleed a
+      // 1px seam while the sheet is transformed up (a react-native-web artifact).
+      backfaceVisibility: 'hidden',
     },
     socialPanel: {
       gap: 12,

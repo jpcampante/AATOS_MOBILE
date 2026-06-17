@@ -1,32 +1,17 @@
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { myceoCornerStyle, useTheme } from '../../../theme';
-import { AuriaIcon, AURIA_ICON_SIZE, type AuriaIconName } from '../../icons';
+import { AuriaIcon } from '../../icons';
 import type { NavigateFn, ProductTabId } from '../../../data/productNavigation';
-import type { InsightAction, Signal, SignalDomain, Severity } from '../../../data/insights/types';
-import { resolveActions } from '../../../data/insights/actions';
+import type { InsightAction, Signal } from '../../../data/insights/types';
 import { needsYou, risks } from '../../../data/insights/selectors';
-import { TodayModal } from '../../today/TodayModal';
-import { DataSourceBadge } from '../DataSourceBadge';
+import { SignalRow } from './SignalRow';
+import { NeedsYouModal } from './NeedsYouModal';
 
 const FILTERS = ['Needs you', 'Risks', 'All'] as const;
 type Filter = (typeof FILTERS)[number];
 
 const INLINE_MAX = 4;
-
-const DOMAIN_ICON: Record<SignalDomain, AuriaIconName> = {
-  tasks: 'checkCircle',
-  email: 'mail',
-  auria: 'sparkles',
-  calendar: 'calendar',
-  projects: 'briefcase',
-};
-
-const SEVERITY_COLOR: Record<Severity, string> = {
-  high: '#E5484D',
-  medium: '#B45309',
-  low: '#9CA3AF',
-};
 
 type NeedsYouProps = {
   /** Switch tab when an action is taken (Auria actions carry a pre-filled prompt). */
@@ -98,52 +83,14 @@ export function NeedsYou({ onNavigate }: NeedsYouProps) {
         {visible.length === 0 ? (
           <Text style={styles.empty}>Nothing needs you here. 🎉</Text>
         ) : (
-          visible.map((signal) => {
-            const actions = resolveActions(signal.actionIds);
-            return (
-              <View key={signal.id} style={styles.row}>
-                <View style={styles.rowTop}>
-                  <View style={[styles.sevDot, { backgroundColor: SEVERITY_COLOR[signal.severity] }]} />
-                  <View style={styles.iconTile}>
-                    <AuriaIcon
-                      name={DOMAIN_ICON[signal.domain]}
-                      size={AURIA_ICON_SIZE.xs}
-                      color={insights.textMuted}
-                      strokeWidth={1.8}
-                    />
-                  </View>
-                  <View style={styles.rowCopy}>
-                    <Text style={styles.rowTitle} numberOfLines={1}>{signal.title}</Text>
-                    <Text style={styles.rowMeta} numberOfLines={1}>
-                      {signal.detail ?? signal.delta ?? signal.domain}
-                    </Text>
-                  </View>
-                  <DataSourceBadge source={signal.source} />
-                </View>
-
-                {actions.length > 0 ? (
-                  <View style={styles.actions}>
-                    {actions.map((action) => (
-                      <Pressable
-                        key={action.id}
-                        onPress={() => runAction(action)}
-                        style={({ pressed }) => [styles.actionBtn, pressed && styles.pressed]}
-                        accessibilityRole="button"
-                        accessibilityLabel={action.label}
-                      >
-                        <Text style={styles.actionText}>{action.label}</Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                ) : null}
-              </View>
-            );
-          })
+          visible.map((signal) => (
+            <SignalRow key={signal.id} signal={signal} onAction={runAction} />
+          ))
         )}
       </View>
 
       {modalMounted ? (
-        <TodayModal visible={modalOpen} onClose={() => setModalOpen(false)} onNavigate={onNavigate} />
+        <NeedsYouModal visible={modalOpen} onClose={() => setModalOpen(false)} onNavigate={onNavigate} />
       ) : null}
     </View>
   );
@@ -182,34 +129,5 @@ function createStyles(
     filterTextActive: { color: insights.surface },
     list: { gap: 8 },
     empty: { fontSize: 13, color: insights.textMuted, paddingVertical: 16, textAlign: 'center' },
-    row: {
-      backgroundColor: insights.page,
-      ...myceoCornerStyle('inset'),
-      padding: 11,
-      gap: 9,
-    },
-    rowTop: { flexDirection: 'row', alignItems: 'center', gap: 9 },
-    sevDot: { width: 8, height: 8, borderRadius: 4 },
-    iconTile: {
-      width: 30,
-      height: 30,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: insights.surface,
-      ...myceoCornerStyle('iconSm'),
-    },
-    rowCopy: { flex: 1, gap: 1, minWidth: 0 },
-    rowTitle: { fontSize: 13.5, fontWeight: '700', color: insights.text, letterSpacing: -0.1 },
-    rowMeta: { fontSize: 11.5, color: insights.textMuted },
-    actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, paddingLeft: 47 },
-    actionBtn: {
-      paddingHorizontal: 11,
-      paddingVertical: 6,
-      backgroundColor: insights.surface,
-      borderWidth: 1,
-      borderColor: insights.divider,
-      ...myceoCornerStyle('chip'),
-    },
-    actionText: { fontSize: 11.5, fontWeight: '600', color: insights.text },
   });
 }

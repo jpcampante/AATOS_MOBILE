@@ -1,11 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { TaskItem, TaskSource } from '../../data/tasksMockData';
 import { auriaTypography, myceoCornerStyle, useTheme } from '../../theme';
 import { AuriaIcon, AURIA_ICON_SIZE, type AuriaIconName } from '../icons';
 import { tasksCardCorner, tasksSheetCorner } from './tasksCorners';
-import { recordSuggestionAccepted } from '../../data/insights/auriaAcceptance';
+import { recordSuggestionAccepted, recordSuggestionShown } from '../../data/insights/auriaAcceptance';
 
 type TaskReviewModalProps = {
   visible: boolean;
@@ -34,6 +34,17 @@ export function TaskReviewModal({ visible, suggestions, onClose, onCreateTask }:
   );
   const [source, setSource] = useState<TaskSource | 'All'>('All');
   const [processed, setProcessed] = useState<string[]>([]);
+
+  // Count suggestions as "shown" once per open so acceptance rate = accepted/shown.
+  const shownRecorded = useRef(false);
+  useEffect(() => {
+    if (visible && !shownRecorded.current) {
+      recordSuggestionShown(suggestions.length);
+      shownRecorded.current = true;
+    } else if (!visible) {
+      shownRecorded.current = false;
+    }
+  }, [visible, suggestions.length]);
 
   const visibleSuggestions = suggestions.filter((item) => source === 'All' || item.source === source);
   const highPriority = suggestions.filter((item) => item.priority === 'High' || item.priority === 'Urgent').length;

@@ -19,8 +19,9 @@ export function recordSuggestionShown(count = 1) {
 }
 
 export function recordSuggestionAccepted() {
+  // `shown` is counted when the review modal opens, so only bump `accepted` here.
   accepted += 1;
-  shown += 1; // an accepted suggestion was, by definition, shown
+  if (accepted > shown) shown = accepted; // guard if accepted before any shown batch
   emit();
 }
 

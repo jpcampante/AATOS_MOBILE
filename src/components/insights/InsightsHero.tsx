@@ -134,6 +134,10 @@ export function InsightsHero() {
         <Text style={styles.metaValue}>{formatMetricValue(metric, lastValue)}</Text>
       </View>
 
+      {overlay ? (
+        <Text style={styles.compareHint}>Shapes compared on separate scales — trend, not absolute values.</Text>
+      ) : null}
+
       <View style={styles.chipsRow}>
         {insightMetrics.map((item) => {
           const active = item.id === metric.id;
@@ -217,6 +221,7 @@ function createStyles(
     legendLineDashed: { width: 14, height: 0, borderTopWidth: 2, borderStyle: 'dashed' },
     metaLabel: { fontSize: 12, color: insights.textMuted, fontWeight: '600' },
     metaValue: { fontSize: 22, color: insights.text, fontWeight: '800' },
+    compareHint: { fontSize: 10.5, color: insights.textHint, fontStyle: 'italic', marginTop: -4 },
     chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm },
     chip: {
       backgroundColor: theme.colors.chipSurface,

@@ -119,7 +119,9 @@ const SEEDS: MetricSeed[] = [
     metaLabel: 'Suggestion acceptance',
     unit: 'percent',
     step: 25,
-    source: 'local',
+    // The 12-month trend is estimated; only the current rate (Auria Impact) is
+    // captured in-app (`local`).
+    source: 'estimated',
     goodDirection: 'up',
     base: [58, 61, 63, 66, 68, 70, 69, 72, 74, 78, 80, 72],
   },

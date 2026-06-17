@@ -1,5 +1,6 @@
 import { getMetric } from './metrics';
 import { insightSignals } from './signals';
+import { getAcceptance } from './auriaAcceptance';
 import type { DataSource, Metric, Severity, Signal } from './types';
 
 /**
@@ -107,15 +108,16 @@ export type AuriaImpact = {
  */
 export function auriaImpact(acceptanceLocal?: number): AuriaImpact {
   const timeSaved = latest(getMetric('auria-time-saved'));
-  const acceptance = acceptanceLocal ?? Math.round(latest(getMetric('auria-acceptance')));
+  const captured = getAcceptance();
+  const acceptance = acceptanceLocal ?? captured.rate;
   return {
     items: [
       { label: 'Hours saved', value: `${timeSaved}h`, source: 'estimated' },
       { label: 'Emails triaged', value: '24', source: 'sample' },
-      { label: 'Tasks suggested', value: '8', source: 'sample' },
-      { label: 'Tasks accepted', value: '5', source: 'local' },
+      { label: 'Suggestions shown', value: `${captured.shown}`, source: 'local' },
+      { label: 'Tasks accepted', value: `${captured.accepted}`, source: 'local' },
       { label: 'Meetings scheduled', value: '3', source: 'sample' },
     ],
-    acceptanceRate: { value: acceptance, source: acceptanceLocal !== undefined ? 'local' : 'estimated' },
+    acceptanceRate: { value: acceptance, source: 'local' },
   };
 }

@@ -55,14 +55,14 @@ export type Signal = {
   actionIds: string[];
 };
 
-export type ActionKind = 'navigate' | 'auria' | 'modal';
+export type ActionKind = 'navigate' | 'auria';
 
 /** The next step a signal offers. */
 export type InsightAction = {
   id: string;
   label: string;
   kind: ActionKind;
-  /** Tab for 'navigate'/'auria', or a modal id for 'modal'. */
-  target: ProductTabId | string;
+  /** Tab to switch to; for 'auria', the composer is pre-filled with payload.prompt. */
+  target: ProductTabId;
   payload?: { prompt?: string; [key: string]: unknown };
 };

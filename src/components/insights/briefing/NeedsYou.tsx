@@ -113,7 +113,7 @@ function createStyles(
       alignItems: 'center',
       justifyContent: 'space-between',
     },
-    title: { ...auriaTypography.title, fontSize: 16, fontWeight: theme.typography.fontWeight.bold, color: insights.text },
+    title: { ...auriaTypography.title, fontSize: 16, fontWeight: theme.typography.fontWeight.extrabold, color: insights.text },
     viewAll: { flexDirection: 'row', alignItems: 'center', gap: 2 },
     viewAllText: { ...auriaTypography.body, fontSize: 12.5, fontWeight: '600', color: insights.textMuted },
     pressed: { opacity: 0.6 },

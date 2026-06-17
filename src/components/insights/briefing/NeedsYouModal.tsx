@@ -124,7 +124,7 @@ function createStyles(
       paddingBottom: 12,
     },
     headerText: { flex: 1, gap: 2 },
-    title: { ...auriaTypography.title, fontSize: 18, fontWeight: theme.typography.fontWeight.bold, color: insights.text },
+    title: { ...auriaTypography.title, fontSize: 18, fontWeight: theme.typography.fontWeight.extrabold, color: insights.text },
     subtitle: { ...auriaTypography.body, fontSize: 12, color: insights.textMuted },
     closeButton: { alignSelf: 'flex-start' },
     pressed: { opacity: 0.6 },

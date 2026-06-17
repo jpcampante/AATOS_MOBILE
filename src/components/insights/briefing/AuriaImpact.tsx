@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { auriaTypography, myceoCornerStyle, useTheme } from '../../../theme';
-import { AuriaIcon, AURIA_ICON_SIZE } from '../../icons';
+import { AuriaBloomMark } from '../../auria/AuriaBloomMark';
 import { auriaImpact } from '../../../data/insights/selectors';
 import { useAcceptanceRate } from '../../../data/insights/auriaAcceptance';
 import { DataSourceBadge } from '../DataSourceBadge';
@@ -18,7 +18,7 @@ export function AuriaImpact() {
     <View style={styles.card}>
       <View style={styles.header}>
         <View style={styles.headerIcon}>
-          <AuriaIcon name="sparkles" size={AURIA_ICON_SIZE.sm} color="#2563EB" strokeWidth={1.9} />
+          <AuriaBloomMark size="sm" />
         </View>
         <Text style={styles.title}>Auria impact this week</Text>
       </View>
@@ -66,10 +66,8 @@ function createStyles(
       height: 30,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: '#EEF3FF',
-      ...myceoCornerStyle('iconSm'),
     },
-    title: { ...auriaTypography.title, fontSize: 16, fontWeight: theme.typography.fontWeight.bold, color: insights.text },
+    title: { ...auriaTypography.title, fontSize: 16, fontWeight: theme.typography.fontWeight.extrabold, color: insights.text },
     acceptance: {
       backgroundColor: insights.page,
       ...myceoCornerStyle('inset'),
@@ -77,7 +75,7 @@ function createStyles(
     },
     acceptanceLeft: { gap: 2 },
     acceptanceValueRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    acceptanceValue: { ...auriaTypography.title, fontSize: 28, fontWeight: theme.typography.fontWeight.bold, color: insights.text },
+    acceptanceValue: { ...auriaTypography.title, fontSize: 28, fontWeight: theme.typography.fontWeight.extrabold, color: insights.text },
     acceptanceLabel: { ...auriaTypography.body, fontSize: 12, fontWeight: '600', color: insights.textMuted },
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     item: {
@@ -89,7 +87,7 @@ function createStyles(
       gap: 2,
     },
     itemTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    itemValue: { ...auriaTypography.title, fontSize: 18, fontWeight: theme.typography.fontWeight.bold, color: insights.text },
+    itemValue: { ...auriaTypography.title, fontSize: 18, fontWeight: theme.typography.fontWeight.extrabold, color: insights.text },
     itemLabel: { ...auriaTypography.body, fontSize: 11.5, color: insights.textMuted },
   });
 }

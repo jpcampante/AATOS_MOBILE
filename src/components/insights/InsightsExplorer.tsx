@@ -218,7 +218,7 @@ function createStyles(
       ...auriaTypography.title,
       fontSize: 18,
       lineHeight: 24,
-      fontWeight: theme.typography.fontWeight.bold,
+      fontWeight: theme.typography.fontWeight.extrabold,
       color: insights.text,
     },
     subheadline: { ...auriaTypography.body, fontSize: 12.5, color: insights.textMuted, fontWeight: '500' },
@@ -226,7 +226,7 @@ function createStyles(
     statValue: {
       ...auriaTypography.title,
       fontSize: 30,
-      fontWeight: theme.typography.fontWeight.bold,
+      fontWeight: theme.typography.fontWeight.extrabold,
       color: insights.text,
     },
     statDelta: { ...auriaTypography.body, fontSize: 13, fontWeight: '700' },

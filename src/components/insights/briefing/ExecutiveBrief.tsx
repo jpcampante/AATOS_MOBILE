@@ -24,7 +24,7 @@ export function ExecutiveBrief() {
 
   const { attentionCount, topBlocker, movers } = pulse();
   const health = healthScore();
-  const bandColor = health.score >= 75 ? GOOD : health.score >= 50 ? '#B45309' : BAD;
+  const bandColor = health.score >= 75 ? GOOD : health.score >= 50 ? insights.text : BAD;
 
   return (
     <View style={styles.card}>
@@ -99,7 +99,7 @@ function createStyles(
       ...auriaTypography.title,
       fontSize: 19,
       lineHeight: 25,
-      fontWeight: theme.typography.fontWeight.bold,
+      fontWeight: theme.typography.fontWeight.extrabold,
       color: insights.text,
     },
     subline: { ...auriaTypography.body, fontSize: 12.5, color: insights.textMuted, marginTop: 1 },
@@ -111,7 +111,7 @@ function createStyles(
     healthLeft: { gap: 1 },
     healthLabel: { ...auriaTypography.body, fontSize: 12, fontWeight: '600', color: insights.textMuted },
     scoreRow: { flexDirection: 'row', alignItems: 'baseline', gap: 2 },
-    score: { ...auriaTypography.title, fontSize: 30, fontWeight: theme.typography.fontWeight.bold },
+    score: { ...auriaTypography.title, fontSize: 30, fontWeight: theme.typography.fontWeight.extrabold },
     scoreMax: { ...auriaTypography.body, fontSize: 13, fontWeight: '600', color: insights.textHint },
     components: { flexDirection: 'row', gap: 8, marginTop: 12 },
     component: {
@@ -122,7 +122,7 @@ function createStyles(
       paddingHorizontal: 8,
       gap: 2,
     },
-    componentValue: { ...auriaTypography.title, fontSize: 16, fontWeight: theme.typography.fontWeight.bold, color: insights.text },
+    componentValue: { ...auriaTypography.title, fontSize: 16, fontWeight: theme.typography.fontWeight.extrabold, color: insights.text },
     componentLabel: { ...auriaTypography.body, fontSize: 10, color: insights.textMuted, lineHeight: 13 },
     componentWeight: { ...auriaTypography.label, fontSize: 9, fontWeight: '700', color: insights.textHint },
   });

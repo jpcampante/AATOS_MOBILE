@@ -34,6 +34,7 @@ type AuriaComposerProps = {
   onChangeText?: (text: string) => void;
   onSend?: () => void;
   onAttach?: () => void;
+  onVoice?: () => void;
   bottomInset?: number;
   isResponding?: boolean;
 };
@@ -54,7 +55,7 @@ const inputWebFocusReset =
 
 export const AuriaComposer = forwardRef<AuriaComposerHandle, AuriaComposerProps>(
   function AuriaComposer(
-    { value, onChangeText, onSend, onAttach, bottomInset = 0, isResponding = false },
+    { value, onChangeText, onSend, onAttach, onVoice, bottomInset = 0, isResponding = false },
     ref,
   ) {
     const [draft, setDraft] = useState('');
@@ -131,6 +132,7 @@ export const AuriaComposer = forwardRef<AuriaComposerHandle, AuriaComposerProps>
         />
         <Pressable
           style={styles.micButton}
+          onPress={onVoice}
           accessibilityRole="button"
           accessibilityLabel="Voice"
         >

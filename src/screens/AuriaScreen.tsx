@@ -28,6 +28,7 @@ import {
   getWelcomeContentTopPadding,
 } from '../components/auria/auriaLayout';
 import { AuriaChatView } from '../components/auria/AuriaChatView';
+import { AuriaVoiceMode } from '../components/auria/AuriaVoiceMode';
 import { AuriaNewProjectInput, AuriaNewProjectModal } from '../components/auria/AuriaNewProjectModal';
 import { AuriaSidebar } from '../components/auria/AuriaSidebar';
 import { AuriaWelcomeView } from '../components/auria/AuriaWelcomeView';
@@ -72,6 +73,7 @@ export function AuriaScreen({
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
+  const [voiceOpen, setVoiceOpen] = useState(false);
   const [composerHeight, setComposerHeight] = useState(
     getAuriaComposerOverlayHeight(),
   );
@@ -341,6 +343,10 @@ export function AuriaScreen({
                   onChangeText={workspace.setComposerText}
                   onSend={handleSend}
                   onAttach={openCreateMenu}
+                  onVoice={() => {
+                    dismissKeyboard();
+                    setVoiceOpen(true);
+                  }}
                   bottomInset={keyboardInset}
                   isResponding={workspace.isResponding}
                 />
@@ -362,6 +368,8 @@ export function AuriaScreen({
         onClose={workspace.closeProjectModal}
         onCreate={handleCreateProject}
       />
+
+      <AuriaVoiceMode visible={voiceOpen} onClose={() => setVoiceOpen(false)} />
     </View>
   );
 }

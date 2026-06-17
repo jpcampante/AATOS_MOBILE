@@ -65,9 +65,7 @@ export function TodaySection({ onNavigate }: TodaySectionProps) {
         </View>
       </Pressable>
 
-      <View style={styles.divider} />
-
-      {/* Preview of the most important items */}
+      {/* Preview of the most important items — nested inside the Today card */}
       <View style={styles.list}>
         {preview.map((item) => (
           <Pressable
@@ -102,10 +100,11 @@ function createStyles(
   theme: ReturnType<typeof useTheme>['theme'],
 ) {
   return StyleSheet.create({
+    // The whole card is the blue "Today" container; items sit inside it.
     card: {
       padding: 12,
-      gap: 4,
-      backgroundColor: ds.white,
+      gap: 8,
+      backgroundColor: '#DDE8FF',
       ...tasksCardCorner(),
       ...theme.shadow.card,
     },
@@ -117,7 +116,7 @@ function createStyles(
       gap: 12,
       paddingHorizontal: 4,
       paddingTop: 2,
-      paddingBottom: 10,
+      paddingBottom: 2,
     },
     headerPressed: { opacity: 0.7 },
     headerIcon: {
@@ -125,7 +124,7 @@ function createStyles(
       height: 38,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: '#DDE8FF',
+      backgroundColor: 'rgba(255,255,255,0.85)',
       ...myceoCornerStyle('icon'),
     },
     headerCopy: { flex: 1, gap: 3, minWidth: 0 },
@@ -144,13 +143,13 @@ function createStyles(
     },
     headerDate: {
       ...auriaTypography.body,
-      color: ds.gray500,
+      color: ds.gray600,
       fontSize: 12,
       fontWeight: theme.typography.fontWeight.medium,
     },
     headerSummary: {
       ...auriaTypography.body,
-      color: ds.gray500,
+      color: ds.gray700,
       fontSize: 12.5,
     },
     viewAll: {
@@ -170,21 +169,15 @@ function createStyles(
       fontWeight: theme.typography.fontWeight.semibold,
     },
 
-    divider: {
-      height: 1,
-      backgroundColor: ds.gray100,
-      marginHorizontal: 4,
-      marginBottom: 2,
-    },
-
-    // Preview list
-    list: { gap: 2 },
+    // Preview list — white rows nested inside the blue card
+    list: { gap: 6 },
     row: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 12,
-      paddingHorizontal: 6,
+      paddingHorizontal: 10,
       paddingVertical: 9,
+      backgroundColor: ds.white,
       ...myceoCornerStyle('inset'),
     },
     rowPressed: { backgroundColor: ds.gray100 },
@@ -193,7 +186,7 @@ function createStyles(
       height: 32,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: ds.gray100,
+      backgroundColor: '#EEF3FF',
       ...myceoCornerStyle('iconSm'),
     },
     rowCopy: { flex: 1, gap: 1, minWidth: 0 },

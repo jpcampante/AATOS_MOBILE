@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { myceoCornerStyle, useTheme } from '../../theme';
+import { auriaTypography, myceoCornerStyle, useTheme } from '../../theme';
 import {
   formatMetricValue,
   getMetric,
@@ -12,22 +12,31 @@ import type { Period, Scope } from '../../data/insights/types';
 import { LineChart } from './LineChart';
 import { DataSourceBadge } from './DataSourceBadge';
 
+const USER_NAME = 'Marta';
+const GOOD = '#1D9E75';
+const BAD = '#E5484D';
+const OVERLAY_COLOR = '#2563EB';
+
 const SCOPES: { key: Scope; label: string }[] = [
   { key: 'company', label: 'Company' },
   { key: 'team', label: 'Team' },
   { key: 'me', label: 'Me' },
 ];
+const SCOPE_CONTEXT: Record<Scope, string> = {
+  company: 'across the company',
+  team: 'in your team',
+  me: 'for you',
+};
 const PERIODS: { key: Period; label: string }[] = [
   { key: 'week', label: 'W' },
   { key: 'month', label: 'M' },
   { key: 'quarter', label: 'Q' },
 ];
 const PERIOD_SUB: Record<Period, string> = {
-  week: 'Last 8 weeks.',
-  month: 'Last 12 months.',
-  quarter: 'Last 4 quarters.',
+  week: 'last 8 weeks',
+  month: 'last 12 months',
+  quarter: 'last 4 quarters',
 };
-const OVERLAY_COLOR = '#2563EB';
 
 /** A sensible correlate to overlay per metric (tells a story, not just a line). */
 const CORRELATE: Record<string, string> = {
@@ -39,7 +48,7 @@ const CORRELATE: Record<string, string> = {
   'auria-time-saved': 'email-backlog',
 };
 
-/** Zone 4 — the Explorer (neutral analysis tool). Pick metric, scope, period; overlay to compare. */
+/** Zone — the Explorer (blue hero). Pick a metric, scope and period; overlay to compare. */
 export function InsightsExplorer() {
   const { insights, theme } = useTheme();
   const styles = useMemo(() => createStyles(insights, theme), [insights, theme]);
@@ -52,6 +61,13 @@ export function InsightsExplorer() {
   const metric = getMetric(metricId);
   const series = metricSeries(metric, scope, period);
   const lastValue = series[series.length - 1]?.value ?? 0;
+  const prevValue = series[series.length - 2]?.value ?? lastValue;
+  const diff = lastValue - prevValue;
+  const deltaGood = metric.goodDirection === 'up' ? diff >= 0 : diff <= 0;
+  const deltaText =
+    metric.unit === 'percent'
+      ? `${diff >= 0 ? '+' : ''}${Math.round(diff)}pp`
+      : `${diff >= 0 ? '+' : ''}${prevValue ? Math.round((diff / prevValue) * 100) : 0}%`;
 
   const overlayId = CORRELATE[metric.id];
   const overlay = compare && overlayId ? getMetric(overlayId) : null;
@@ -62,14 +78,27 @@ export function InsightsExplorer() {
     insightSignals.find((s) => s.metricId === metric.id);
   const annotationLabel = matchedSignal?.delta ?? (matchedSignal ? 'flagged' : undefined);
 
+  // Lowercase the metric name mid-sentence, but keep proper nouns (Auria).
+  const metricPhrase = /^Auria/.test(metric.chip)
+    ? metric.chip
+    : metric.chip.charAt(0).toLowerCase() + metric.chip.slice(1);
+
   return (
     <View style={styles.shell}>
       <View style={styles.headerRow}>
         <View style={styles.headerCopy}>
-          <Text style={styles.headline}>{`Here's a line graph of ${metric.headline}.`}</Text>
-          <Text style={styles.subheadline}>{PERIOD_SUB[period]}</Text>
+          <Text style={styles.headline}>
+            {USER_NAME}, here's {metricPhrase} {SCOPE_CONTEXT[scope]}.
+          </Text>
+          <Text style={styles.subheadline}>Auria tracked this over the {PERIOD_SUB[period]}.</Text>
         </View>
         <DataSourceBadge source={metric.source} />
+      </View>
+
+      <View style={styles.statRow}>
+        <Text style={styles.statValue}>{formatMetricValue(metric, lastValue)}</Text>
+        <Text style={[styles.statDelta, { color: deltaGood ? GOOD : BAD }]}>{deltaText}</Text>
+        <Text style={styles.statHint}>vs previous</Text>
       </View>
 
       <View style={styles.controls}>
@@ -118,20 +147,17 @@ export function InsightsExplorer() {
         annotationLabel={annotationLabel}
       />
 
-      <View style={styles.metaRow}>
-        <View style={styles.metaLeft}>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendLine, { backgroundColor: insights.accent }]} />
-            <Text style={styles.metaLabel}>{metric.metaLabel}</Text>
-          </View>
-          {overlay ? (
-            <View style={styles.legendItem}>
-              <View style={[styles.legendLineDashed, { borderColor: OVERLAY_COLOR }]} />
-              <Text style={styles.metaLabel}>{overlay.metaLabel}</Text>
-            </View>
-          ) : null}
+      <View style={styles.legendRow}>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendLine, { backgroundColor: insights.accent }]} />
+          <Text style={styles.legendText}>{metric.metaLabel}</Text>
         </View>
-        <Text style={styles.metaValue}>{formatMetricValue(metric, lastValue)}</Text>
+        {overlay ? (
+          <View style={styles.legendItem}>
+            <View style={[styles.legendLineDashed, { borderColor: OVERLAY_COLOR }]} />
+            <Text style={styles.legendText}>{overlay.metaLabel}</Text>
+          </View>
+        ) : null}
       </View>
 
       {overlay ? (
@@ -187,9 +213,24 @@ function createStyles(
       justifyContent: 'space-between',
       gap: 8,
     },
-    headerCopy: { flex: 1, gap: 4 },
-    headline: { fontSize: 18, lineHeight: 24, fontWeight: '700', color: insights.text },
-    subheadline: { fontSize: 13, color: insights.textMuted, fontWeight: '500' },
+    headerCopy: { flex: 1, gap: 3 },
+    headline: {
+      ...auriaTypography.title,
+      fontSize: 18,
+      lineHeight: 24,
+      fontWeight: theme.typography.fontWeight.bold,
+      color: insights.text,
+    },
+    subheadline: { ...auriaTypography.body, fontSize: 12.5, color: insights.textMuted, fontWeight: '500' },
+    statRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
+    statValue: {
+      ...auriaTypography.title,
+      fontSize: 30,
+      fontWeight: theme.typography.fontWeight.bold,
+      color: insights.text,
+    },
+    statDelta: { ...auriaTypography.body, fontSize: 13, fontWeight: '700' },
+    statHint: { ...auriaTypography.body, fontSize: 11, color: insights.textHint, fontWeight: '500' },
     controls: {
       flexDirection: 'row',
       flexWrap: 'wrap',
@@ -203,25 +244,25 @@ function createStyles(
       padding: 2,
     },
     segBtn: {
-      paddingHorizontal: 11,
+      paddingHorizontal: 12,
       paddingVertical: 6,
       ...myceoCornerStyle('chip'),
     },
     segBtnActive: { backgroundColor: insights.accent },
-    segText: { fontSize: 12, fontWeight: '600', color: insights.textMuted },
+    segText: { ...auriaTypography.body, fontSize: 12, fontWeight: '600', color: insights.textMuted },
     segTextActive: { color: insights.surface },
-    metaRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'flex-end',
-    },
-    metaLeft: { gap: 4 },
+    legendRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 14 },
     legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     legendLine: { width: 14, height: 3, borderRadius: 2 },
     legendLineDashed: { width: 14, height: 0, borderTopWidth: 2, borderStyle: 'dashed' },
-    metaLabel: { fontSize: 12, color: insights.textMuted, fontWeight: '600' },
-    metaValue: { fontSize: 22, color: insights.text, fontWeight: '800' },
-    compareHint: { fontSize: 10.5, color: insights.textHint, fontStyle: 'italic', marginTop: -4 },
+    legendText: { ...auriaTypography.body, fontSize: 12, color: insights.textMuted, fontWeight: '600' },
+    compareHint: {
+      ...auriaTypography.body,
+      fontSize: 10.5,
+      color: insights.textHint,
+      fontStyle: 'italic',
+      marginTop: -4,
+    },
     chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm },
     chip: {
       backgroundColor: theme.colors.chipSurface,
@@ -230,7 +271,7 @@ function createStyles(
       paddingVertical: 8,
     },
     chipActive: { backgroundColor: insights.accent },
-    chipText: { fontSize: 12, fontWeight: '600', color: insights.textMuted },
+    chipText: { ...auriaTypography.body, fontSize: 12, fontWeight: '600', color: insights.textMuted },
     chipTextActive: { color: insights.surface },
     compareChip: { borderWidth: 1, borderColor: OVERLAY_COLOR, backgroundColor: 'transparent' },
     compareChipActive: { backgroundColor: OVERLAY_COLOR, borderColor: OVERLAY_COLOR },

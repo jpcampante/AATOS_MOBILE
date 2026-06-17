@@ -9,7 +9,9 @@ import Svg, {
   Stop,
   Text as SvgText,
 } from 'react-native-svg';
-import { motionDuration, motionEasing, useTheme } from '../../theme';
+import { auriaTypography, motionDuration, motionEasing, useTheme } from '../../theme';
+
+const CHART_FONT = auriaTypography.fontFamily;
 
 type Point = { label: string; value: number };
 
@@ -166,6 +168,7 @@ export function LineChart({
                   x={padL - 6}
                   y={geo.yAt(value) + 3}
                   fontSize={9}
+                  fontFamily={CHART_FONT}
                   fill={insights.textHint}
                   textAnchor="end"
                 >
@@ -215,6 +218,7 @@ export function LineChart({
                 x={geo.pts[geo.pts.length - 1].x}
                 y={Math.max(geo.pts[geo.pts.length - 1].y - 12, padT + 2)}
                 fontSize={9}
+                fontFamily={CHART_FONT}
                 fontWeight="600"
                 fill={stroke}
                 textAnchor="end"
@@ -231,6 +235,7 @@ export function LineChart({
                   x={geo.xAt(i)}
                   y={height - 6}
                   fontSize={9}
+                  fontFamily={CHART_FONT}
                   fill={insights.textHint}
                   textAnchor="middle"
                 >

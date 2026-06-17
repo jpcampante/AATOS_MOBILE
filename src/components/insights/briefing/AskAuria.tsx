@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { myceoCornerStyle, useTheme } from '../../../theme';
+import { auriaTypography, myceoCornerStyle, useTheme } from '../../../theme';
 import { AuriaIcon, AURIA_ICON_SIZE } from '../../icons';
 import type { NavigateFn } from '../../../data/productNavigation';
 
@@ -95,6 +95,7 @@ function createStyles(
       paddingVertical: 10,
     },
     input: {
+      ...auriaTypography.body,
       flex: 1,
       fontSize: theme.typography.fontSize.base,
       color: insights.text,
@@ -117,6 +118,6 @@ function createStyles(
       paddingVertical: 8,
       maxWidth: '100%',
     },
-    chipText: { fontSize: 12, fontWeight: '600', color: insights.textMuted },
+    chipText: { ...auriaTypography.body, fontSize: 12, fontWeight: '600', color: insights.textMuted },
   });
 }

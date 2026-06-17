@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { myceoCornerStyle, useTheme } from '../../../theme';
+import { auriaTypography, myceoCornerStyle, useTheme } from '../../../theme';
 import { AuriaIcon } from '../../icons';
 import type { NavigateFn, ProductTabId } from '../../../data/productNavigation';
 import type { InsightAction, Signal } from '../../../data/insights/types';
@@ -113,9 +113,9 @@ function createStyles(
       alignItems: 'center',
       justifyContent: 'space-between',
     },
-    title: { fontSize: 16, fontWeight: '800', color: insights.text, letterSpacing: -0.2 },
+    title: { ...auriaTypography.title, fontSize: 16, fontWeight: theme.typography.fontWeight.bold, color: insights.text },
     viewAll: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-    viewAllText: { fontSize: 12.5, fontWeight: '600', color: insights.textMuted },
+    viewAllText: { ...auriaTypography.body, fontSize: 12.5, fontWeight: '600', color: insights.textMuted },
     pressed: { opacity: 0.6 },
     filters: { flexDirection: 'row', gap: 7 },
     filter: {
@@ -125,9 +125,9 @@ function createStyles(
       ...myceoCornerStyle('chip'),
     },
     filterActive: { backgroundColor: insights.accent },
-    filterText: { fontSize: 12, fontWeight: '600', color: insights.textMuted },
+    filterText: { ...auriaTypography.body, fontSize: 12, fontWeight: '600', color: insights.textMuted },
     filterTextActive: { color: insights.surface },
     list: { gap: 8 },
-    empty: { fontSize: 13, color: insights.textMuted, paddingVertical: 16, textAlign: 'center' },
+    empty: { ...auriaTypography.body, fontSize: 13, color: insights.textMuted, paddingVertical: 16, textAlign: 'center' },
   });
 }

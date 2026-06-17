@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { myceoCornerStyle, useTheme } from '../../../theme';
+import { auriaTypography, myceoCornerStyle, useTheme } from '../../../theme';
 import { AuriaIcon } from '../../icons';
 import { healthScore, pulse } from '../../../data/insights/selectors';
 import { DataSourceBadge } from '../DataSourceBadge';
@@ -94,25 +94,25 @@ function createStyles(
       padding: theme.spacing.lg,
       gap: 4,
     },
-    greeting: { fontSize: 13, fontWeight: '600', color: insights.textMuted },
+    greeting: { ...auriaTypography.body, fontSize: 13, fontWeight: '600', color: insights.textMuted },
     headline: {
+      ...auriaTypography.title,
       fontSize: 19,
       lineHeight: 25,
-      fontWeight: '800',
+      fontWeight: theme.typography.fontWeight.bold,
       color: insights.text,
-      letterSpacing: -0.3,
     },
-    subline: { fontSize: 12.5, color: insights.textMuted, marginTop: 1 },
+    subline: { ...auriaTypography.body, fontSize: 12.5, color: insights.textMuted, marginTop: 1 },
     moversRow: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 6 },
-    moverText: { fontSize: 12.5, fontWeight: '600' },
+    moverText: { ...auriaTypography.body, fontSize: 12.5, fontWeight: '600' },
     moverDot: { color: insights.textHint },
     divider: { height: 1, backgroundColor: insights.divider, marginVertical: 12 },
     healthRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     healthLeft: { gap: 1 },
-    healthLabel: { fontSize: 12, fontWeight: '600', color: insights.textMuted },
+    healthLabel: { ...auriaTypography.body, fontSize: 12, fontWeight: '600', color: insights.textMuted },
     scoreRow: { flexDirection: 'row', alignItems: 'baseline', gap: 2 },
-    score: { fontSize: 30, fontWeight: '800', letterSpacing: -0.5 },
-    scoreMax: { fontSize: 13, fontWeight: '600', color: insights.textHint },
+    score: { ...auriaTypography.title, fontSize: 30, fontWeight: theme.typography.fontWeight.bold },
+    scoreMax: { ...auriaTypography.body, fontSize: 13, fontWeight: '600', color: insights.textHint },
     components: { flexDirection: 'row', gap: 8, marginTop: 12 },
     component: {
       flex: 1,
@@ -122,8 +122,8 @@ function createStyles(
       paddingHorizontal: 8,
       gap: 2,
     },
-    componentValue: { fontSize: 16, fontWeight: '800', color: insights.text },
-    componentLabel: { fontSize: 10, color: insights.textMuted, lineHeight: 13 },
-    componentWeight: { fontSize: 9, fontWeight: '700', color: insights.textHint },
+    componentValue: { ...auriaTypography.title, fontSize: 16, fontWeight: theme.typography.fontWeight.bold, color: insights.text },
+    componentLabel: { ...auriaTypography.body, fontSize: 10, color: insights.textMuted, lineHeight: 13 },
+    componentWeight: { ...auriaTypography.label, fontSize: 9, fontWeight: '700', color: insights.textHint },
   });
 }

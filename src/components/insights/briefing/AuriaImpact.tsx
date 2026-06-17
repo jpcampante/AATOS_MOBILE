@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { myceoCornerStyle, useTheme } from '../../../theme';
+import { auriaTypography, myceoCornerStyle, useTheme } from '../../../theme';
 import { AuriaIcon, AURIA_ICON_SIZE } from '../../icons';
 import { auriaImpact } from '../../../data/insights/selectors';
 import { useAcceptanceRate } from '../../../data/insights/auriaAcceptance';
@@ -69,7 +69,7 @@ function createStyles(
       backgroundColor: '#EEF3FF',
       ...myceoCornerStyle('iconSm'),
     },
-    title: { fontSize: 16, fontWeight: '800', color: insights.text, letterSpacing: -0.2 },
+    title: { ...auriaTypography.title, fontSize: 16, fontWeight: theme.typography.fontWeight.bold, color: insights.text },
     acceptance: {
       backgroundColor: insights.page,
       ...myceoCornerStyle('inset'),
@@ -77,8 +77,8 @@ function createStyles(
     },
     acceptanceLeft: { gap: 2 },
     acceptanceValueRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    acceptanceValue: { fontSize: 28, fontWeight: '800', color: insights.text, letterSpacing: -0.5 },
-    acceptanceLabel: { fontSize: 12, fontWeight: '600', color: insights.textMuted },
+    acceptanceValue: { ...auriaTypography.title, fontSize: 28, fontWeight: theme.typography.fontWeight.bold, color: insights.text },
+    acceptanceLabel: { ...auriaTypography.body, fontSize: 12, fontWeight: '600', color: insights.textMuted },
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     item: {
       width: '48%',
@@ -89,7 +89,7 @@ function createStyles(
       gap: 2,
     },
     itemTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    itemValue: { fontSize: 18, fontWeight: '800', color: insights.text },
-    itemLabel: { fontSize: 11.5, color: insights.textMuted },
+    itemValue: { ...auriaTypography.title, fontSize: 18, fontWeight: theme.typography.fontWeight.bold, color: insights.text },
+    itemLabel: { ...auriaTypography.body, fontSize: 11.5, color: insights.textMuted },
   });
 }

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { useTheme } from '../../theme';
+import { auriaTypography, useTheme } from '../../theme';
 import type { DataSource } from '../../data/insights/types';
 
 /** Small honesty cue: where a number comes from while data is mocked. */
@@ -31,6 +31,7 @@ function createStyles(insights: ReturnType<typeof useTheme>['insights']) {
     },
     dot: { width: 6, height: 6, borderRadius: 3 },
     text: {
+      ...auriaTypography.label,
       fontSize: 10,
       fontWeight: '600',
       color: insights.textHint,

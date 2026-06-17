@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { myceoCornerStyle, useTheme } from '../../../theme';
+import { auriaTypography, myceoCornerStyle, useTheme } from '../../../theme';
 import { AuriaIcon, AURIA_ICON_SIZE, type AuriaIconName } from '../../icons';
 import type { InsightAction, Severity, Signal, SignalDomain } from '../../../data/insights/types';
 import { resolveActions } from '../../../data/insights/actions';
@@ -92,8 +92,8 @@ function createStyles(insights: ReturnType<typeof useTheme>['insights']) {
       ...myceoCornerStyle('iconSm'),
     },
     rowCopy: { flex: 1, gap: 1, minWidth: 0 },
-    rowTitle: { fontSize: 13.5, fontWeight: '700', color: insights.text, letterSpacing: -0.1 },
-    rowMeta: { fontSize: 11.5, color: insights.textMuted },
+    rowTitle: { ...auriaTypography.body, fontSize: 13.5, fontWeight: '700', color: insights.text },
+    rowMeta: { ...auriaTypography.body, fontSize: 11.5, color: insights.textMuted },
     actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, paddingLeft: 47 },
     actionBtn: {
       paddingHorizontal: 11,
@@ -103,7 +103,7 @@ function createStyles(insights: ReturnType<typeof useTheme>['insights']) {
       borderColor: insights.divider,
       ...myceoCornerStyle('chip'),
     },
-    actionText: { fontSize: 11.5, fontWeight: '600', color: insights.text },
+    actionText: { ...auriaTypography.body, fontSize: 11.5, fontWeight: '600', color: insights.text },
     pressed: { opacity: 0.6 },
   });
 }

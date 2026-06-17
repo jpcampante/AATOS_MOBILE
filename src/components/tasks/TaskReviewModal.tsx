@@ -333,7 +333,8 @@ function createStyles(
 
     // List
     list: {
-      flex: 1,
+      flexGrow: 0,
+      flexShrink: 1,
     },
     listContent: {
       paddingHorizontal: 18,

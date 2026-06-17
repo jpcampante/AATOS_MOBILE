@@ -208,7 +208,6 @@ function createStyles(
       color: ds.gray500,
       letterSpacing: -0.2,
       textAlign: 'center',
-      width: '100%',
     },
     greetTitle: {
       ...auriaTypography.title,

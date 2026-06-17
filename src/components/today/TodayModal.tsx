@@ -197,7 +197,7 @@ function createStyles(
       color: ds.white,
       fontWeight: theme.typography.fontWeight.semibold,
     },
-    list: { flex: 1 },
+    list: { flexGrow: 0, flexShrink: 1 },
     listContent: {
       paddingHorizontal: 18,
       paddingBottom: 12,

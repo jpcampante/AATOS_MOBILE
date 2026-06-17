@@ -8,7 +8,7 @@ import {
   myceoCornerStyle,
   useTheme,
 } from '../../theme';
-import { AuriaLogoMark } from './AuriaLogoMark';
+import { AuriaBloomMark } from './AuriaBloomMark';
 import { AuriaRefreshButton } from './AuriaRefreshButton';
 
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
@@ -106,7 +106,7 @@ export function AuriaWelcomeView({
             <View style={styles.greetingBlock}>
               <View style={styles.greetRow}>
                 <View style={styles.greetLogo}>
-                  <AuriaLogoMark size="md" />
+                  <AuriaBloomMark size="md" />
                 </View>
                 <Text style={styles.greetHi}>Hi {auriaWelcomeName}</Text>
               </View>

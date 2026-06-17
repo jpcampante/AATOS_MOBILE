@@ -76,6 +76,9 @@ export const composeFromAccounts: ComposeAccount[] = [
 
 export const composeDefaultFrom = 'contact@myceo.fi';
 
+/** A message being composed (new, reply or forward). */
+export type ComposeDraft = { to: string; subject: string; body: string };
+
 /** Default signature appended to a new message. */
 export const composeSignature = `João Campante
 CEO & Founder | MyCEO

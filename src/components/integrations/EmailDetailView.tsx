@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Popover } from '../ui/Popover';
+import { Snackbar } from '../ui/Snackbar';
 import { AuriaIcon, AuriaIconName, AURIA_ICON_SIZE } from '../icons';
 import { connectedMailbox, type MailItem } from '../../data/integrationsMockData';
 import { auriaTypography, myceoCornerStyle, useTheme } from '../../theme';
@@ -308,13 +310,7 @@ export function EmailDetailView({
           </Pressable>
         </View>
 
-        {snack ? (
-          <View style={styles.detailSnack} pointerEvents="none">
-            <Text style={styles.detailSnackText} numberOfLines={1}>
-              {snack}
-            </Text>
-          </View>
-        ) : null}
+        {snack ? <Snackbar text={snack} style={styles.detailSnackPos} /> : null}
 
         {reactionsOpen ? (
           <>
@@ -443,34 +439,6 @@ function Menu({
         })}
       </Popover>
     </>
-  );
-}
-
-function Popover({ style, children }: { style?: object | object[]; children: React.ReactNode }) {
-  const a = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    Animated.timing(a, {
-      toValue: 1,
-      duration: 150,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
-    }).start();
-  }, [a]);
-  return (
-    <Animated.View
-      style={[
-        style,
-        {
-          opacity: a,
-          transform: [
-            { scale: a.interpolate({ inputRange: [0, 1], outputRange: [0.96, 1] }) },
-            { translateY: a.interpolate({ inputRange: [0, 1], outputRange: [-6, 0] }) },
-          ],
-        },
-      ]}
-    >
-      {children}
-    </Animated.View>
   );
 }
 
@@ -660,21 +628,7 @@ function createStyles(
       fontSize: 14,
       fontWeight: theme.typography.fontWeight.medium,
     },
-    detailSnack: {
-      position: 'absolute',
-      left: 16,
-      bottom: insets.bottom + 84,
-      maxWidth: '88%',
-      backgroundColor: ds.gray900,
-      borderRadius: 10,
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-    },
-    detailSnackText: {
-      ...auriaTypography.body,
-      color: ds.white,
-      fontSize: 13.5,
-    },
+    detailSnackPos: { bottom: insets.bottom + 84 },
     dismiss: { ...StyleSheet.absoluteFillObject },
     reactionBar: {
       position: 'absolute',

@@ -7,7 +7,7 @@ import {
   heroSuggestionChips,
 } from '../../data/insightsMockData';
 import { myceoCornerStyle, useTheme } from '../../theme';
-import { MiniBarChart } from './MiniBarChart';
+import { LineChart } from './LineChart';
 
 export function InsightsHero() {
   const [prompt, setPrompt] = useState('');
@@ -42,7 +42,7 @@ export function InsightsHero() {
         </View>
       </View>
 
-      <MiniBarChart data={dauSeries} barColor={insights.accent} />
+      <LineChart data={dauSeries} color={insights.accent} height={184} />
 
       <View style={styles.metaRow}>
         <Text style={styles.metaLabel}>Daily active users</Text>

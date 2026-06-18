@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
@@ -16,6 +16,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { auriaTypography, useTheme } from '../../theme';
 import { AuriaIcon } from '../icons';
+import { useMicLevel } from '../../features/auria/useMicLevel';
+import { useWebSpeech } from '../../features/auria/useWebSpeech';
 
 type AuriaVoiceModeProps = {
   visible: boolean;
@@ -36,17 +38,17 @@ const SERIF = Platform.select({
 
 /** The bloom palettes — blue while you speak, warm peach while Auria speaks. */
 const BLUE_STOPS = [
-  { offset: '0%', color: '#6E9FE9', opacity: 0.82 },
-  { offset: '30%', color: '#93B6EF', opacity: 0.5 },
-  { offset: '58%', color: '#BCD4F4', opacity: 0.26 },
-  { offset: '80%', color: '#DDE9F9', opacity: 0.1 },
+  { offset: '0%', color: '#6E9FE9', opacity: 0.92 },
+  { offset: '26%', color: '#8FB4EF', opacity: 0.66 },
+  { offset: '50%', color: '#B3CCF3', opacity: 0.4 },
+  { offset: '74%', color: '#D4E3F8', opacity: 0.18 },
   { offset: '100%', color: '#FAFAF9', opacity: 0 },
 ] as const;
 const PINK_STOPS = [
-  { offset: '0%', color: '#E2A089', opacity: 0.82 },
-  { offset: '30%', color: '#ECBBA8', opacity: 0.5 },
-  { offset: '58%', color: '#F3D3C6', opacity: 0.26 },
-  { offset: '80%', color: '#F8E6DE', opacity: 0.1 },
+  { offset: '0%', color: '#E1A089', opacity: 0.92 },
+  { offset: '26%', color: '#EAB7A4', opacity: 0.66 },
+  { offset: '50%', color: '#F1CDBF', opacity: 0.4 },
+  { offset: '74%', color: '#F7E2D9', opacity: 0.18 },
   { offset: '100%', color: '#FAFAF9', opacity: 0 },
 ] as const;
 
@@ -86,12 +88,30 @@ function VoiceModeContent({ active, onClose }: { active: boolean; onClose: () =>
   ]);
   const [mode, setMode] = useState<'speaking' | 'listening'>('speaking');
   const [revealCount, setRevealCount] = useState(0);
+  const [recording, setRecording] = useState(false);
+  const [interacted, setInteracted] = useState(false);
+  const [liveTranscript, setLiveTranscript] = useState('');
+  const [micNote, setMicNote] = useState<string | null>(null);
   const stepRef = useRef(1);
+  const recordingRef = useRef(false);
+  const liveTranscriptRef = useRef('');
+  liveTranscriptRef.current = liveTranscript;
 
   // Bloom drivers: amplitude (shared) + a crossfade between blue and pink.
   const level = useRef(new Animated.Value(0.4)).current;
   const blueOpacity = useRef(new Animated.Value(0)).current;
   const pinkOpacity = useRef(new Animated.Value(1)).current;
+
+  // Real microphone capture — the actual audio level drives the bloom.
+  const onMicLevel = useCallback(
+    (v: number) => {
+      if (!recordingRef.current) return;
+      level.setValue(0.15 + v * 0.85);
+    },
+    [level],
+  );
+  const mic = useMicLevel({ onLevel: onMicLevel });
+  const speech = useWebSpeech({ lang: 'pt-PT', onTranscript: setLiveTranscript });
 
   const last = messages[messages.length - 1];
 
@@ -111,9 +131,9 @@ function VoiceModeContent({ active, onClose }: { active: boolean; onClose: () =>
     }).start();
   }, [mode, blueOpacity, pinkOpacity]);
 
-  // Simulated audio amplitude — organic jitter while the conversation is live.
+  // Simulated amplitude — drives the bloom until the real mic is capturing.
   useEffect(() => {
-    if (!active) return;
+    if (!active || recording) return;
     let running = true;
     const tick = () => {
       if (!running) return;
@@ -129,22 +149,12 @@ function VoiceModeContent({ active, onClose }: { active: boolean; onClose: () =>
       running = false;
       level.stopAnimation();
     };
-  }, [active, level]);
+  }, [active, recording, level]);
 
-  // Turn-taking. Auria speaks (pink + word reveal), then it listens for you
-  // (blue) before the next turn arrives — mirrors the real voice cadence.
+  // Reveal + bloom colour for whatever Auria last said (demo or live reply).
+  // Frozen while you record — then the bloom stays blue (you hold the floor).
   useEffect(() => {
-    if (!active || !last) return;
-
-    const advance = () => {
-      stepRef.current += 1;
-      const turn = SCRIPT[stepRef.current % SCRIPT.length];
-      setMessages((prev) => {
-        const next = [...prev, { id: `v-${stepRef.current}`, role: turn.role, text: turn.text }];
-        return next.length > 3 ? next.slice(next.length - 3) : next;
-      });
-    };
-
+    if (!active || recording || !last) return;
     if (last.role === 'auria') {
       setMode('speaking');
       setRevealCount(0);
@@ -155,45 +165,101 @@ function VoiceModeContent({ active, onClose }: { active: boolean; onClose: () =>
         setRevealCount(i);
         if (i >= total) clearInterval(iv);
       }, 210);
-      const revealMs = total * 210 + 200;
-      const toListen = setTimeout(() => setMode('listening'), revealMs);
-      const toNext = setTimeout(advance, revealMs + 1800);
+      const toListen = setTimeout(() => setMode('listening'), total * 210 + 200);
       return () => {
         clearInterval(iv);
         clearTimeout(toListen);
-        clearTimeout(toNext);
       };
     }
-
-    // You are speaking — blue, no reveal.
     setMode('listening');
     setRevealCount(99);
-    const toNext = setTimeout(advance, 2200);
-    return () => clearTimeout(toNext);
-  }, [active, last]);
+  }, [active, recording, last]);
 
-  const handleMic = () => {
+  // Scripted auto-advance — only until you take over with the real mic.
+  useEffect(() => {
+    if (!active || interacted || recording || !last) return;
+    const total = last.text.split(' ').length;
+    const duration = last.role === 'auria' ? total * 210 + 200 + 1800 : 2200;
+    const toNext = setTimeout(() => {
+      stepRef.current += 1;
+      const turn = SCRIPT[stepRef.current % SCRIPT.length];
+      setMessages((prev) => {
+        const next = [...prev, { id: `v-${stepRef.current}`, role: turn.role, text: turn.text }];
+        return next.length > 3 ? next.slice(next.length - 3) : next;
+      });
+    }, duration);
+    return () => clearTimeout(toNext);
+  }, [active, interacted, recording, last]);
+
+  const pushMessage = (role: Speaker, text: string) => {
+    stepRef.current += 1;
     setMessages((prev) => {
-      const next = [...prev, { id: `v-mic-${Date.now()}`, role: 'user' as Speaker, text: 'Mostra-me o que precisa de atenção.' }];
+      const next = [...prev, { id: `v-live-${stepRef.current}-${role}`, role, text }];
       return next.length > 3 ? next.slice(next.length - 3) : next;
     });
   };
 
-  const levelScale = level.interpolate({ inputRange: [0, 1], outputRange: [0.84, 1.08] });
-  const levelTranslate = level.interpolate({ inputRange: [0, 1], outputRange: [10, -26] });
-  const levelOpacity = level.interpolate({ inputRange: [0, 1], outputRange: [0.74, 1] });
-  const bloomHeight = Math.round(screenHeight * 0.66);
+  const ackReply = (text: string) => {
+    if (/tarefa|task|organi|priorid/i.test(text)) {
+      return 'Certo. Tens três tarefas em risco hoje — queres que comece pela mais urgente?';
+    }
+    if (/email|mail|responder/i.test(text)) {
+      return 'Posso tratar disso. Diz-me o destinatário e o tom que queres dar.';
+    }
+    return 'Entendido. Vou tratar disso e aviso-te quando estiver pronto.';
+  };
+
+  const handleMic = async () => {
+    if (recordingRef.current) {
+      // Stop talking → finalize the transcript, then Auria replies.
+      recordingRef.current = false;
+      setRecording(false);
+      speech.stop();
+      mic.stop();
+      const text = liveTranscriptRef.current.trim();
+      setLiveTranscript('');
+      if (text) {
+        pushMessage('user', text);
+        const reply = ackReply(text);
+        setTimeout(() => pushMessage('auria', reply), 650);
+      } else {
+        setMode('listening');
+      }
+      return;
+    }
+    // Start talking → real capture drives the bloom + transcription.
+    setMicNote(null);
+    setInteracted(true);
+    const ok = await mic.start();
+    if (!ok) {
+      setMicNote('Microfone indisponível ou sem permissão');
+      setInteracted(false);
+      return;
+    }
+    setLiveTranscript('');
+    speech.start();
+    recordingRef.current = true;
+    setRecording(true);
+    setMode('listening');
+  };
+
+  // The bloom reacts to the audio level: it glows brighter and rises taller.
+  // Scale is anchored at the BOTTOM (transformOrigin) so the bottom edge stays
+  // pinned to the screen edge — it grows upward only, never lifting into a line.
+  const levelOpacity = level.interpolate({ inputRange: [0.2, 1], outputRange: [0.74, 1] });
+  const levelScale = level.interpolate({ inputRange: [0.2, 1], outputRange: [0.9, 1.18] });
+  const bloomHeight = Math.round(screenHeight * 0.82);
 
   return (
     <View style={styles.root}>
       <StatusBar style="dark" />
 
-      {/* Audio-reactive bloom — sits behind the transcript and controls. */}
+      {/* Audio-reactive bloom — bottom-anchored: grows upward, never seams. */}
       <View style={[styles.bloomWrap, { height: bloomHeight }]} pointerEvents="none">
         <Animated.View
           style={[
             StyleSheet.absoluteFill,
-            { opacity: levelOpacity, transform: [{ translateY: levelTranslate }, { scaleY: levelScale }] },
+            { opacity: levelOpacity, transformOrigin: 'center bottom', transform: [{ scaleY: levelScale }] },
           ]}
         >
           <Animated.View style={[StyleSheet.absoluteFill, { opacity: blueOpacity }]}>
@@ -239,7 +305,23 @@ function VoiceModeContent({ active, onClose }: { active: boolean; onClose: () =>
             </View>
           );
         })}
+
+        {recording ? (
+          <View style={styles.userRow}>
+            <View style={[styles.userBubble, styles.userBubbleLive]}>
+              <Text style={styles.userText}>
+                {liveTranscript || (speech.supported ? 'A ouvir…' : 'A ouvir o microfone…')}
+              </Text>
+            </View>
+          </View>
+        ) : null}
       </ScrollView>
+
+      {micNote ? (
+        <View style={styles.micNote} pointerEvents="none">
+          <Text style={styles.micNoteText}>{micNote}</Text>
+        </View>
+      ) : null}
 
       <View style={styles.controls} pointerEvents="box-none">
         <Pressable
@@ -253,11 +335,16 @@ function VoiceModeContent({ active, onClose }: { active: boolean; onClose: () =>
         <View style={styles.controlsRight}>
           <Pressable
             onPress={handleMic}
-            style={({ pressed }) => [styles.circleLight, pressed && styles.pressed]}
+            style={({ pressed }) => [
+              styles.circleLight,
+              recording && styles.circleRecording,
+              pressed && styles.pressed,
+            ]}
             accessibilityRole="button"
-            accessibilityLabel="Talk"
+            accessibilityState={{ selected: recording }}
+            accessibilityLabel={recording ? 'Stop talking' : 'Talk'}
           >
-            <AuriaIcon name="mic" size={22} color={ds.gray600} strokeWidth={1.7} />
+            <AuriaIcon name="mic" size={22} color={recording ? ds.white : ds.gray600} strokeWidth={1.7} />
           </Pressable>
           <Pressable
             onPress={onClose}
@@ -283,7 +370,7 @@ function BloomLayer({
   return (
     <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
       <Defs>
-        <RadialGradient id={id} cx="50%" cy="100%" rx="92%" ry="76%" fx="50%" fy="100%">
+        <RadialGradient id={id} cx="50%" cy="102%" rx="125%" ry="100%" fx="50%" fy="102%">
           {stops.map((s) => (
             <Stop key={s.offset} offset={s.offset} stopColor={s.color} stopOpacity={s.opacity} />
           ))}
@@ -351,6 +438,10 @@ function createStyles(
       borderRadius: 19,
       paddingHorizontal: 17,
       paddingVertical: 10,
+    },
+    userBubbleLive: {
+      borderWidth: 1,
+      borderColor: 'rgba(61, 123, 224, 0.55)',
     },
     userText: {
       ...auriaTypography.body,
@@ -422,9 +513,29 @@ function createStyles(
       shadowOffset: { width: 0, height: 5 },
       elevation: 4,
     },
+    circleRecording: {
+      backgroundColor: '#3D7BE0',
+    },
     pressed: {
       transform: [{ scale: 0.94 }],
       opacity: 0.92,
+    },
+    micNote: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: safeBottom + 88,
+      alignItems: 'center',
+    },
+    micNoteText: {
+      ...auriaTypography.body,
+      fontSize: 12.5,
+      color: ds.gray600,
+      backgroundColor: ds.white,
+      paddingHorizontal: 14,
+      paddingVertical: 7,
+      borderRadius: 16,
+      overflow: 'hidden',
     },
   });
 }

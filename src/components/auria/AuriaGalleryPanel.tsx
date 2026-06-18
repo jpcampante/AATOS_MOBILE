@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import * as DocumentPicker from 'expo-document-picker';
 import {
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -8,15 +9,26 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import { auriaGalleryItems, AuriaGalleryItem } from '../../data/auriaMockData';
+import { auriaGalleryItems, auriaProjects, AuriaGalleryItem, AuriaProject } from '../../data/auriaMockData';
 import {
+  AuriaGallerySort,
   AuriaGalleryTab,
   AuriaGalleryView,
   filterGalleryItems,
+  sortGalleryItems,
 } from '../../features/auria/galleryLogic';
 import { auriaTypography, useTheme } from '../../theme';
 import { AuriaIcon, AURIA_ICON_SIZE, AURIA_ICON_STROKE_NAV } from '../icons';
 import { AuriaEmptyState, AuriaPanelScroll } from './AuriaPanelShared';
+import {
+  GalleryActionSheet,
+  GalleryMoveSheet,
+  GalleryPreviewSheet,
+  GalleryRenameModal,
+  GallerySortSheet,
+  GalleryToast,
+  type GalleryActionId,
+} from './AuriaGallerySheets';
 
 const TABS: Array<{ id: AuriaGalleryTab; label: string }> = [
   { id: 'all', label: 'All' },
@@ -31,21 +43,37 @@ export function AuriaGalleryPanel() {
   const [tab, setTab] = useState<AuriaGalleryTab>('all');
   const [view, setView] = useState<AuriaGalleryView>('grid');
   const [query, setQuery] = useState('');
-  const [uploadedItems, setUploadedItems] = useState<AuriaGalleryItem[]>([]);
+  const [sort, setSort] = useState<AuriaGallerySort>('recent');
+  const [items, setItems] = useState<AuriaGalleryItem[]>(() => [...auriaGalleryItems]);
 
-  const items = useMemo(
-    () => filterGalleryItems([...uploadedItems, ...auriaGalleryItems], { tab, query, typeFilter: null }),
-    [query, tab, uploadedItems],
+  // Active overlays
+  const [menuItem, setMenuItem] = useState<AuriaGalleryItem | null>(null);
+  const [renameItem, setRenameItem] = useState<AuriaGalleryItem | null>(null);
+  const [moveItem, setMoveItem] = useState<AuriaGalleryItem | null>(null);
+  const [previewItem, setPreviewItem] = useState<AuriaGalleryItem | null>(null);
+  const [sortOpen, setSortOpen] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const displayed = useMemo(
+    () => sortGalleryItems(filterGalleryItems(items, { tab, query, typeFilter: null }), sort),
+    [items, tab, query, sort],
   );
   const columns = width >= 960 ? 4 : width >= 680 ? 3 : 2;
   const cardWidth = `${100 / columns - 1.6}%` as const;
 
+  const showToast = (message: string) => {
+    setToast(message);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 2200);
+  };
+
   const upload = async () => {
     const result = await DocumentPicker.getDocumentAsync({ multiple: true, copyToCacheDirectory: true });
     if (result.canceled) return;
-    setUploadedItems((current) => [
+    setItems((current) => [
       ...result.assets.map((asset, index) => ({
-        id: `upload-${asset.name}-${index}`,
+        id: `upload-${asset.name}-${index}-${Date.now()}`,
         name: asset.name,
         type: asset.mimeType?.startsWith('image/') ? ('Image' as const) : ('Document' as const),
         accent: theme.colors.input,
@@ -56,85 +84,165 @@ export function AuriaGalleryPanel() {
       })),
       ...current,
     ]);
+    showToast(`Uploaded ${result.assets.length} file${result.assets.length === 1 ? '' : 's'}`);
+  };
+
+  const runAction = (id: GalleryActionId) => {
+    const target = menuItem ?? previewItem;
+    if (!target) return;
+    if (id !== 'download' && id !== 'share' && id !== 'addToChat') setMenuItem(null);
+    switch (id) {
+      case 'open':
+        setPreviewItem(target);
+        break;
+      case 'rename':
+        setRenameItem(target);
+        break;
+      case 'move':
+        setMoveItem(target);
+        break;
+      case 'download':
+        showToast(`Downloading “${target.name}”`);
+        break;
+      case 'share':
+        if (Platform.OS === 'web' && typeof navigator !== 'undefined') {
+          void navigator.clipboard?.writeText(`https://aatos.app/file/${encodeURIComponent(target.name)}`);
+        }
+        showToast('Link copied');
+        break;
+      case 'addToChat':
+        showToast(`Added “${target.name}” to chat`);
+        break;
+      case 'delete':
+        setItems((current) => current.filter((it) => it.id !== target.id));
+        setPreviewItem((p) => (p?.id === target.id ? null : p));
+        showToast('File deleted');
+        break;
+    }
+  };
+
+  const renameTo = (name: string) => {
+    if (!renameItem) return;
+    setItems((current) => current.map((it) => (it.id === renameItem.id ? { ...it, name } : it)));
+    setRenameItem(null);
+    showToast('File renamed');
+  };
+
+  const moveTo = (project: AuriaProject) => {
+    if (!moveItem) return;
+    setItems((current) =>
+      current.map((it) => (it.id === moveItem.id ? { ...it, source: project.name } : it)),
+    );
+    setMoveItem(null);
+    showToast(`Moved to ${project.name}`);
   };
 
   return (
-    <AuriaPanelScroll>
-      <View style={styles.topRow}>
-        <Text style={styles.title}>Gallery</Text>
-        <View style={styles.topActions}>
-          <SearchBox value={query} onChangeText={setQuery} />
-          <Pressable style={styles.uploadButton} onPress={() => void upload()} accessibilityRole="button">
-            <Text style={styles.uploadText}>Upload</Text>
-          </Pressable>
-        </View>
-      </View>
-
-      <View style={styles.controlRow}>
-        <View style={styles.tabs}>
-          {TABS.map((item) => {
-            const active = tab === item.id;
-            return (
-              <Pressable
-                key={item.id}
-                onPress={() => setTab(item.id)}
-                style={[styles.tab, active && styles.tabActive]}
-                accessibilityRole="button"
-                accessibilityState={{ selected: active }}
-              >
-                <Text style={[styles.tabText, active && styles.tabTextActive]}>{item.label}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
-        <View style={styles.viewActions}>
-          <View style={styles.filterIcon}>
-            <AuriaIcon name="filter" size={AURIA_ICON_SIZE.xs} tertiary />
+    <View style={styles.root}>
+      <AuriaPanelScroll>
+        <View style={styles.topRow}>
+          <Text style={styles.title}>Gallery</Text>
+          <View style={styles.topActions}>
+            <SearchBox value={query} onChangeText={setQuery} />
+            <Pressable style={styles.uploadButton} onPress={() => void upload()} accessibilityRole="button" accessibilityLabel="Upload files">
+              <AuriaIcon name="upload" size={AURIA_ICON_SIZE.xs} color={theme.colors.surface} strokeWidth={AURIA_ICON_STROKE_NAV} />
+              <Text style={styles.uploadText}>Upload</Text>
+            </Pressable>
           </View>
-          {(['grid', 'list'] as const).map((value) => {
-            const active = view === value;
-            return (
-              <Pressable
-                key={value}
-                onPress={() => setView(value)}
-                style={[styles.viewButton, active && styles.viewButtonActive]}
-                accessibilityRole="button"
-                accessibilityLabel={`${value} view`}
-                accessibilityState={{ selected: active }}
-              >
-                <AuriaIcon
-                  name={value}
-                  size={AURIA_ICON_SIZE.xs}
-                  color={active ? theme.colors.text : theme.colors.textTertiary}
-                  strokeWidth={AURIA_ICON_STROKE_NAV}
-                />
-              </Pressable>
-            );
-          })}
         </View>
-      </View>
 
-      {items.length === 0 ? (
-        <AuriaEmptyState title="No files found" message="Try a different search or category." />
-      ) : view === 'grid' ? (
-        <View style={styles.grid}>
-          {items.map((item, index) => (
-            <GalleryCard key={item.id} item={item} index={index} width={cardWidth} />
-          ))}
+        <View style={styles.controlRow}>
+          <View style={styles.tabs}>
+            {TABS.map((item) => {
+              const active = tab === item.id;
+              return (
+                <Pressable
+                  key={item.id}
+                  onPress={() => setTab(item.id)}
+                  style={[styles.tab, active && styles.tabActive]}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                >
+                  <Text style={[styles.tabText, active && styles.tabTextActive]}>{item.label}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          <View style={styles.viewActions}>
+            <Pressable
+              style={({ pressed }) => [styles.viewButton, pressed && styles.viewButtonActive]}
+              onPress={() => setSortOpen(true)}
+              accessibilityRole="button"
+              accessibilityLabel="Sort and filter"
+            >
+              <AuriaIcon name="filter" size={AURIA_ICON_SIZE.xs} color={theme.colors.textTertiary} strokeWidth={AURIA_ICON_STROKE_NAV} />
+            </Pressable>
+            {(['grid', 'list'] as const).map((value) => {
+              const active = view === value;
+              return (
+                <Pressable
+                  key={value}
+                  onPress={() => setView(value)}
+                  style={[styles.viewButton, active && styles.viewButtonActive]}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${value} view`}
+                  accessibilityState={{ selected: active }}
+                >
+                  <AuriaIcon
+                    name={value}
+                    size={AURIA_ICON_SIZE.xs}
+                    color={active ? theme.colors.text : theme.colors.textTertiary}
+                    strokeWidth={AURIA_ICON_STROKE_NAV}
+                  />
+                </Pressable>
+              );
+            })}
+          </View>
         </View>
-      ) : (
-        <View style={styles.list}>
-          {items.map((item, index) => (
-            <GalleryListRow key={item.id} item={item} index={index} />
-          ))}
-        </View>
-      )}
 
-      <View style={styles.recent}>
-        <Text style={styles.recentTitle}>Recent searches</Text>
-        <Text style={styles.recentHint}>Your recent searches appear here.</Text>
-      </View>
-    </AuriaPanelScroll>
+        {displayed.length === 0 ? (
+          <AuriaEmptyState title="No files found" message="Try a different search or category." />
+        ) : view === 'grid' ? (
+          <View style={styles.grid}>
+            {displayed.map((item, index) => (
+              <GalleryCard
+                key={item.id}
+                item={item}
+                index={index}
+                width={cardWidth}
+                onOpen={() => setPreviewItem(item)}
+                onMenu={() => setMenuItem(item)}
+              />
+            ))}
+          </View>
+        ) : (
+          <View style={styles.list}>
+            {displayed.map((item, index) => (
+              <GalleryListRow
+                key={item.id}
+                item={item}
+                index={index}
+                onOpen={() => setPreviewItem(item)}
+                onMenu={() => setMenuItem(item)}
+              />
+            ))}
+          </View>
+        )}
+
+        <View style={styles.countRow}>
+          <Text style={styles.countText}>
+            {displayed.length} {displayed.length === 1 ? 'item' : 'items'}
+          </Text>
+        </View>
+      </AuriaPanelScroll>
+
+      <GalleryActionSheet item={menuItem} onClose={() => setMenuItem(null)} onAction={runAction} />
+      <GalleryRenameModal item={renameItem} onClose={() => setRenameItem(null)} onRename={renameTo} />
+      <GalleryMoveSheet item={moveItem} projects={auriaProjects} onClose={() => setMoveItem(null)} onMove={moveTo} />
+      <GallerySortSheet visible={sortOpen} sort={sort} onSelect={(s) => { setSort(s); setSortOpen(false); }} onClose={() => setSortOpen(false)} />
+      <GalleryPreviewSheet item={previewItem} onClose={() => setPreviewItem(null)} onAction={runAction} />
+      <GalleryToast message={toast} />
+    </View>
   );
 }
 
@@ -151,22 +259,63 @@ function SearchBox({ value, onChangeText }: { value: string; onChangeText: (valu
         placeholderTextColor={theme.colors.textHint}
         style={styles.searchInput}
       />
+      {value ? (
+        <Pressable onPress={() => onChangeText('')} hitSlop={8} accessibilityRole="button" accessibilityLabel="Clear search">
+          <AuriaIcon name="close" size={AURIA_ICON_SIZE.xs} color={theme.colors.textTertiary} strokeWidth={2} />
+        </Pressable>
+      ) : null}
     </View>
   );
 }
 
-function GalleryCard({ item, index, width }: { item: AuriaGalleryItem; index: number; width: `${number}%` }) {
+function MoreButton({ onPress, style }: { onPress: () => void; style?: object }) {
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
+  return (
+    <Pressable
+      onPress={onPress}
+      hitSlop={8}
+      style={({ pressed }) => [styles.moreButton, pressed && styles.moreButtonPressed, style]}
+      accessibilityRole="button"
+      accessibilityLabel="File options"
+    >
+      <AuriaIcon name="moreHorizontal" size={AURIA_ICON_SIZE.xs} color={theme.colors.textSecondary} strokeWidth={AURIA_ICON_STROKE_NAV} />
+    </Pressable>
+  );
+}
+
+function GalleryCard({
+  item,
+  index,
+  width,
+  onOpen,
+  onMenu,
+}: {
+  item: AuriaGalleryItem;
+  index: number;
+  width: `${number}%`;
+  onOpen: () => void;
+  onMenu: () => void;
+}) {
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const image = item.type === 'Image';
   return (
-    <Pressable style={[styles.card, { width }]} accessibilityRole="button">
+    <View style={[styles.card, { width }]}>
       <Text style={styles.cardName} numberOfLines={1}>{item.name}</Text>
       <View style={styles.preview}>
         {image ? <AbstractPreview index={index} /> : <FilePreview item={item} />}
       </View>
       <Text style={styles.cardMeta}>{item.type.toUpperCase()} · {item.sizeLabel}</Text>
-    </Pressable>
+      {/* tap-to-open overlay (sits under the 3-dots button) */}
+      <Pressable
+        style={StyleSheet.absoluteFill}
+        onPress={onOpen}
+        accessibilityRole="button"
+        accessibilityLabel={`Open ${item.name}`}
+      />
+      <MoreButton onPress={onMenu} style={styles.cardMore} />
+    </View>
   );
 }
 
@@ -200,20 +349,32 @@ function AbstractPreview({ index }: { index: number }) {
   );
 }
 
-function GalleryListRow({ item, index }: { item: AuriaGalleryItem; index: number }) {
+function GalleryListRow({
+  item,
+  index,
+  onOpen,
+  onMenu,
+}: {
+  item: AuriaGalleryItem;
+  index: number;
+  onOpen: () => void;
+  onMenu: () => void;
+}) {
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   return (
-    <Pressable style={styles.listRow} accessibilityRole="button">
-      <View style={styles.listPreview}>
-        {item.type === 'Image' ? <AbstractPreview index={index} /> : <FilePreview item={item} />}
-      </View>
-      <View style={styles.listCopy}>
-        <Text style={styles.cardName} numberOfLines={1}>{item.name}</Text>
-        <Text style={styles.cardMeta}>{item.type.toUpperCase()} · {item.sizeLabel}</Text>
-      </View>
-      <AuriaIcon name="moreHorizontal" tertiary />
-    </Pressable>
+    <View style={styles.listRow}>
+      <Pressable style={styles.listMain} onPress={onOpen} accessibilityRole="button" accessibilityLabel={`Open ${item.name}`}>
+        <View style={styles.listPreview}>
+          {item.type === 'Image' ? <AbstractPreview index={index} /> : <FilePreview item={item} />}
+        </View>
+        <View style={styles.listCopy}>
+          <Text style={styles.cardName} numberOfLines={1}>{item.name}</Text>
+          <Text style={styles.cardMeta}>{item.type.toUpperCase()} · {item.sizeLabel} · {item.source}</Text>
+        </View>
+      </Pressable>
+      <MoreButton onPress={onMenu} />
+    </View>
   );
 }
 
@@ -225,6 +386,7 @@ function formatBytes(bytes: number) {
 
 function createStyles(theme: ReturnType<typeof useTheme>['theme']) {
   return StyleSheet.create({
+    root: { flex: 1 },
     topRow: { gap: 14 },
     title: {
       ...auriaTypography.title,
@@ -251,11 +413,14 @@ function createStyles(theme: ReturnType<typeof useTheme>['theme']) {
       fontSize: 13,
       color: theme.colors.text,
       paddingVertical: 0,
+      ...(Platform.OS === 'web' ? ({ outlineWidth: 0, outlineStyle: 'none' } as object) : null),
     },
     uploadButton: {
       minHeight: 38,
-      paddingHorizontal: 17,
+      flexDirection: 'row',
       alignItems: 'center',
+      gap: 6,
+      paddingHorizontal: 16,
       justifyContent: 'center',
       borderRadius: theme.radius.pill,
       backgroundColor: theme.colors.offBlack,
@@ -273,7 +438,6 @@ function createStyles(theme: ReturnType<typeof useTheme>['theme']) {
     tabText: { ...auriaTypography.body, fontSize: 12, color: theme.colors.textTertiary },
     tabTextActive: { color: theme.colors.text, fontWeight: theme.typography.fontWeight.semibold },
     viewActions: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-    filterIcon: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
     viewButton: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
     viewButtonActive: { backgroundColor: theme.colors.input },
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, alignItems: 'stretch' },
@@ -286,12 +450,20 @@ function createStyles(theme: ReturnType<typeof useTheme>['theme']) {
       backgroundColor: theme.colors.surface,
       justifyContent: 'space-between',
       gap: 8,
+      overflow: 'hidden',
+    },
+    cardMore: {
+      position: 'absolute',
+      top: 8,
+      right: 8,
+      backgroundColor: theme.colors.surface,
     },
     cardName: {
       ...auriaTypography.body,
       fontSize: 13,
       fontWeight: theme.typography.fontWeight.semibold,
       color: theme.colors.text,
+      paddingRight: 30,
     },
     preview: { flex: 1, minHeight: 132, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderRadius: 14 },
     cardMeta: { ...auriaTypography.body, fontSize: 10, color: theme.colors.textTertiary },
@@ -317,17 +489,25 @@ function createStyles(theme: ReturnType<typeof useTheme>['theme']) {
       minHeight: 72,
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 12,
+      gap: 8,
       padding: 9,
       borderWidth: 1,
       borderColor: theme.colors.divider,
       borderRadius: 16,
       backgroundColor: theme.colors.surface,
     },
+    listMain: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
     listPreview: { width: 54, height: 54, borderRadius: 12, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
     listCopy: { flex: 1, gap: 5 },
-    recent: { paddingTop: 22, paddingBottom: 18, gap: 8 },
-    recentTitle: { ...auriaTypography.body, fontSize: 13, fontWeight: theme.typography.fontWeight.bold, color: theme.colors.text },
-    recentHint: { ...auriaTypography.body, fontSize: 12, color: theme.colors.textHint },
+    moreButton: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    moreButtonPressed: { backgroundColor: theme.colors.hover },
+    countRow: { paddingTop: 18, paddingBottom: 16 },
+    countText: { ...auriaTypography.body, fontSize: 12, color: theme.colors.textHint },
   });
 }

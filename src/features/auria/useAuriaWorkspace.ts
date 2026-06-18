@@ -11,7 +11,7 @@ import {
 } from '../../data/auriaMockData';
 import type { AuriaChatMessage, AuriaDocumentArtifact, AuriaImageArtifact } from './types';
 
-type AssistantReply = string | Pick<AuriaChatMessage, 'text' | 'artifact'>;
+type AssistantReply = string | Pick<AuriaChatMessage, 'text' | 'artifact' | 'reasoning' | 'sources'>;
 
 type WorkspaceState = {
   panel: AuriaPanel;
@@ -97,6 +97,84 @@ export const auriaImageMock: AuriaChatMessage = {
   ),
 };
 
+/**
+ * A rich preview conversation that demonstrates every message capability:
+ * reasoning (chain-of-thought), consulted-source chips, a document artifact
+ * and an image artifact. Loaded when a saved conversation is opened.
+ */
+export const auriaDemoConversation: AuriaChatMessage[] = [
+  {
+    id: 'demo-u1',
+    role: 'user',
+    text: 'Resume o nosso contrato MSA e aponta os riscos principais.',
+  },
+  {
+    id: 'demo-a1',
+    role: 'assistant',
+    reasoning: {
+      durationSec: 6,
+      steps: [
+        'Abri o MSA e localizei as cláusulas de responsabilidade, rescisão e SLA.',
+        'Comparei o Anexo B com as notas de revisão do Jurídico.',
+        'Identifiquei 3 pontos com risco acima do habitual e priorizei-os.',
+        'Resumi em linguagem de negócio, com a ação recomendada.',
+      ],
+    },
+    text:
+      'Aqui está o resumo do MSA e os riscos principais:\n\n• Responsabilidade: o limite está em 12 meses de fees — abaixo do nosso padrão (24 meses).\n• Rescisão: a outra parte pode sair com 30 dias sem causa; nós precisamos de 90.\n• SLA: 99.5% sem créditos de serviço definidos.\n\nRecomendo renegociar o limite de responsabilidade e adicionar créditos de SLA antes de assinar.',
+    sources: [
+      {
+        id: 'src-1',
+        title: 'MSA_Contract_v3.pdf',
+        kind: 'pdf',
+        meta: 'Legal team · 2.4 MB',
+        excerpt:
+          'Section 9.2 — Limitation of Liability. In no event shall either party’s aggregate liability exceed the total fees paid in the twelve (12) months preceding the claim giving rise to such liability...',
+      },
+      {
+        id: 'src-2',
+        title: 'Legal review notes.docx',
+        kind: 'doc',
+        meta: 'Research chat · 84 KB',
+        excerpt:
+          'Reviewer note: liability cap (12 months) is below our 24-month standard. Termination-for-convenience is asymmetric — counterparty 30 days, us 90 days. Confirm whether SLA credits exist.',
+      },
+      {
+        id: 'src-3',
+        title: 'Annex B — SLA.pdf',
+        kind: 'pdf',
+        meta: 'Legal team · 612 KB',
+        excerpt:
+          'Service availability target: 99.5%, measured monthly. No service credits are specified for missed targets within this annex.',
+      },
+    ],
+  },
+  {
+    id: 'demo-u2',
+    role: 'user',
+    text: 'Cria um documento com o resumo executivo para o board.',
+  },
+  {
+    id: 'demo-a2',
+    role: 'assistant',
+    text: 'Criei um rascunho executivo. Podes copiá-lo ou expandi-lo para leitura focada.',
+    artifact: buildDocumentArtifact('Create a document. Brief: MSA executive summary for the board'),
+  },
+  {
+    id: 'demo-u3',
+    role: 'user',
+    text: 'Gera uma imagem para a capa da apresentação.',
+  },
+  {
+    id: 'demo-a3',
+    role: 'assistant',
+    text: 'Aqui está uma capa gerada a partir do briefing.',
+    artifact: buildImageArtifact(
+      'Create an image with aspect ratio 16:9. Image brief: Minimal abstract cover for an MSA board presentation, calm blue tones',
+    ),
+  },
+];
+
 const initialState: WorkspaceState = {
   panel: 'chat',
   showWelcome: true,
@@ -111,6 +189,44 @@ const initialState: WorkspaceState = {
 
 function buildAssistantReply(text: string): AssistantReply {
   const normalized = text.toLowerCase();
+  if (
+    normalized.includes('contrato') ||
+    normalized.includes('contract') ||
+    normalized.includes('risco') ||
+    normalized.includes('review') ||
+    normalized.includes('resume') ||
+    normalized.includes('resumo')
+  ) {
+    return {
+      text:
+        'Aqui está a leitura, com os pontos de risco em destaque:\n\n• Responsabilidade limitada a 12 meses de fees (abaixo do nosso padrão de 24).\n• Rescisão sem causa assimétrica (30 dias vs 90).\n• SLA de 99.5% sem créditos definidos.\n\nQueres que prepare a contraproposta?',
+      reasoning: {
+        durationSec: 5,
+        steps: [
+          'Reli o documento e extraí as cláusulas-chave.',
+          'Confrontei com as notas de revisão e o nosso padrão interno.',
+          'Classifiquei cada cláusula por nível de risco.',
+        ],
+      },
+      sources: [
+        {
+          id: `src-live-1-${Date.now()}`,
+          title: 'MSA_Contract_v3.pdf',
+          kind: 'pdf',
+          meta: 'Legal team · 2.4 MB',
+          excerpt:
+            'Section 9.2 — Limitation of Liability. Aggregate liability shall not exceed fees paid in the preceding twelve (12) months...',
+        },
+        {
+          id: `src-live-2-${Date.now()}`,
+          title: 'Legal review notes.docx',
+          kind: 'doc',
+          meta: 'Research chat · 84 KB',
+          excerpt: 'Liability cap below standard; termination asymmetry; confirm SLA credits.',
+        },
+      ],
+    };
+  }
   if (normalized.includes('task') || normalized.includes('priority')) {
     return 'Here is a practical priority structure:\n\n1. Define the outcome and deadline.\n2. Separate urgent work from important work.\n3. Assign an owner and next action to every task.\n4. Review blockers before starting execution.\n\nTell me the project or deadline and I will turn this into a specific task list.';
   }
@@ -194,22 +310,13 @@ function workspaceReducer(state: WorkspaceState, action: WorkspaceAction): Works
         };
       }
     case 'open-conversation': {
-      const conversation = auriaConversations.find((item) => item.id === action.conversationId);
       return {
         ...state,
         panel: 'chat',
         showWelcome: false,
         activeConversationId: action.conversationId,
         pendingReply: null,
-        messages: [
-          {
-            id: `history-${action.conversationId}`,
-            role: 'assistant',
-            text: conversation
-              ? `Loaded "${conversation.title}". This local preview will be replaced when conversation sync is connected.`
-              : 'Loaded the selected conversation preview.',
-          },
-        ],
+        messages: auriaDemoConversation.map((message) => ({ ...message })),
       };
     }
     case 'open-project-modal':

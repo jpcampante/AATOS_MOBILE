@@ -5,6 +5,8 @@ import { auriaTypography, liquidGlassBorder, liquidGlassTokens, useTheme } from 
 import type { AuriaChatMessage } from '../../features/auria/types';
 import { AuriaDocumentArtifact } from './AuriaDocumentArtifact';
 import { AuriaImageArtifact } from './AuriaImageArtifact';
+import { AuriaReasoningBlock } from './AuriaReasoningBlock';
+import { AuriaSourceChips } from './AuriaSourceChips';
 
 type AuriaChatViewProps = {
   messages: AuriaChatMessage[];
@@ -40,9 +42,15 @@ export function AuriaChatView({ messages, isResponding = false }: AuriaChatViewP
                 message.artifact && styles.bubbleWithArtifact,
               ]}
             >
-              <Text style={[styles.text, isUser ? styles.textUser : styles.textAssistant]}>
-                {message.text}
-              </Text>
+              {message.reasoning ? <AuriaReasoningBlock reasoning={message.reasoning} /> : null}
+              {message.text ? (
+                <Text style={[styles.text, isUser ? styles.textUser : styles.textAssistant]}>
+                  {message.text}
+                </Text>
+              ) : null}
+              {message.sources && message.sources.length > 0 ? (
+                <AuriaSourceChips sources={message.sources} />
+              ) : null}
               {message.artifact?.kind === 'document' ? (
                 <AuriaDocumentArtifact artifact={message.artifact} />
               ) : null}
@@ -96,6 +104,7 @@ function createStyles(
       borderRadius: 20,
       paddingHorizontal: 16,
       paddingVertical: 12,
+      gap: 11,
     },
     bubbleUser: {
       backgroundColor: ds.offBlack,

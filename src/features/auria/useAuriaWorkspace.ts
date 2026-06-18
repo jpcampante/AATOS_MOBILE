@@ -34,7 +34,15 @@ type WorkspaceAction =
   | { type: 'open-conversation'; conversationId: string }
   | { type: 'open-project-modal' }
   | { type: 'close-project-modal' }
-  | { type: 'create-project'; name: string; visibility: AuriaProjectVisibility; id: number };
+  | { type: 'delete-project'; id: string }
+  | {
+      type: 'create-project';
+      name: string;
+      visibility: AuriaProjectVisibility;
+      iconId?: string;
+      description?: string;
+      id: number;
+    };
 
 function buildDocumentArtifact(text: string): AuriaDocumentArtifact {
   const brief = text.match(/Brief:\s*(.+)$/i)?.[1]?.trim();
@@ -483,6 +491,12 @@ function workspaceReducer(state: WorkspaceState, action: WorkspaceAction): Works
       return { ...state, newProjectOpen: true };
     case 'close-project-modal':
       return { ...state, newProjectOpen: false };
+    case 'delete-project':
+      return {
+        ...state,
+        projects: state.projects.filter((project) => project.id !== action.id),
+        projectRows: state.projectRows.filter((row) => row.id !== action.id),
+      };
     case 'create-project': {
       const accent = PROJECT_ACCENT_PALETTE[state.projects.length % PROJECT_ACCENT_PALETTE.length];
       const project: AuriaProject = {
@@ -495,6 +509,8 @@ function workspaceReducer(state: WorkspaceState, action: WorkspaceAction): Works
         updatedLabel: 'Created just now',
         fileCount: 0,
         chatCount: 0,
+        iconId: action.iconId ?? 'folder',
+        description: action.description,
       };
       const moreIndex = state.projectRows.findIndex((row) => row.kind === 'more');
       const row: AuriaSidebarProjectRow = { id: project.id, name: project.name, kind: 'folder' };
@@ -550,8 +566,13 @@ export function useAuriaWorkspace() {
         dispatch({ type: 'open-conversation', conversationId }),
       openProjectModal: () => dispatch({ type: 'open-project-modal' }),
       closeProjectModal: () => dispatch({ type: 'close-project-modal' }),
-      createProject: (input: { name: string; visibility: AuriaProjectVisibility }) =>
-        dispatch({ type: 'create-project', ...input, id: Date.now() }),
+      deleteProject: (id: string) => dispatch({ type: 'delete-project', id }),
+      createProject: (input: {
+        name: string;
+        visibility: AuriaProjectVisibility;
+        iconId?: string;
+        description?: string;
+      }) => dispatch({ type: 'create-project', ...input, id: Date.now() }),
     }),
     [state],
   );

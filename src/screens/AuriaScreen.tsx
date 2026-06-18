@@ -283,6 +283,7 @@ export function AuriaScreen({
         <AuriaProjectsPanel
           projects={workspace.projects}
           onCreateProject={openNewProjectModal}
+          onDeleteProject={workspace.deleteProject}
         />
       );
     }

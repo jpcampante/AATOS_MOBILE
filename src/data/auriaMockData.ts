@@ -34,6 +34,9 @@ export type AuriaProject = {
   updatedLabel: string;
   fileCount: number;
   chatCount: number;
+  /** Icon id from PROJECT_ICON_OPTIONS. */
+  iconId?: string;
+  description?: string;
 };
 
 export type AuriaSidebarProjectRow = {
@@ -269,6 +272,8 @@ export const auriaProjects: AuriaProject[] = [
     updatedLabel: 'Updated 2 hours ago',
     fileCount: 8,
     chatCount: 3,
+    iconId: 'bar-chart',
+    description: 'Budgets, forecasts and board financials for the finance org.',
   },
   {
     id: 'f-projects',
@@ -280,6 +285,8 @@ export const auriaProjects: AuriaProject[] = [
     updatedLabel: 'Updated yesterday',
     fileCount: 12,
     chatCount: 5,
+    iconId: 'package',
+    description: 'Delivery plans, status updates and customer rollouts.',
   },
   {
     id: 'f-sales',
@@ -291,6 +298,8 @@ export const auriaProjects: AuriaProject[] = [
     updatedLabel: 'Updated 4 hours ago',
     fileCount: 6,
     chatCount: 2,
+    iconId: 'target',
+    description: 'Pipeline, proposals and account plans for the sales team.',
   },
   {
     id: 'f-legal',
@@ -302,6 +311,8 @@ export const auriaProjects: AuriaProject[] = [
     updatedLabel: 'Updated last week',
     fileCount: 4,
     chatCount: 1,
+    iconId: 'shield',
+    description: 'Contracts, reviews and compliance shared across the company.',
   },
 ];
 

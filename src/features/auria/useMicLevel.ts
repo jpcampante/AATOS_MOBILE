@@ -48,6 +48,7 @@ export function useMicLevel({ onLevel }: Options): UseMicLevel {
       analyser.fftSize = 512;
       source.connect(analyser);
       const data = new Uint8Array(analyser.frequencyBinCount);
+      let smoothed = 0;
       const loop = () => {
         analyser.getByteTimeDomainData(data);
         let sum = 0;
@@ -56,7 +57,10 @@ export function useMicLevel({ onLevel }: Options): UseMicLevel {
           sum += v * v;
         }
         const rms = Math.sqrt(sum / data.length);
-        onLevelRef.current(Math.max(0, Math.min(1, rms * 3.4)));
+        const target = Math.max(0, Math.min(1, rms * 4.2));
+        // Ease toward the target so the bloom tracks the voice without jitter.
+        smoothed += (target - smoothed) * 0.35;
+        onLevelRef.current(smoothed);
         rafRef.current = requestAnimationFrame(loop);
       };
       loop();

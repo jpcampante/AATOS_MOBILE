@@ -17,6 +17,7 @@ export function useMicLevel({ onLevel }: Options): UseMicLevel {
   const onLevelRef = useRef(onLevel);
   onLevelRef.current = onLevel;
   const activeRef = useRef(false);
+  const smoothedRef = useRef(0);
 
   const recorder = useAudioRecorder(
     { ...RecordingPresets.HIGH_QUALITY, isMeteringEnabled: true },
@@ -24,8 +25,10 @@ export function useMicLevel({ onLevel }: Options): UseMicLevel {
       if (!activeRef.current) return;
       const metering = (status as { metering?: number }).metering;
       if (typeof metering === 'number' && Number.isFinite(metering)) {
-        // dBFS (~-50 quiet .. 0 loud) → 0..1
-        onLevelRef.current(Math.max(0, Math.min(1, (metering + 50) / 50)));
+        // dBFS (~-55 quiet .. 0 loud) → 0..1, eased so the bloom tracks smoothly.
+        const target = Math.max(0, Math.min(1, (metering + 55) / 55));
+        smoothedRef.current += (target - smoothedRef.current) * 0.5;
+        onLevelRef.current(smoothedRef.current);
       }
     },
   );
@@ -41,6 +44,7 @@ export function useMicLevel({ onLevel }: Options): UseMicLevel {
       }
       await recorder.prepareToRecordAsync();
       recorder.record();
+      smoothedRef.current = 0;
       activeRef.current = true;
       return true;
     } catch {

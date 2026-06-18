@@ -97,83 +97,131 @@ export const auriaImageMock: AuriaChatMessage = {
   ),
 };
 
-/**
- * A rich preview conversation that demonstrates every message capability:
- * reasoning (chain-of-thought), consulted-source chips, a document artifact
- * and an image artifact. Loaded when a saved conversation is opened.
- */
-export const auriaDemoConversation: AuriaChatMessage[] = [
+/* ---- Separate preview conversations: each one showcases ONE capability ---- */
+
+/** Document only — a rewrite that produces an editable document artifact. */
+const documentMockConversation: AuriaChatMessage[] = [
+  { id: 'doc-u1', role: 'user', text: 'Reescreve os nossos Termos de Serviço de forma mais clara.' },
   {
-    id: 'demo-u1',
-    role: 'user',
-    text: 'Resume o nosso contrato MSA e aponta os riscos principais.',
+    id: 'doc-a1',
+    role: 'assistant',
+    text: 'Reescrevi os Termos de Serviço num rascunho editável. Podes copiá-lo ou abri-lo em ecrã cheio.',
+    artifact: buildDocumentArtifact('Create a document. Brief: Terms of Service — plain-language rewrite'),
   },
+];
+
+/** Reasoning only — a collapsible chain-of-thought above the answer. */
+const reasoningMockConversation: AuriaChatMessage[] = [
+  { id: 'rea-u1', role: 'user', text: 'Resume o pipeline do Q2 e diz-me onde estamos a perder negócios.' },
   {
-    id: 'demo-a1',
+    id: 'rea-a1',
+    role: 'assistant',
+    reasoning: {
+      durationSec: 7,
+      steps: [
+        'Carreguei o export do pipeline e agrupei por estágio.',
+        'Calculei a taxa de conversão entre estágios.',
+        'Comparei com o trimestre anterior para encontrar quedas.',
+        'Isolei o estágio com maior perda e a causa provável.',
+      ],
+    },
+    text:
+      'Resumo do pipeline Q2:\n\n• Volume total +12% vs Q1.\n• A maior perda está na passagem de "Proposta" → "Negociação" (só 38% avançam).\n• Causa provável: propostas a demorarem >9 dias a sair.\n\nRecomendo encurtar o tempo de proposta para <4 dias.',
+  },
+];
+
+/** Image only — a generated cover image with edit/share. */
+const imageMockConversation: AuriaChatMessage[] = [
+  { id: 'img-u1', role: 'user', text: 'Gera uma imagem de capa para o board update.' },
+  {
+    id: 'img-a1',
+    role: 'assistant',
+    text: 'Aqui está uma capa gerada a partir do briefing. Podes editá-la ou partilhá-la.',
+    artifact: buildImageArtifact(
+      'Create an image with aspect ratio 16:9. Image brief: Calm minimal cover for a board update, soft blue gradient',
+    ),
+  },
+];
+
+/** Sources only — consulted-document chips that open the document. */
+const sourcesMockConversation: AuriaChatMessage[] = [
+  { id: 'src-u1', role: 'user', text: 'Que documentos sustentam o plano de onboarding de clientes?' },
+  {
+    id: 'src-a1',
+    role: 'assistant',
+    text: 'Baseei o plano nestes documentos do teu workspace — toca para veres o que consultei:',
+    sources: [
+      {
+        id: 'on-1',
+        title: 'Customer onboarding deck.pptx',
+        kind: 'doc',
+        meta: 'Sales workspace · 3.1 MB',
+        excerpt:
+          'Onboarding em 4 fases: Kickoff (semana 1), Setup técnico (semana 2-3), Treino (semana 4), Revisão de sucesso (dia 60).',
+      },
+      {
+        id: 'on-2',
+        title: 'Customer interview notes.md',
+        kind: 'doc',
+        meta: 'Research chat · 84 KB',
+        excerpt:
+          'Clientes pedem um único ponto de contacto e um checklist claro nos primeiros 30 dias. Fricção maior: setup técnico.',
+      },
+      {
+        id: 'on-3',
+        title: 'Pipeline export.csv',
+        kind: 'sheet',
+        meta: 'Sales workspace · 1.1 MB',
+        excerpt: 'Tempo médio até primeiro valor: 21 dias. Contas com kickoff na semana 1 ativam 35% mais rápido.',
+      },
+    ],
+  },
+];
+
+/** Reasoning + sources together — the legal review. */
+const legalMockConversation: AuriaChatMessage[] = [
+  { id: 'leg-u1', role: 'user', text: 'Revê o contrato e aponta os riscos principais.' },
+  {
+    id: 'leg-a1',
     role: 'assistant',
     reasoning: {
       durationSec: 6,
       steps: [
-        'Abri o MSA e localizei as cláusulas de responsabilidade, rescisão e SLA.',
+        'Abri o MSA e localizei responsabilidade, rescisão e SLA.',
         'Comparei o Anexo B com as notas de revisão do Jurídico.',
-        'Identifiquei 3 pontos com risco acima do habitual e priorizei-os.',
-        'Resumi em linguagem de negócio, com a ação recomendada.',
+        'Classifiquei cada cláusula por nível de risco.',
       ],
     },
     text:
-      'Aqui está o resumo do MSA e os riscos principais:\n\n• Responsabilidade: o limite está em 12 meses de fees — abaixo do nosso padrão (24 meses).\n• Rescisão: a outra parte pode sair com 30 dias sem causa; nós precisamos de 90.\n• SLA: 99.5% sem créditos de serviço definidos.\n\nRecomendo renegociar o limite de responsabilidade e adicionar créditos de SLA antes de assinar.',
+      'Resumo do contrato e riscos principais:\n\n• Responsabilidade limitada a 12 meses de fees (abaixo do padrão de 24).\n• Rescisão sem causa assimétrica (30 dias vs 90).\n• SLA de 99.5% sem créditos definidos.\n\nRecomendo renegociar antes de assinar.',
     sources: [
       {
-        id: 'src-1',
+        id: 'leg-s1',
         title: 'MSA_Contract_v3.pdf',
         kind: 'pdf',
         meta: 'Legal team · 2.4 MB',
         excerpt:
-          'Section 9.2 — Limitation of Liability. In no event shall either party’s aggregate liability exceed the total fees paid in the twelve (12) months preceding the claim giving rise to such liability...',
+          'Section 9.2 — Limitation of Liability. Aggregate liability shall not exceed the total fees paid in the twelve (12) months preceding the claim...',
       },
       {
-        id: 'src-2',
-        title: 'Legal review notes.docx',
-        kind: 'doc',
-        meta: 'Research chat · 84 KB',
-        excerpt:
-          'Reviewer note: liability cap (12 months) is below our 24-month standard. Termination-for-convenience is asymmetric — counterparty 30 days, us 90 days. Confirm whether SLA credits exist.',
-      },
-      {
-        id: 'src-3',
+        id: 'leg-s2',
         title: 'Annex B — SLA.pdf',
         kind: 'pdf',
         meta: 'Legal team · 612 KB',
-        excerpt:
-          'Service availability target: 99.5%, measured monthly. No service credits are specified for missed targets within this annex.',
+        excerpt: 'Service availability target: 99.5%, measured monthly. No service credits specified for missed targets.',
       },
     ],
   },
-  {
-    id: 'demo-u2',
-    role: 'user',
-    text: 'Cria um documento com o resumo executivo para o board.',
-  },
-  {
-    id: 'demo-a2',
-    role: 'assistant',
-    text: 'Criei um rascunho executivo. Podes copiá-lo ou expandi-lo para leitura focada.',
-    artifact: buildDocumentArtifact('Create a document. Brief: MSA executive summary for the board'),
-  },
-  {
-    id: 'demo-u3',
-    role: 'user',
-    text: 'Gera uma imagem para a capa da apresentação.',
-  },
-  {
-    id: 'demo-a3',
-    role: 'assistant',
-    text: 'Aqui está uma capa gerada a partir do briefing.',
-    artifact: buildImageArtifact(
-      'Create an image with aspect ratio 16:9. Image brief: Minimal abstract cover for an MSA board presentation, calm blue tones',
-    ),
-  },
 ];
+
+/** Each saved conversation opens a focused, single-capability mock. */
+export const AURIA_CONVERSATION_MOCKS: Record<string, AuriaChatMessage[]> = {
+  h1: documentMockConversation, // Rewrite Terms of Service → document
+  h2: reasoningMockConversation, // Summarize Q2 pipeline → reasoning
+  h3: imageMockConversation, // Draft board update → image
+  h4: sourcesMockConversation, // Customer onboarding plan → source chips
+  h5: legalMockConversation, // Legal contract review → reasoning + sources
+};
 
 const initialState: WorkspaceState = {
   panel: 'chat',
@@ -310,13 +358,14 @@ function workspaceReducer(state: WorkspaceState, action: WorkspaceAction): Works
         };
       }
     case 'open-conversation': {
+      const mock = AURIA_CONVERSATION_MOCKS[action.conversationId] ?? legalMockConversation;
       return {
         ...state,
         panel: 'chat',
         showWelcome: false,
         activeConversationId: action.conversationId,
         pendingReply: null,
-        messages: auriaDemoConversation.map((message) => ({ ...message })),
+        messages: mock.map((message) => ({ ...message })),
       };
     }
     case 'open-project-modal':

@@ -22,29 +22,32 @@ export function AuriaDocumentArtifact({ artifact }: AuriaDocumentArtifactProps) 
     setTimeout(() => setCopied(false), 1400);
   };
 
-  const documentBody = (
-    <>
-      <View style={styles.header}>
-        <Text style={styles.eyebrow}>Writing</Text>
-        <View style={styles.actions}>
-          <Pressable
-            onPress={copyDocument}
-            style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}
-            accessibilityRole="button"
-            accessibilityLabel="Copy document"
-          >
-            <AuriaIcon name="copy" size={AURIA_ICON_SIZE.sm} strokeWidth={AURIA_ICON_STROKE_NAV} />
-          </Pressable>
-          <Pressable
-            onPress={() => setExpanded((value) => !value)}
-            style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}
-            accessibilityRole="button"
-            accessibilityLabel={expanded ? 'Close expanded document' : 'Expand document'}
-          >
-            <AuriaIcon name="expand" size={AURIA_ICON_SIZE.sm} strokeWidth={AURIA_ICON_STROKE_NAV} />
-          </Pressable>
-        </View>
+  const header = (
+    <View style={styles.header}>
+      <Text style={styles.eyebrow}>Writing</Text>
+      <View style={styles.actions}>
+        <Pressable
+          onPress={copyDocument}
+          style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}
+          accessibilityRole="button"
+          accessibilityLabel="Copy document"
+        >
+          <AuriaIcon name="copy" size={AURIA_ICON_SIZE.sm} strokeWidth={AURIA_ICON_STROKE_NAV} />
+        </Pressable>
+        <Pressable
+          onPress={() => setExpanded((value) => !value)}
+          style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}
+          accessibilityRole="button"
+          accessibilityLabel={expanded ? 'Close expanded document' : 'Expand document'}
+        >
+          <AuriaIcon name="expand" size={AURIA_ICON_SIZE.sm} strokeWidth={AURIA_ICON_STROKE_NAV} />
+        </Pressable>
       </View>
+    </View>
+  );
+
+  const content = (
+    <>
       {copied ? <Text style={styles.copied}>Copied</Text> : null}
       <Text style={styles.title}>{artifact.title}</Text>
       <Text style={styles.body}>{artifact.body}</Text>
@@ -53,7 +56,16 @@ export function AuriaDocumentArtifact({ artifact }: AuriaDocumentArtifactProps) 
 
   return (
     <>
-      <View style={styles.card}>{documentBody}</View>
+      <View style={styles.card}>
+        {header}
+        <Pressable
+          onPress={() => setExpanded(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Open document"
+        >
+          {content}
+        </Pressable>
+      </View>
       <Modal
         visible={expanded}
         animationType="slide"
@@ -61,7 +73,10 @@ export function AuriaDocumentArtifact({ artifact }: AuriaDocumentArtifactProps) 
         onRequestClose={() => setExpanded(false)}
       >
         <View style={styles.modal}>
-          <ScrollView contentContainerStyle={styles.modalContent}>{documentBody}</ScrollView>
+          <ScrollView contentContainerStyle={styles.modalContent}>
+            {header}
+            {content}
+          </ScrollView>
         </View>
       </Modal>
     </>

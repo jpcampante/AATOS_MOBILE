@@ -13,10 +13,31 @@ export type AuriaImageArtifact = {
 
 export type AuriaArtifact = AuriaDocumentArtifact | AuriaImageArtifact;
 
-/** Collapsible chain-of-thought shown above an answer ("Thought for Ns"). */
+/** A website/source consulted during a search step (favicon chip). */
+export type AuriaThoughtSource = { label: string };
+
+/**
+ * One entry in the thinking timeline. Either a reasoning paragraph or a
+ * web-search step with query chips and the sources it found.
+ */
+export type AuriaThoughtStep = {
+  kind: 'reasoning' | 'search';
+  title: string;
+  /** Reasoning paragraph (for kind 'reasoning'). */
+  body?: string;
+  /** Search query chips (for kind 'search'). */
+  queries?: string[];
+  moreQueries?: number;
+  sources?: AuriaThoughtSource[];
+  moreSources?: number;
+};
+
+/** Chain-of-thought: a shimmering "Thinking" chip that opens the full timeline. */
 export type AuriaReasoning = {
   durationSec: number;
-  steps: string[];
+  /** When true the chip reads "Thinking" with the live shimmer. */
+  live?: boolean;
+  steps: AuriaThoughtStep[];
 };
 
 export type AuriaSourceKind = 'pdf' | 'doc' | 'sheet' | 'image' | 'web';

@@ -117,12 +117,30 @@ const reasoningMockConversation: AuriaChatMessage[] = [
     id: 'rea-a1',
     role: 'assistant',
     reasoning: {
-      durationSec: 7,
+      durationSec: 14,
       steps: [
-        'Carreguei o export do pipeline e agrupei por estágio.',
-        'Calculei a taxa de conversão entre estágios.',
-        'Comparei com o trimestre anterior para encontrar quedas.',
-        'Isolei o estágio com maior perda e a causa provável.',
+        {
+          kind: 'reasoning',
+          title: 'Planning the pipeline analysis',
+          body: "The user wants a Q2 summary and where deals are lost. I'll load the export, group deals by stage, compute the stage-to-stage conversion, and compare against Q1 to spot the biggest drop.",
+        },
+        {
+          kind: 'search',
+          title: 'Searching the pipeline export and CRM',
+          queries: [
+            'Q2 pipeline conversion by stage',
+            'Proposal → Negotiation drop-off Q2 vs Q1',
+            'average days in Proposal stage',
+          ],
+          moreQueries: 4,
+          sources: [{ label: 'pipeline-export.csv' }, { label: 'crm.aatos.app' }],
+          moreSources: 1,
+        },
+        {
+          kind: 'reasoning',
+          title: 'Isolating the biggest leak',
+          body: 'Conversion from Proposal to Negotiation is only 38%, well below the 61% in Q1. The likely cause is proposal turnaround exceeding 9 days. I will recommend shortening it to under 4 days.',
+        },
       ],
     },
     text:
@@ -185,11 +203,57 @@ const legalMockConversation: AuriaChatMessage[] = [
     id: 'leg-a1',
     role: 'assistant',
     reasoning: {
-      durationSec: 6,
+      durationSec: 22,
       steps: [
-        'Abri o MSA e localizei responsabilidade, rescisão e SLA.',
-        'Comparei o Anexo B com as notas de revisão do Jurídico.',
-        'Classifiquei cada cláusula por nível de risco.',
+        {
+          kind: 'search',
+          title: 'Searching trademarks for “AATOS” and related terms',
+          queries: [
+            '"AATOS" "Aatos Legal Technology Oy" trademark OR tr…',
+            '"AATOS" "Aatos Legal Technology Oy" EUIPO OR TMvi…',
+            '"AATOS" "2901500-3" trademark',
+            '"AATOS" "Bind" "Aatos Legal Technology" trademark',
+          ],
+          moreQueries: 8,
+          sources: [
+            { label: 'en.wikipedia.org' },
+            { label: 'tavaramerkkitietopalvelu.prh.fi' },
+            { label: 'www.wipo.int' },
+            { label: 'www.euipo.europa.eu' },
+          ],
+          moreSources: 1,
+        },
+        {
+          kind: 'reasoning',
+          title: 'Reviewing research options and citation needs',
+          body: "The user wants a re-check of research, but I've already reviewed it and found no official results. The browser tool seems unavailable now, so I'll switch to using web search to gather reliable sources and citations. I might also try querying Aatos with national databases for further confirmation.",
+        },
+        {
+          kind: 'search',
+          title: 'Searching official sources for Aatos Legal Technology',
+          queries: [
+            'site:prh.fi "Aatos Legal Technology Oy"',
+            'site:prh.fi "AATOS" "tavaramerkki"',
+            'site:tavaramerkkitietopalvelu.prh.fi "AATOS"',
+            'site:tavaramerkkitietopalvelu.prh.fi "Aatos Legal Techno…',
+          ],
+        },
+        {
+          kind: 'reasoning',
+          title: 'Considering a search for the company',
+          body: "I think I'll try a more general search for the company. This could help me cast a wider net and pick up relevant details more efficiently. Let me see what shows up, and I'll adjust if necessary.",
+        },
+        {
+          kind: 'search',
+          title: 'Searching for information on Aatos Legal Technology Oy',
+          queries: [
+            'Aatos Legal Technology Oy 2901500-3',
+            'Aatos Legal Technology Oy Bind terms 2901500-3',
+            'Aatos Legal Technology Oy Deloitte Fast 50',
+            'Aatos Legal Technology Oy Business Finland',
+          ],
+          sources: [{ label: 'en.wikipedia.org' }, { label: 'arxiv.org' }],
+        },
       ],
     },
     text:
@@ -249,11 +313,29 @@ function buildAssistantReply(text: string): AssistantReply {
       text:
         'Aqui está a leitura, com os pontos de risco em destaque:\n\n• Responsabilidade limitada a 12 meses de fees (abaixo do nosso padrão de 24).\n• Rescisão sem causa assimétrica (30 dias vs 90).\n• SLA de 99.5% sem créditos definidos.\n\nQueres que prepare a contraproposta?',
       reasoning: {
-        durationSec: 5,
+        durationSec: 9,
         steps: [
-          'Reli o documento e extraí as cláusulas-chave.',
-          'Confrontei com as notas de revisão e o nosso padrão interno.',
-          'Classifiquei cada cláusula por nível de risco.',
+          {
+            kind: 'reasoning',
+            title: 'Reading the contract and extracting clauses',
+            body: 'I located the liability, termination and SLA clauses and compared them against our internal standard to flag anything off-market.',
+          },
+          {
+            kind: 'search',
+            title: 'Checking our standard terms and prior reviews',
+            queries: [
+              'standard liability cap months fees MSA',
+              'termination for convenience notice period policy',
+              'SLA service credits requirement',
+            ],
+            moreQueries: 2,
+            sources: [{ label: 'Legal review notes.docx' }, { label: 'playbook.aatos.app' }],
+          },
+          {
+            kind: 'reasoning',
+            title: 'Classifying each clause by risk',
+            body: 'Liability cap and SLA credits are the two highest-risk gaps versus our standard, so I prioritised those in the answer.',
+          },
         ],
       },
       sources: [

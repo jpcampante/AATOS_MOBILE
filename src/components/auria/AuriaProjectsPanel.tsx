@@ -218,28 +218,13 @@ function ProjectCard({
   const icon = getProjectIcon(project.iconId);
   return (
     <View style={styles.card}>
-      <View style={styles.cardTop}>
-        <View style={styles.cardIcon}>
-          <AuriaIcon name={icon.icon} size={15} color={project.accent} strokeWidth={1.7} />
-        </View>
-        <Text style={styles.cardName} numberOfLines={1}>{project.name}</Text>
-        {project.visibility === 'Shared' ? (
-          <AuriaIcon name="lock" size={13} color={theme.colors.textTertiary} strokeWidth={1.7} />
-        ) : null}
-        <View style={{ flex: 1 }} />
+      <View style={styles.cardIcon}>
+        <AuriaIcon name={icon.icon} size={15} color={project.accent} strokeWidth={1.7} />
       </View>
-      <Text style={styles.cardDesc} numberOfLines={2}>
-        {project.description ?? `${project.owner} workspace with files, chats and context.`}
-      </Text>
-      <View style={styles.cardFooter}>
-        <Text style={styles.footerText}>{project.updatedLabel}</Text>
-        <View style={styles.footerDot} />
-        <Text style={styles.footerText}>{project.fileCount} files</Text>
-        <View style={styles.footerDot} />
-        <Text style={styles.footerText}>{project.chatCount} chats</Text>
-        <View style={{ flex: 1 }} />
-        <View style={[styles.accentDot, { backgroundColor: project.accent }]} />
-      </View>
+      <Text style={styles.cardName} numberOfLines={1}>{project.name}</Text>
+      {project.visibility === 'Shared' ? (
+        <AuriaIcon name="lock" size={13} color={theme.colors.textTertiary} strokeWidth={1.7} />
+      ) : null}
 
       <Pressable style={StyleSheet.absoluteFill} onPress={onOpen} accessibilityRole="button" accessibilityLabel={`Open project ${project.name}`} />
       <Pressable
@@ -411,18 +396,21 @@ function createStyles(theme: ReturnType<typeof useTheme>['theme']) {
     },
     sortPillPressed: { backgroundColor: theme.colors.hover },
     sortText: { ...auriaTypography.body, fontSize: 12, fontWeight: theme.typography.fontWeight.semibold, color: theme.colors.textSecondary },
-    list: { gap: 10 },
+    list: { gap: 8 },
     card: {
-      minHeight: 116,
-      padding: 14,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      minHeight: 54,
+      paddingLeft: 12,
+      paddingRight: 44,
+      paddingVertical: 9,
       borderWidth: 1,
       borderColor: theme.colors.divider,
-      borderRadius: 18,
+      borderRadius: 16,
       backgroundColor: theme.colors.surface,
-      gap: 10,
       overflow: 'hidden',
     },
-    cardTop: { flexDirection: 'row', alignItems: 'center', gap: 9 },
     cardIcon: {
       width: 30,
       height: 30,
@@ -440,21 +428,16 @@ function createStyles(theme: ReturnType<typeof useTheme>['theme']) {
       color: theme.colors.text,
       flexShrink: 1,
     },
-    cardDesc: { ...auriaTypography.body, fontSize: 13, lineHeight: 19, color: theme.colors.textTertiary },
-    cardFooter: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 2 },
-    footerText: { ...auriaTypography.body, fontSize: 11.5, color: theme.colors.textHint },
-    footerDot: { width: 3, height: 3, borderRadius: 2, backgroundColor: theme.colors.borderInput },
-    accentDot: { width: 9, height: 9, borderRadius: 5 },
     cardMore: {
       position: 'absolute',
-      top: 10,
-      right: 10,
-      width: 30,
-      height: 30,
-      borderRadius: 15,
+      top: 0,
+      bottom: 0,
+      right: 6,
+      width: 32,
+      height: '100%',
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: theme.colors.surface,
+      backgroundColor: 'transparent',
     },
     cardMorePressed: { backgroundColor: theme.colors.hover },
     empty: { alignItems: 'center', paddingVertical: 44, gap: 8 },

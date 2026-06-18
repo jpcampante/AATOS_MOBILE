@@ -137,9 +137,15 @@ const reasoningMockConversation: AuriaChatMessage[] = [
             'forecast vs actual close Q2',
           ],
           sources: [
-            { label: 'pipeline-export.csv' },
-            { label: 'crm.aatos.app' },
-            { label: 'looker.aatos.app' },
+            {
+              label: 'pipeline-export.csv',
+              kind: 'doc',
+              docType: 'sheet',
+              excerpt:
+                'Stage,Deals,Conv%\nQualify,148,72\nProposal,96,38\nNegotiation,37,64\nClosed Won,24,100\n\nAvg days in Proposal: 9.4 (Q1: 5.1).',
+            },
+            { label: 'crm.aatos.app', kind: 'web' },
+            { label: 'looker.aatos.app', kind: 'web' },
           ],
         },
         {
@@ -343,7 +349,16 @@ function buildAssistantReply(text: string): AssistantReply {
               'indemnification mutual cap standard',
               'data processing addendum requirement',
             ],
-            sources: [{ label: 'Legal review notes.docx' }, { label: 'playbook.aatos.app' }],
+            sources: [
+              {
+                label: 'Legal review notes.docx',
+                kind: 'doc',
+                docType: 'doc',
+                excerpt:
+                  'Liability cap (12 months) is below our 24-month standard. Termination-for-convenience is asymmetric — counterparty 30 days, us 90 days. Confirm whether SLA credits exist.',
+              },
+              { label: 'playbook.aatos.app', kind: 'web' },
+            ],
           },
           {
             kind: 'reasoning',

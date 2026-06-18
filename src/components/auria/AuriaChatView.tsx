@@ -11,9 +11,11 @@ import { AuriaSourceChips } from './AuriaSourceChips';
 type AuriaChatViewProps = {
   messages: AuriaChatMessage[];
   isResponding?: boolean;
+  /** Redirect to the files area when an internal document is opened. */
+  onOpenFiles?: () => void;
 };
 
-export function AuriaChatView({ messages, isResponding = false }: AuriaChatViewProps) {
+export function AuriaChatView({ messages, isResponding = false, onOpenFiles }: AuriaChatViewProps) {
   const { ds, theme } = useTheme();
   const styles = useMemo(() => createStyles(ds, theme), [ds, theme]);
   const scrollRef = useRef<ScrollView>(null);
@@ -42,14 +44,16 @@ export function AuriaChatView({ messages, isResponding = false }: AuriaChatViewP
                 message.artifact && styles.bubbleWithArtifact,
               ]}
             >
-              {message.reasoning ? <AuriaReasoningBlock reasoning={message.reasoning} /> : null}
+              {message.reasoning ? (
+                <AuriaReasoningBlock reasoning={message.reasoning} onOpenFiles={onOpenFiles} />
+              ) : null}
               {message.text ? (
                 <Text style={[styles.text, isUser ? styles.textUser : styles.textAssistant]}>
                   {message.text}
                 </Text>
               ) : null}
               {message.sources && message.sources.length > 0 ? (
-                <AuriaSourceChips sources={message.sources} />
+                <AuriaSourceChips sources={message.sources} onOpenFiles={onOpenFiles} />
               ) : null}
               {message.artifact?.kind === 'document' ? (
                 <AuriaDocumentArtifact artifact={message.artifact} />

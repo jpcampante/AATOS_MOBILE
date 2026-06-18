@@ -7,6 +7,8 @@ import { AuriaIcon, type AuriaIconName } from '../icons';
 
 type AuriaSourceChipsProps = {
   sources: AuriaSource[];
+  /** Redirect to the files area from the source detail. */
+  onOpenFiles?: () => void;
 };
 
 const ICON_FOR: Record<AuriaSourceKind, AuriaIconName> = {
@@ -26,7 +28,7 @@ const KIND_LABEL: Record<AuriaSourceKind, string> = {
 };
 
 /** Consulted documents as chips. Tapping one shows the source Auria read. */
-export function AuriaSourceChips({ sources }: AuriaSourceChipsProps) {
+export function AuriaSourceChips({ sources, onOpenFiles }: AuriaSourceChipsProps) {
   const { ds, theme } = useTheme();
   const safe = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(ds, theme, safe.bottom), [ds, theme, safe.bottom]);
@@ -95,6 +97,20 @@ export function AuriaSourceChips({ sources }: AuriaSourceChipsProps) {
                     {active.excerpt ?? 'Auria referenced this document while answering. The full content will be available when document sync is connected.'}
                   </Text>
                 </ScrollView>
+                {onOpenFiles && active.kind !== 'web' ? (
+                  <Pressable
+                    onPress={() => {
+                      setActive(null);
+                      onOpenFiles();
+                    }}
+                    style={({ pressed }) => [styles.openFiles, pressed && styles.openFilesPressed]}
+                    accessibilityRole="button"
+                    accessibilityLabel="Open in files"
+                  >
+                    <AuriaIcon name="folder" size={16} color={ds.white} strokeWidth={1.9} />
+                    <Text style={styles.openFilesText}>Open in files</Text>
+                  </Pressable>
+                ) : null}
               </>
             ) : null}
           </View>
@@ -213,6 +229,23 @@ function createStyles(
       fontSize: 14.5,
       lineHeight: 23,
       color: ds.gray800,
+    },
+    openFiles: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      marginTop: 12,
+      paddingVertical: 13,
+      backgroundColor: ds.offBlack,
+      ...myceoCornerStyle('panel'),
+    },
+    openFilesPressed: { opacity: 0.85 },
+    openFilesText: {
+      ...auriaTypography.body,
+      fontSize: 14,
+      fontWeight: theme.typography.fontWeight.bold,
+      color: ds.white,
     },
   });
 }

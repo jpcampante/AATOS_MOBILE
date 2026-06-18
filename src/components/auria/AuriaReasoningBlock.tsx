@@ -8,10 +8,11 @@ import { AuriaThinkingSheet } from './AuriaThinkingSheet';
 
 type AuriaReasoningBlockProps = {
   reasoning: AuriaReasoning;
+  onOpenFiles?: () => void;
 };
 
 /** The thought chip: a shimmering "Thinking" label that opens the timeline. */
-export function AuriaReasoningBlock({ reasoning }: AuriaReasoningBlockProps) {
+export function AuriaReasoningBlock({ reasoning, onOpenFiles }: AuriaReasoningBlockProps) {
   const { ds, theme } = useTheme();
   const styles = useMemo(() => createStyles(ds, theme), [ds, theme]);
   const [open, setOpen] = useState(false);
@@ -31,7 +32,12 @@ export function AuriaReasoningBlock({ reasoning }: AuriaReasoningBlockProps) {
         <AuriaIcon name="chevronRight" size={14} color={ds.gray400} strokeWidth={2} />
       </Pressable>
 
-      <AuriaThinkingSheet visible={open} onClose={() => setOpen(false)} reasoning={reasoning} />
+      <AuriaThinkingSheet
+        visible={open}
+        onClose={() => setOpen(false)}
+        reasoning={reasoning}
+        onOpenFiles={onOpenFiles}
+      />
     </View>
   );
 }

@@ -13,8 +13,21 @@ export type AuriaImageArtifact = {
 
 export type AuriaArtifact = AuriaDocumentArtifact | AuriaImageArtifact;
 
-/** A website/source consulted during a search step (favicon link pill). */
-export type AuriaThoughtSource = { label: string; url?: string };
+/**
+ * A source consulted during a search step (favicon link pill).
+ * `kind: 'web'` opens the URL; `kind: 'doc'` is an internal document that
+ * opens in-app. Defaults to 'doc' for file-like labels, 'web' otherwise.
+ */
+export type AuriaThoughtSource = {
+  label: string;
+  kind?: 'web' | 'doc';
+  /** Web target (for kind 'web'). */
+  url?: string;
+  /** Document type for the in-app viewer icon (for kind 'doc'). */
+  docType?: 'pdf' | 'doc' | 'sheet';
+  /** Excerpt shown when the internal document is opened. */
+  excerpt?: string;
+};
 
 /**
  * One entry in the thinking timeline. Either a reasoning paragraph or a

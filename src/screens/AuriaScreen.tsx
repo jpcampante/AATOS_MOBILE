@@ -287,7 +287,13 @@ export function AuriaScreen({
       );
     }
 
-    return <AuriaChatView messages={workspace.messages} isResponding={workspace.isResponding} />;
+    return (
+      <AuriaChatView
+        messages={workspace.messages}
+        isResponding={workspace.isResponding}
+        onOpenFiles={() => transitionPanel('gallery')}
+      />
+    );
   };
 
   return (

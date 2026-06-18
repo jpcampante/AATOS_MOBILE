@@ -162,10 +162,14 @@ function VoiceModeContent({ active, onClose }: { active: boolean; onClose: () =>
       let i = 0;
       const iv = setInterval(() => {
         i += 1;
-        setRevealCount(i);
-        if (i >= total) clearInterval(iv);
-      }, 210);
-      const toListen = setTimeout(() => setMode('listening'), total * 210 + 200);
+        if (i >= total) {
+          setRevealCount(total + 5); // fully spoken — all black
+          clearInterval(iv);
+        } else {
+          setRevealCount(i);
+        }
+      }, 190);
+      const toListen = setTimeout(() => setMode('listening'), total * 190 + 200);
       return () => {
         clearInterval(iv);
         clearTimeout(toListen);
@@ -179,7 +183,7 @@ function VoiceModeContent({ active, onClose }: { active: boolean; onClose: () =>
   useEffect(() => {
     if (!active || interacted || recording || !last) return;
     const total = last.text.split(' ').length;
-    const duration = last.role === 'auria' ? total * 210 + 200 + 1800 : 2200;
+    const duration = last.role === 'auria' ? total * 190 + 200 + 1800 : 2200;
     const toNext = setTimeout(() => {
       stepRef.current += 1;
       const turn = SCRIPT[stepRef.current % SCRIPT.length];
@@ -393,12 +397,20 @@ function AssistantLine({
   const words = text.split(' ');
   return (
     <Text style={styles.auriaText}>
-      {words.map((word, i) => (
-        <Text key={`${word}-${i}`} style={i < revealCount ? styles.auriaSpoken : styles.auriaUpcoming}>
-          {word}
-          {i < words.length - 1 ? ' ' : ''}
-        </Text>
-      ))}
+      {words.map((word, i) => {
+        const wordStyle =
+          i < revealCount - 1
+            ? styles.auriaSpoken
+            : i < revealCount
+              ? styles.auriaCurrent
+              : styles.auriaUpcoming;
+        return (
+          <Text key={`${word}-${i}`} style={wordStyle}>
+            {word}
+            {i < words.length - 1 ? ' ' : ''}
+          </Text>
+        );
+      })}
     </Text>
   );
 }
@@ -460,6 +472,10 @@ function createStyles(
     auriaSpoken: {
       fontFamily: SERIF,
       color: ds.gray900,
+    },
+    auriaCurrent: {
+      fontFamily: SERIF,
+      color: '#6F6D67',
     },
     auriaUpcoming: {
       fontFamily: SERIF,

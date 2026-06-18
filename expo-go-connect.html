@@ -3,29 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Expo Go — AATOS (rápido)</title>
+  <title>Expo Go — AATOS (LAN)</title>
   <style>
     body { font-family: system-ui, sans-serif; max-width: 460px; margin: 24px auto; padding: 20px; background: #f8fafc; }
-    h1 { font-size: 1.2rem; color: #0f172a; }
-    .ok { background: #ecfdf5; border: 2px solid #10b981; padding: 16px; border-radius: 12px; text-align: center; }
-    .tip { background: #eff6ff; border: 1px solid #93c5fd; padding: 12px; border-radius: 8px; font-size: 0.9rem; margin-top: 12px; }
-    code { display: block; background: #fff; padding: 14px; margin: 10px 0; border-radius: 8px; font-size: .95rem; font-weight: 700; word-break: break-all; color: #047857; border: 1px solid #10b981; }
-    img { margin: 12px auto; display: block; border-radius: 10px; }
-    ol { line-height: 1.7; }
+    h1 { font-size: 1.2rem; }
+    code { display: block; background: #ecfdf5; padding: 16px; border-radius: 8px; font-size: 1rem; font-weight: 700; word-break: break-all; color: #047857; border: 1px solid #10b981; }
+    p { line-height: 1.6; color: #334155; }
   </style>
 </head>
 <body>
-  <h1>AATOS — Expo Go (modo rápido)</h1>
-  <div class="ok">
-    <p><strong>Bundle ~75% mais leve</strong> (minify + prod)</p>
-    <img src="https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=exp%3A%2F%2F192.168.1.138%3A8081" width="320" height="320" alt="QR Expo Go" />
-    <code>exp://192.168.1.138:8081</code>
-  </div>
-  <div class="tip">Desliga a VPN. Fecha o projecto antigo no Expo Go antes de abrir.</div>
-  <ol>
-    <li>Expo Go → <strong>Enter URL manually</strong></li>
-    <li>Cola o link acima</li>
-    <li>1ª carga: ~15–30 s (antes era 1–2 min)</li>
-  </ol>
+  <h1>AATOS — Expo Go (só LAN)</h1>
+  <p>Página local. <strong>Não usa tunnel</strong> — não altera a tua internet.</p>
+  <p>Expo Go → <strong>Enter URL manually</strong> → cola:</p>
+  <code id="link">exp://192.168.1.138:8081</code>
+  <p>Telemóvel e PC na <strong>mesma Wi‑Fi</strong>. VPN desligada.</p>
 </body>
 </html>

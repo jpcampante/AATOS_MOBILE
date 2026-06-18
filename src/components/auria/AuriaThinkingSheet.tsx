@@ -1,6 +1,8 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
+  Linking,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -19,8 +21,19 @@ type AuriaThinkingSheetProps = {
   reasoning: AuriaReasoning;
 };
 
+const QUERY_PREVIEW = 4;
+const SOURCE_PREVIEW = 4;
+
 const FAVICON_TINTS = ['#E7EEF9', '#F3E8F7', '#E8F5EC', '#FBEFE3', '#EAF0F4', '#F6E9E9'];
 const tintFor = (label: string) => FAVICON_TINTS[label.charCodeAt(0) % FAVICON_TINTS.length];
+
+function openLink(url: string) {
+  if (Platform.OS === 'web') {
+    if (typeof window !== 'undefined') window.open(url, '_blank', 'noopener,noreferrer');
+  } else {
+    Linking.openURL(url).catch(() => {});
+  }
+}
 
 /** The full "Thinking" timeline — opens when the thought chip is tapped. */
 export function AuriaThinkingSheet({ visible, onClose, reasoning }: AuriaThinkingSheetProps) {
@@ -72,6 +85,16 @@ function Step({
   styles: ReturnType<typeof createStyles>;
   ds: ReturnType<typeof useTheme>['ds'];
 }) {
+  const [allQueries, setAllQueries] = useState(false);
+  const [allSources, setAllSources] = useState(false);
+
+  const queries = step.queries ?? [];
+  const sources = step.sources ?? [];
+  const shownQueries = allQueries ? queries : queries.slice(0, QUERY_PREVIEW);
+  const shownSources = allSources ? sources : sources.slice(0, SOURCE_PREVIEW);
+  const moreQueries = queries.length - shownQueries.length;
+  const moreSources = sources.length - shownSources.length;
+
   return (
     <View style={styles.step}>
       <View style={styles.rail}>
@@ -90,36 +113,63 @@ function Step({
 
         {step.body ? <Text style={styles.body}>{step.body}</Text> : null}
 
-        {step.queries && step.queries.length > 0 ? (
+        {queries.length > 0 ? (
           <View style={styles.queries}>
-            {step.queries.map((q, qi) => (
-              <View key={`q-${qi}`} style={styles.queryChip}>
+            {shownQueries.map((q, qi) => (
+              <Pressable
+                key={`q-${qi}`}
+                onPress={() => openLink(`https://www.google.com/search?q=${encodeURIComponent(q)}`)}
+                style={({ pressed }) => [styles.queryChip, pressed && styles.chipPressed]}
+                accessibilityRole="button"
+                accessibilityLabel={`Search ${q}`}
+              >
                 <AuriaIcon name="search" size={13} color={ds.gray500} strokeWidth={1.8} />
                 <Text style={styles.queryText} numberOfLines={1}>
                   {q}
                 </Text>
-              </View>
+              </Pressable>
             ))}
-            {step.moreQueries ? <Text style={styles.moreText}>{step.moreQueries} more</Text> : null}
+            {moreQueries > 0 ? (
+              <Pressable
+                onPress={() => setAllQueries(true)}
+                style={({ pressed }) => [styles.moreRow, pressed && styles.chipPressed]}
+                accessibilityRole="button"
+                accessibilityLabel={`Show ${moreQueries} more searches`}
+              >
+                <Text style={styles.moreText}>{moreQueries} more</Text>
+                <AuriaIcon name="chevronDown" size={13} color={ds.gray500} strokeWidth={2} />
+              </Pressable>
+            ) : null}
           </View>
         ) : null}
 
-        {step.sources && step.sources.length > 0 ? (
+        {sources.length > 0 ? (
           <View style={styles.sources}>
-            {step.sources.map((s, si) => (
-              <View key={`s-${si}`} style={styles.sourceChip}>
+            {shownSources.map((s, si) => (
+              <Pressable
+                key={`s-${si}`}
+                onPress={() => openLink(s.url ?? `https://${s.label}`)}
+                style={({ pressed }) => [styles.sourcePill, pressed && styles.chipPressed]}
+                accessibilityRole="link"
+                accessibilityLabel={`Open ${s.label}`}
+              >
                 <View style={[styles.favicon, { backgroundColor: tintFor(s.label) }]}>
                   <Text style={styles.faviconText}>{s.label.charAt(0).toUpperCase()}</Text>
                 </View>
                 <Text style={styles.sourceText} numberOfLines={1}>
                   {s.label}
                 </Text>
-              </View>
+              </Pressable>
             ))}
-            {step.moreSources ? (
-              <View style={styles.moreChip}>
-                <Text style={styles.moreText}>{step.moreSources} more</Text>
-              </View>
+            {moreSources > 0 ? (
+              <Pressable
+                onPress={() => setAllSources(true)}
+                style={({ pressed }) => [styles.moreChip, pressed && styles.chipPressed]}
+                accessibilityRole="button"
+                accessibilityLabel={`Show ${moreSources} more sources`}
+              >
+                <Text style={styles.moreText}>{moreSources} more</Text>
+              </Pressable>
             ) : null}
           </View>
         ) : null}
@@ -222,11 +272,21 @@ function createStyles(
       backgroundColor: ds.gray100,
       ...myceoCornerStyle('chip'),
     },
+    chipPressed: { backgroundColor: ds.gray200 },
     queryText: {
       ...auriaTypography.body,
       flex: 1,
       fontSize: 13.5,
       color: ds.gray700,
+    },
+    moreRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      alignSelf: 'flex-start',
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+      ...myceoCornerStyle('chip'),
     },
     sources: {
       flexDirection: 'row',
@@ -234,15 +294,17 @@ function createStyles(
       gap: 8,
       marginTop: 2,
     },
-    sourceChip: {
+    sourcePill: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 7,
-      paddingLeft: 6,
-      paddingRight: 12,
+      paddingLeft: 5,
+      paddingRight: 13,
       paddingVertical: 5,
       backgroundColor: ds.gray100,
-      ...myceoCornerStyle('chip'),
+      borderWidth: 1,
+      borderColor: ds.gray200,
+      borderRadius: 999,
     },
     favicon: {
       width: 18,
@@ -263,16 +325,16 @@ function createStyles(
       color: ds.gray700,
     },
     moreChip: {
-      paddingHorizontal: 12,
+      justifyContent: 'center',
+      paddingHorizontal: 14,
       paddingVertical: 7,
       backgroundColor: ds.gray100,
-      ...myceoCornerStyle('chip'),
+      borderRadius: 999,
     },
     moreText: {
       ...auriaTypography.label,
       fontSize: 13,
       color: ds.gray500,
-      paddingVertical: 2,
     },
   });
 }

@@ -13,23 +13,23 @@ export type AuriaImageArtifact = {
 
 export type AuriaArtifact = AuriaDocumentArtifact | AuriaImageArtifact;
 
-/** A website/source consulted during a search step (favicon chip). */
-export type AuriaThoughtSource = { label: string };
+/** A website/source consulted during a search step (favicon link pill). */
+export type AuriaThoughtSource = { label: string; url?: string };
 
 /**
  * One entry in the thinking timeline. Either a reasoning paragraph or a
- * web-search step with query chips and the sources it found.
+ * web-search step with query chips and the sources it found. The lists are
+ * complete — the UI shows a preview and a working "N more" toggle.
  */
 export type AuriaThoughtStep = {
   kind: 'reasoning' | 'search';
   title: string;
   /** Reasoning paragraph (for kind 'reasoning'). */
   body?: string;
-  /** Search query chips (for kind 'search'). */
+  /** Full list of search query chips (for kind 'search'). */
   queries?: string[];
-  moreQueries?: number;
+  /** Full list of consulted sources. */
   sources?: AuriaThoughtSource[];
-  moreSources?: number;
 };
 
 /** Chain-of-thought: a shimmering "Thinking" chip that opens the full timeline. */

@@ -4,12 +4,13 @@ import {
   Platform,
   Pressable,
   StyleSheet,
+  Text,
   TextInput,
   View,
 } from 'react-native';
 import { LiquidGlassSurface } from '../ui/LiquidGlassSurface';
 import { AuriaIcon, AURIA_ICON_SIZE, AURIA_ICON_STROKE_SEND, AURIA_ICON_STROKE_STRONG } from '../icons';
-import { auriaTypography, liquidGlassTokens, useTheme } from '../../theme';
+import { auriaTypography, liquidGlassTokens, MYCEO_CORNER_RADIUS, useTheme } from '../../theme';
 import {
   AURIA_COMPOSER_CONTENT_GAP,
   AURIA_COMPOSER_BOTTOM_PADDING,
@@ -37,6 +38,12 @@ type AuriaComposerProps = {
   onVoice?: () => void;
   bottomInset?: number;
   isResponding?: boolean;
+  /** Label shown on the model selector pill (e.g. "Opus 4.8"). */
+  selectedModelName?: string;
+  /** Optional effort tag shown beside the model name (e.g. "Max"). */
+  selectedModelEffort?: string | null;
+  /** Opens the model picker sheet. */
+  onOpenModelPicker?: () => void;
 };
 
 const inputWebFocusReset =
@@ -45,17 +52,27 @@ const inputWebFocusReset =
         outlineWidth: 0,
         outlineStyle: 'none',
         boxShadow: 'none',
-        height: AURIA_COMPOSER_TOOLBAR_HEIGHT,
-        minHeight: AURIA_COMPOSER_TOOLBAR_HEIGHT,
-        paddingTop: 11,
-        paddingBottom: 11,
+        minHeight: 24,
+        paddingTop: 0,
+        paddingBottom: 0,
         boxSizing: 'border-box',
       } as object)
     : null;
 
 export const AuriaComposer = forwardRef<AuriaComposerHandle, AuriaComposerProps>(
   function AuriaComposer(
-    { value, onChangeText, onSend, onAttach, onVoice, bottomInset = 0, isResponding = false },
+    {
+      value,
+      onChangeText,
+      onSend,
+      onAttach,
+      onVoice,
+      bottomInset = 0,
+      isResponding = false,
+      selectedModelName = 'Opus 4.8',
+      selectedModelEffort = 'Max',
+      onOpenModelPicker,
+    },
     ref,
   ) {
     const [draft, setDraft] = useState('');
@@ -95,25 +112,10 @@ export const AuriaComposer = forwardRef<AuriaComposerHandle, AuriaComposerProps>
         variant="input"
         interactive
         elevated={false}
-        borderRadius={AURIA_COMPOSER_TOOLBAR_HEIGHT / 2}
+        borderRadius={MYCEO_CORNER_RADIUS.panel}
         style={styles.toolbarGlass}
       >
-        <Pressable
-          onPress={onAttach}
-          accessibilityRole="button"
-          accessibilityLabel="Open create menu"
-          hitSlop={6}
-          style={({ pressed }) => [styles.attachButton, pressed && styles.attachButtonPressed]}
-        >
-          <AuriaIcon
-            name="plus"
-            size={AURIA_ICON_SIZE.sm}
-            color={ds.gray900}
-            strokeWidth={AURIA_ICON_STROKE_STRONG}
-          />
-        </Pressable>
-
-        <View style={styles.inputPill}>
+        {/* Row 1 — multiline text */}
         <TextInput
           ref={inputRef}
           value={text}
@@ -126,45 +128,89 @@ export const AuriaComposer = forwardRef<AuriaComposerHandle, AuriaComposerProps>
           returnKeyType="default"
           enablesReturnKeyAutomatically
           keyboardAppearance={theme.mode === 'dark' ? 'dark' : 'light'}
-          textAlignVertical="center"
+          textAlignVertical="top"
           submitBehavior="newline"
           onSubmitEditing={Platform.OS === 'ios' ? undefined : () => Keyboard.dismiss()}
         />
-        <Pressable
-          style={styles.micButton}
-          onPress={onVoice}
-          accessibilityRole="button"
-          accessibilityLabel="Voice"
-        >
-          <AuriaIcon
-            name="mic"
-            size={AURIA_ICON_SIZE.sm}
-            color={ds.gray400}
-            strokeWidth={AURIA_ICON_STROKE_STRONG}
-          />
-        </Pressable>
-        </View>
 
-        <Pressable
-          style={({ pressed }) => [
-            styles.voiceButton,
-            hasText && !isResponding && styles.voiceButtonActive,
-            (!hasText || isResponding) && styles.voiceButtonDisabled,
-            pressed && hasText && !isResponding && styles.voiceButtonPressed,
-          ]}
-          onPress={handleSend}
-          disabled={!hasText || isResponding}
-          accessibilityRole="button"
-          accessibilityLabel="Send"
-          hitSlop={6}
-        >
-          <AuriaIcon
-            name="arrowUp"
-            size={AURIA_ICON_SIZE.xs}
-            color={ds.white}
-            strokeWidth={AURIA_ICON_STROKE_SEND}
-          />
-        </Pressable>
+        {/* Row 2 — action row */}
+        <View style={styles.actionRow}>
+          <Pressable
+            onPress={onAttach}
+            accessibilityRole="button"
+            accessibilityLabel="Open create menu"
+            hitSlop={8}
+            style={({ pressed }) => [styles.circleButton, pressed && styles.circleButtonPressed]}
+          >
+            <AuriaIcon
+              name="plus"
+              size={AURIA_ICON_SIZE.md}
+              color={ds.gray900}
+              strokeWidth={AURIA_ICON_STROKE_STRONG}
+            />
+          </Pressable>
+
+          <Pressable
+            onPress={onOpenModelPicker}
+            accessibilityRole="button"
+            accessibilityLabel={`Model: ${selectedModelName}`}
+            hitSlop={6}
+            style={({ pressed }) => [styles.modelPill, pressed && styles.modelPillPressed]}
+          >
+            <Text style={styles.modelName} numberOfLines={1}>
+              {selectedModelName}
+            </Text>
+            {selectedModelEffort ? (
+              <View style={styles.effortTag}>
+                <Text style={styles.effortTagText}>{selectedModelEffort}</Text>
+              </View>
+            ) : null}
+            <AuriaIcon
+              name="chevronDown"
+              size={12}
+              color={ds.gray500}
+              strokeWidth={1.5}
+            />
+          </Pressable>
+
+          <View style={styles.spacer} />
+
+          <Pressable
+            onPress={onVoice}
+            accessibilityRole="button"
+            accessibilityLabel="Voice"
+            hitSlop={8}
+            style={({ pressed }) => [styles.circleButton, pressed && styles.circleButtonPressed]}
+          >
+            <AuriaIcon
+              name="mic"
+              size={AURIA_ICON_SIZE.md}
+              color={ds.gray600}
+              strokeWidth={AURIA_ICON_STROKE_STRONG}
+            />
+          </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.sendButton,
+              hasText && !isResponding && styles.sendButtonActive,
+              (!hasText || isResponding) && styles.sendButtonDisabled,
+              pressed && hasText && !isResponding && styles.sendButtonPressed,
+            ]}
+            onPress={handleSend}
+            disabled={!hasText || isResponding}
+            accessibilityRole="button"
+            accessibilityLabel="Send"
+            hitSlop={8}
+          >
+            <AuriaIcon
+              name="arrowUp"
+              size={AURIA_ICON_SIZE.sm}
+              color={ds.white}
+              strokeWidth={AURIA_ICON_STROKE_SEND}
+            />
+          </Pressable>
+        </View>
       </LiquidGlassSurface>
     );
 
@@ -191,69 +237,96 @@ function createStyles(
       paddingHorizontal: 4,
     },
     toolbarGlass: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: 4,
+      flexDirection: 'column',
+      alignItems: 'stretch',
+      paddingHorizontal: 14,
+      paddingTop: 12,
+      paddingBottom: 10,
+      gap: 10,
       minHeight: AURIA_COMPOSER_TOOLBAR_HEIGHT,
-    },
-    attachButton: {
-      width: AURIA_COMPOSER_TOOLBAR_HEIGHT,
-      height: AURIA_COMPOSER_TOOLBAR_HEIGHT,
-      borderRadius: AURIA_COMPOSER_TOOLBAR_HEIGHT / 2,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: 'transparent',
-    },
-    attachButtonPressed: {
-      backgroundColor: glass.pressed,
-      transform: [{ scale: 0.96 }],
-    },
-    inputPill: {
-      flex: 1,
-      flexDirection: 'row',
-      alignItems: 'center',
-      minHeight: AURIA_COMPOSER_TOOLBAR_HEIGHT,
-      paddingLeft: 4,
-      paddingRight: 0,
-      backgroundColor: 'transparent',
     },
     input: {
       ...auriaTypography.body,
-      flex: 1,
       fontSize: 16,
       lineHeight: 22,
       color: ds.gray900,
       paddingVertical: 0,
-      paddingTop: 0,
-      paddingBottom: 0,
+      paddingHorizontal: 4,
       margin: 0,
-      maxHeight: 100,
-      minHeight: 22,
+      maxHeight: 120,
+      minHeight: 24,
       backgroundColor: 'transparent',
       borderWidth: 0,
       ...(inputWebFocusReset ?? {}),
     },
-    micButton: {
-      width: 38,
-      height: AURIA_COMPOSER_TOOLBAR_HEIGHT,
+    actionRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      minHeight: 36,
+    },
+    spacer: { flex: 1 },
+    circleButton: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
       alignItems: 'center',
       justifyContent: 'center',
+      backgroundColor: 'transparent',
     },
-    voiceButton: {
-      width: AURIA_COMPOSER_TOOLBAR_HEIGHT,
-      height: AURIA_COMPOSER_TOOLBAR_HEIGHT,
-      borderRadius: AURIA_COMPOSER_TOOLBAR_HEIGHT / 2,
+    circleButtonPressed: {
+      backgroundColor: glass.pressed,
+      transform: [{ scale: 0.96 }],
+    },
+    modelPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      height: 34,
+      borderRadius: 17,
+      paddingHorizontal: 12,
+      backgroundColor: ds.sectionFill,
+    },
+    modelPillPressed: {
+      backgroundColor: ds.gray200,
+      transform: [{ scale: 0.98 }],
+    },
+    modelName: {
+      ...auriaTypography.body,
+      fontSize: 15,
+      fontWeight: theme.typography.fontWeight.medium,
+      color: ds.gray900,
+    },
+    effortTag: {
+      height: 18,
+      borderRadius: 9,
+      paddingHorizontal: 6,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.mode === 'dark' ? 'rgba(107,168,255,0.18)' : 'rgba(43,124,216,0.12)',
+    },
+    effortTagText: {
+      ...auriaTypography.label,
+      fontSize: 11,
+      letterSpacing: 0,
+      fontWeight: theme.typography.fontWeight.medium,
+      color: ds.auriaBlue,
+    },
+    sendButton: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
       backgroundColor: ds.offBlack,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    voiceButtonActive: {
+    sendButtonActive: {
       backgroundColor: ds.offBlackSoft,
     },
-    voiceButtonDisabled: {
+    sendButtonDisabled: {
       opacity: 0.45,
     },
-    voiceButtonPressed: {
+    sendButtonPressed: {
       transform: [{ scale: 0.96 }],
     },
   });

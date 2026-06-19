@@ -1,5 +1,6 @@
-/** Composer metrics — keep in sync with AuriaComposer shell. */
-export const AURIA_COMPOSER_TOOLBAR_HEIGHT = 52;
+/** Composer metrics — keep in sync with AuriaComposer shell.
+ *  Two-row composer: padTop 12 + text 24 + gap 10 + actionRow 36 + padBottom 10 = 92. */
+export const AURIA_COMPOSER_TOOLBAR_HEIGHT = 92;
 export const AURIA_COMPOSER_DOCK_PADDING_V = 12;
 export const AURIA_COMPOSER_CONTENT_GAP = 8;
 export const AURIA_COMPOSER_BOTTOM_PADDING = 8;

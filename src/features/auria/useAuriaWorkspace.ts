@@ -10,6 +10,7 @@ import {
   auriaSidebarProjects,
 } from '../../data/auriaMockData';
 import type { AuriaChatMessage, AuriaDocumentArtifact, AuriaImageArtifact } from './types';
+import { DEFAULT_MODEL_ID } from '../../data/auriaModels';
 
 type AssistantReply = string | Pick<AuriaChatMessage, 'text' | 'artifact' | 'reasoning' | 'sources'>;
 
@@ -17,6 +18,7 @@ type WorkspaceState = {
   panel: AuriaPanel;
   showWelcome: boolean;
   composerText: string;
+  selectedModel: string;
   activeConversationId: string | null;
   projects: AuriaProject[];
   projectRows: AuriaSidebarProjectRow[];
@@ -27,6 +29,7 @@ type WorkspaceState = {
 
 type WorkspaceAction =
   | { type: 'set-composer'; value: string }
+  | { type: 'set-model'; value: string }
   | { type: 'open-panel'; panel: AuriaPanel }
   | { type: 'new-chat' }
   | { type: 'send-message'; text: string; id: number }
@@ -318,6 +321,7 @@ const initialState: WorkspaceState = {
   panel: 'chat',
   showWelcome: true,
   composerText: '',
+  selectedModel: DEFAULT_MODEL_ID,
   activeConversationId: null,
   projects: [...auriaProjects],
   projectRows: [...auriaSidebarProjects],
@@ -431,6 +435,8 @@ function workspaceReducer(state: WorkspaceState, action: WorkspaceAction): Works
   switch (action.type) {
     case 'set-composer':
       return { ...state, composerText: action.value };
+    case 'set-model':
+      return { ...state, selectedModel: action.value };
     case 'open-panel':
       return {
         ...state,
@@ -556,6 +562,7 @@ export function useAuriaWorkspace() {
       showComposer: state.panel === 'chat',
       isResponding: state.pendingReply !== null,
       setComposerText: (value: string) => dispatch({ type: 'set-composer', value }),
+      setSelectedModel: (value: string) => dispatch({ type: 'set-model', value }),
       openPanel: (panel: AuriaPanel) => dispatch({ type: 'open-panel', panel }),
       newChat: () => dispatch({ type: 'new-chat' }),
       sendMessage: (text: string) => {

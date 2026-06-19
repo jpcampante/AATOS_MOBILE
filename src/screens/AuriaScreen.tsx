@@ -14,6 +14,8 @@ import {
   AuriaComposerHandle,
 } from '../components/auria/AuriaComposer';
 import { AuriaCreateMenu } from '../components/auria/AuriaCreateMenu';
+import { AuriaModelSheet } from '../components/auria/AuriaModelSheet';
+import { getModelById } from '../data/auriaModels';
 import {
   AuriaGalleryPanel,
   AuriaNewsPanel,
@@ -61,6 +63,7 @@ export function AuriaScreen({
   const keyboardInset = useKeyboardInset(shellBottomInset);
   const composerRef = useRef<AuriaComposerHandle>(null);
   const workspace = useAuriaWorkspace();
+  const activeModel = getModelById(workspace.selectedModel);
 
   // Deep-link from Insights "Ask Auria": seed the composer once, then clear it.
   useEffect(() => {
@@ -73,6 +76,7 @@ export function AuriaScreen({
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
+  const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [composerHeight, setComposerHeight] = useState(
     getAuriaComposerOverlayHeight(),
@@ -356,6 +360,12 @@ export function AuriaScreen({
                   }}
                   bottomInset={keyboardInset}
                   isResponding={workspace.isResponding}
+                  selectedModelName={activeModel?.name ?? 'Opus 4.8'}
+                  selectedModelEffort={activeModel?.effort ?? null}
+                  onOpenModelPicker={() => {
+                    dismissKeyboard();
+                    setModelPickerOpen(true);
+                  }}
                 />
               </View>
             ) : null}
@@ -365,6 +375,13 @@ export function AuriaScreen({
               onClose={() => setCreateMenuOpen(false)}
               onSendRequest={handleCreateRequest}
               bottomOffset={composerHeight + 4}
+            />
+
+            <AuriaModelSheet
+              visible={modelPickerOpen}
+              selectedId={workspace.selectedModel}
+              onSelect={workspace.setSelectedModel}
+              onClose={() => setModelPickerOpen(false)}
             />
           </View>
         </View>

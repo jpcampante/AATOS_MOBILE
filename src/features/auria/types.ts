@@ -70,6 +70,11 @@ export type AuriaChatMessage = {
   id: string;
   role: 'user' | 'assistant';
   text: string;
+  /**
+   * Image attachment URIs sent by the user. Rendered bare (outside the bubble):
+   * a single image at its natural aspect ratio, multiple as a 2-column grid.
+   */
+  attachments?: string[];
   artifact?: AuriaArtifact;
   reasoning?: AuriaReasoning;
   sources?: AuriaSource[];

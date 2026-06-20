@@ -214,6 +214,7 @@ export function AuriaScreen({
   const handleNewChat = () => {
     dismissKeyboard();
     workspace.newChat();
+    setAttachments([]);
     setPanelKey((key) => key + 1);
     panelAnim.setValue(1);
     closeSidebar();
@@ -222,12 +223,13 @@ export function AuriaScreen({
   const handleSuggestion = (text: string) => {
     dismissKeyboard();
     workspace.sendMessage(text);
+    setAttachments([]);
   };
 
   const handleSend = () => {
     const text = workspace.composerText.trim();
-    const message = text || (attachments.length ? 'Sent a photo.' : '');
-    workspace.sendMessage(message);
+    if (!text && attachments.length === 0) return;
+    workspace.sendMessage(text, attachments);
     dismissKeyboard();
     setAttachments([]);
   };
@@ -250,6 +252,7 @@ export function AuriaScreen({
 
   const handleCreateRequest = (request: string) => {
     workspace.sendMessage(request);
+    setAttachments([]);
     setPanelKey((key) => key + 1);
     panelAnim.setValue(1);
   };
@@ -264,6 +267,7 @@ export function AuriaScreen({
   const handleConversation = (id: string) => {
     dismissKeyboard();
     workspace.openConversation(id);
+    setAttachments([]);
     setPanelKey((key) => key + 1);
     panelAnim.setValue(1);
     closeSidebar();

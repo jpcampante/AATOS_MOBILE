@@ -23,7 +23,7 @@ type WorkspaceState = {
   projects: AuriaProject[];
   projectRows: AuriaSidebarProjectRow[];
   messages: AuriaChatMessage[];
-  pendingReply: { id: number; text: string } | null;
+  pendingReply: { id: number; text: string; hasAttachments: boolean } | null;
   newProjectOpen: boolean;
 };
 
@@ -32,7 +32,7 @@ type WorkspaceAction =
   | { type: 'set-model'; value: string }
   | { type: 'open-panel'; panel: AuriaPanel }
   | { type: 'new-chat' }
-  | { type: 'send-message'; text: string; id: number }
+  | { type: 'send-message'; text: string; attachments?: string[]; id: number }
   | { type: 'receive-reply'; reply: AssistantReply; id: number }
   | { type: 'open-conversation'; conversationId: string }
   | { type: 'open-project-modal' }
@@ -330,8 +330,24 @@ const initialState: WorkspaceState = {
   newProjectOpen: false,
 };
 
-function buildAssistantReply(text: string): AssistantReply {
+function buildAssistantReply(text: string, hasAttachments = false): AssistantReply {
   const normalized = text.toLowerCase();
+  if (hasAttachments) {
+    if (!normalized.trim()) {
+      return "Got your photo. Tell me what you'd like me to do with it — describe what's in it, pull out any text, or use it as a reference for the next step.";
+    }
+    // Photo + instruction → an edited/generated image the user can open and
+    // resize, comment on, or brush-remove parts of (ChatGPT-style flow).
+    return {
+      text: "Here's your image. Tap it to edit, resize, or remove anything.",
+      artifact: {
+        kind: 'image',
+        title: text.trim().replace(/[.!?]+$/, ''),
+        prompt: text.trim(),
+        aspectRatio: 3 / 4,
+      },
+    };
+  }
   if (normalized.includes('search the web') || normalized.includes('web search')) {
     return {
       text:
@@ -560,17 +576,23 @@ function workspaceReducer(state: WorkspaceState, action: WorkspaceAction): Works
       };
     case 'send-message': {
       const text = action.text.trim();
-      if (!text) return state;
+      const attachments = action.attachments ?? [];
+      if (!text && attachments.length === 0) return state;
       return {
         ...state,
         panel: 'chat',
         showWelcome: false,
         composerText: '',
         activeConversationId: state.activeConversationId ?? `local-${action.id}`,
-        pendingReply: { id: action.id, text },
+        pendingReply: { id: action.id, text, hasAttachments: attachments.length > 0 },
         messages: [
           ...state.messages,
-          { id: `m-${action.id}`, role: 'user', text },
+          {
+            id: `m-${action.id}`,
+            role: 'user',
+            text,
+            ...(attachments.length > 0 ? { attachments } : {}),
+          },
         ],
       };
     }
@@ -653,9 +675,9 @@ export function useAuriaWorkspace() {
 
   useEffect(() => {
     if (!state.pendingReply) return;
-    const { id, text } = state.pendingReply;
+    const { id, text, hasAttachments } = state.pendingReply;
     const timer = setTimeout(() => {
-      dispatch({ type: 'receive-reply', id, reply: buildAssistantReply(text) });
+      dispatch({ type: 'receive-reply', id, reply: buildAssistantReply(text, hasAttachments) });
     }, 700);
     return () => clearTimeout(timer);
   }, [state.pendingReply]);
@@ -670,9 +692,9 @@ export function useAuriaWorkspace() {
       setSelectedModel: (value: string) => dispatch({ type: 'set-model', value }),
       openPanel: (panel: AuriaPanel) => dispatch({ type: 'open-panel', panel }),
       newChat: () => dispatch({ type: 'new-chat' }),
-      sendMessage: (text: string) => {
+      sendMessage: (text: string, attachments?: string[]) => {
         if (state.pendingReply) return;
-        dispatch({ type: 'send-message', text, id: Date.now() });
+        dispatch({ type: 'send-message', text, attachments, id: Date.now() });
       },
       openConversation: (conversationId: string) =>
         dispatch({ type: 'open-conversation', conversationId }),

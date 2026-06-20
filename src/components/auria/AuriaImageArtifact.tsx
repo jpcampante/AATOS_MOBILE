@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
-import { Image, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { AuriaImageArtifact as AuriaImageArtifactData } from '../../features/auria/types';
 import { auriaTypography, myceoCornerStyle, useTheme } from '../../theme';
 import { AuriaIcon, AURIA_ICON_SIZE, AURIA_ICON_STROKE_NAV } from '../icons';
+import { AuriaImageViewer } from './AuriaImageViewer';
 
 const imageMock = require('../../../assets/auria-image-mock.jpg');
 
@@ -75,34 +76,12 @@ export function AuriaImageArtifact({ artifact }: AuriaImageArtifactProps) {
       </View>
       <Text style={styles.caption}>{shared ? 'Link copied' : artifact.title}</Text>
 
-      <Modal visible={preview} transparent animationType="fade" onRequestClose={() => setPreview(false)}>
-        <View style={styles.previewRoot}>
-          <Pressable
-            style={StyleSheet.absoluteFill}
-            onPress={() => setPreview(false)}
-            accessibilityLabel="Close preview"
-          />
-          <Image
-            source={imageMock}
-            resizeMode="contain"
-            style={styles.previewImage}
-            accessibilityLabel={artifact.prompt}
-          />
-          <View style={styles.previewBar} pointerEvents="box-none">
-            <Text style={styles.previewPrompt} numberOfLines={2}>
-              {artifact.prompt}
-            </Text>
-            <Pressable
-              onPress={() => setPreview(false)}
-              style={({ pressed }) => [styles.previewClose, pressed && styles.buttonPressed]}
-              accessibilityRole="button"
-              accessibilityLabel="Close preview"
-            >
-              <AuriaIcon name="close" size={20} color={ds.white} strokeWidth={2} />
-            </Pressable>
-          </View>
-        </View>
-      </Modal>
+      <AuriaImageViewer
+        visible={preview}
+        source={imageMock}
+        prompt={artifact.prompt}
+        onClose={() => setPreview(false)}
+      />
     </View>
   );
 }
@@ -175,40 +154,6 @@ function createStyles(
       color: ds.gray600,
       fontSize: 12,
       paddingHorizontal: 2,
-    },
-    previewRoot: {
-      flex: 1,
-      backgroundColor: 'rgba(8, 9, 11, 0.94)',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    previewImage: {
-      width: '92%',
-      height: '74%',
-    },
-    previewBar: {
-      position: 'absolute',
-      left: 18,
-      right: 18,
-      bottom: 28,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 12,
-    },
-    previewPrompt: {
-      ...auriaTypography.body,
-      flex: 1,
-      color: 'rgba(255,255,255,0.82)',
-      fontSize: 13,
-      lineHeight: 18,
-    },
-    previewClose: {
-      width: 44,
-      height: 44,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: 'rgba(255,255,255,0.16)',
-      borderRadius: 22,
     },
   });
 }

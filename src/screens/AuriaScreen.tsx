@@ -82,6 +82,8 @@ export function AuriaScreen({
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [attachments, setAttachments] = useState<string[]>([]);
+  const [imageMode, setImageMode] = useState(false);
+  const [imageRatio, setImageRatio] = useState('1:1');
   const [composerHeight, setComposerHeight] = useState(
     getAuriaComposerOverlayHeight(),
   );
@@ -215,6 +217,7 @@ export function AuriaScreen({
     dismissKeyboard();
     workspace.newChat();
     setAttachments([]);
+    setImageMode(false);
     setPanelKey((key) => key + 1);
     panelAnim.setValue(1);
     closeSidebar();
@@ -224,10 +227,18 @@ export function AuriaScreen({
     dismissKeyboard();
     workspace.sendMessage(text);
     setAttachments([]);
+    setImageMode(false);
   };
 
   const handleSend = () => {
     const text = workspace.composerText.trim();
+    if (imageMode) {
+      if (!text) return;
+      workspace.sendMessage(`Create an image with aspect ratio ${imageRatio}. Image brief: ${text}`);
+      setImageMode(false);
+      dismissKeyboard();
+      return;
+    }
     if (!text && attachments.length === 0) return;
     workspace.sendMessage(text, attachments);
     dismissKeyboard();
@@ -253,6 +264,7 @@ export function AuriaScreen({
   const handleCreateRequest = (request: string) => {
     workspace.sendMessage(request);
     setAttachments([]);
+    setImageMode(false);
     setPanelKey((key) => key + 1);
     panelAnim.setValue(1);
   };
@@ -268,6 +280,7 @@ export function AuriaScreen({
     dismissKeyboard();
     workspace.openConversation(id);
     setAttachments([]);
+    setImageMode(false);
     setPanelKey((key) => key + 1);
     panelAnim.setValue(1);
     closeSidebar();
@@ -383,6 +396,10 @@ export function AuriaScreen({
                   onRemoveAttachment={(uri) =>
                     setAttachments((current) => current.filter((item) => item !== uri))
                   }
+                  imageMode={imageMode}
+                  imageRatio={imageRatio}
+                  onSelectRatio={setImageRatio}
+                  onExitImageMode={() => setImageMode(false)}
                 />
               </View>
             ) : null}
@@ -396,6 +413,10 @@ export function AuriaScreen({
                 setCameraOpen(true);
               }}
               onAddPhotos={(uris) => setAttachments((current) => [...current, ...uris])}
+              onCreateImage={() => {
+                setCreateMenuOpen(false);
+                setImageMode(true);
+              }}
               bottomOffset={shellBottomInset - 20}
             />
 

@@ -50,7 +50,18 @@ type AuriaComposerProps = {
   attachments?: string[];
   /** Removes an attachment by its URI. */
   onRemoveAttachment?: (uri: string) => void;
+  /** Image-generation mode: show aspect-ratio chips and prompt for an image. */
+  imageMode?: boolean;
+  /** Currently selected aspect ratio (e.g. "1:1"). */
+  imageRatio?: string;
+  /** Picks an aspect ratio in image mode. */
+  onSelectRatio?: (ratio: string) => void;
+  /** Leaves image-generation mode. */
+  onExitImageMode?: () => void;
 };
+
+/** Aspect ratios offered when generating an image, straight in the composer. */
+export const COMPOSER_IMAGE_RATIOS = ['1:1', '4:3', '3:4', '16:9', '9:16'] as const;
 
 const inputWebFocusReset =
   Platform.OS === 'web'
@@ -80,6 +91,10 @@ export const AuriaComposer = forwardRef<AuriaComposerHandle, AuriaComposerProps>
       onOpenModelPicker,
       attachments = [],
       onRemoveAttachment,
+      imageMode = false,
+      imageRatio = '1:1',
+      onSelectRatio,
+      onExitImageMode,
     },
     ref,
   ) {
@@ -92,7 +107,7 @@ export const AuriaComposer = forwardRef<AuriaComposerHandle, AuriaComposerProps>
     const setText = onChangeText ?? setDraft;
     const hasText = text.trim().length > 0;
     const hasAttachments = attachments.length > 0;
-    const canSend = (hasText || hasAttachments) && !isResponding;
+    const canSend = (imageMode ? hasText : hasText || hasAttachments) && !isResponding;
 
     useImperativeHandle(ref, () => ({
       blur: () => {
@@ -150,12 +165,51 @@ export const AuriaComposer = forwardRef<AuriaComposerHandle, AuriaComposerProps>
           </ScrollView>
         ) : null}
 
+        {/* Image-generation bar — aspect ratios live right in the input */}
+        {imageMode ? (
+          <View style={styles.imageBar}>
+            <AuriaIcon name="frame" size={16} color={ds.auriaBlue} strokeWidth={2} />
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={styles.ratioRow}
+            >
+              {COMPOSER_IMAGE_RATIOS.map((ratio) => {
+                const active = ratio === imageRatio;
+                return (
+                  <Pressable
+                    key={ratio}
+                    onPress={() => onSelectRatio?.(ratio)}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: active }}
+                    style={[styles.ratioChip, active && styles.ratioChipActive]}
+                  >
+                    <Text style={[styles.ratioChipText, active && styles.ratioChipTextActive]}>
+                      {ratio}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+            <Pressable
+              onPress={onExitImageMode}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Exit image mode"
+              style={styles.imageExit}
+            >
+              <AuriaIcon name="close" size={14} color={ds.gray600} strokeWidth={2.5} />
+            </Pressable>
+          </View>
+        ) : null}
+
         {/* Row 1 — multiline text */}
         <TextInput
           ref={inputRef}
           value={text}
           onChangeText={setText}
-          placeholder="Ask anything"
+          placeholder={imageMode ? 'Describe the image…' : 'Ask anything'}
           placeholderTextColor={ds.gray400}
           style={[styles.input, inputWebFocusReset]}
           multiline
@@ -304,6 +358,46 @@ function createStyles(
       backgroundColor: ds.white,
       alignItems: 'center',
       justifyContent: 'center',
+    },
+    imageBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      paddingBottom: 2,
+    },
+    ratioRow: {
+      gap: 6,
+      alignItems: 'center',
+      paddingRight: 4,
+    },
+    ratioChip: {
+      height: 28,
+      paddingHorizontal: 11,
+      borderRadius: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: ds.sectionFill,
+    },
+    ratioChipActive: {
+      backgroundColor: ds.offBlack,
+    },
+    ratioChipText: {
+      ...auriaTypography.label,
+      fontSize: 13,
+      letterSpacing: 0,
+      fontWeight: theme.typography.fontWeight.medium,
+      color: ds.gray900,
+    },
+    ratioChipTextActive: {
+      color: ds.white,
+    },
+    imageExit: {
+      width: 26,
+      height: 26,
+      borderRadius: 13,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: ds.sectionFill,
     },
     input: {
       ...auriaTypography.body,

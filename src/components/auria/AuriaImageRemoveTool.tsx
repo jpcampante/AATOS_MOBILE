@@ -2,7 +2,6 @@ import { useMemo, useReducer, useRef, useState } from 'react';
 import {
   Image,
   ImageSourcePropType,
-  LayoutChangeEvent,
   PanResponder,
   Pressable,
   StyleSheet,
@@ -63,14 +62,10 @@ function historyReducer(state: History, action: HistoryAction): History {
 
 /**
  * Full-screen object-removal editor (ChatGPT-style): brush over the area you
- * want gone. Strokes are captured with PanResponder and drawn as a translucent
- * white mask with a dashed edge. A left-side slider sets the brush size, and
- * Undo/Redo walk the stroke history. "Next" hands the mask back to the caller.
- *
- * Once the image reports its size (onLoad), the image + SVG overlay are sized to
- * the image's *contained* rect so the brush only paints over the visible photo
- * (never the black letterbox bars). Before that, it gracefully falls back to a
- * full-canvas contain image so painting still works.
+ * want gone. The image fills the entire screen (full-bleed) and the controls
+ * float on top, so the whole screen is the paint canvas. Strokes are captured
+ * with PanResponder and drawn as a translucent white mask with a dashed edge; a
+ * left slider sets the brush size; Undo/Redo walk the atomic stroke history.
  */
 export function AuriaImageRemoveTool({ source, onCancel, onNext }: AuriaImageRemoveToolProps) {
   const insets = useSafeAreaInsets();
@@ -81,27 +76,6 @@ export function AuriaImageRemoveTool({ source, onCancel, onNext }: AuriaImageRem
   const [current, setCurrent] = useState<Stroke | null>(null);
   const [brushSize, setBrushSize] = useState(34);
   const [cursor, setCursor] = useState<Point | null>(null);
-
-  // Canvas (visible area) + image intrinsic size → the contained image rect.
-  const [canvasSize, setCanvasSize] = useState<{ w: number; h: number } | null>(null);
-  const [naturalSize, setNaturalSize] = useState<{ w: number; h: number } | null>(null);
-
-  const onImageLoad = (e: { nativeEvent?: { source?: { width?: number; height?: number } } }) => {
-    const s = e?.nativeEvent?.source;
-    if (s?.width && s?.height) setNaturalSize({ w: s.width, h: s.height });
-  };
-
-  const rect = useMemo(() => {
-    if (!canvasSize || !naturalSize || naturalSize.w <= 0 || naturalSize.h <= 0) return null;
-    const scale = Math.min(canvasSize.w / naturalSize.w, canvasSize.h / naturalSize.h);
-    return { w: Math.round(naturalSize.w * scale), h: Math.round(naturalSize.h * scale) };
-  }, [canvasSize, naturalSize]);
-
-  const onCanvasLayout = (e: LayoutChangeEvent) => {
-    const w = Math.round(e.nativeEvent.layout.width);
-    const h = Math.round(e.nativeEvent.layout.height);
-    setCanvasSize((prev) => (prev && prev.w === w && prev.h === h ? prev : { w, h }));
-  };
 
   // Live refs so the PanResponder closures always read fresh values.
   const brushRef = useRef(brushSize);
@@ -170,9 +144,62 @@ export function AuriaImageRemoveTool({ source, onCancel, onNext }: AuriaImageRem
   const knobTop = (1 - (brushSize - BRUSH_MIN) / (BRUSH_MAX - BRUSH_MIN)) * SLIDER_HEIGHT;
 
   return (
-    <View style={styles.root} accessibilityViewIsModal>
-      {/* Top bar — Cancel · Remove · Next */}
-      <View style={styles.topBar}>
+    <View style={styles.root}>
+      {/* Full-screen paint canvas — image fills the whole screen, brush anywhere */}
+      <View style={StyleSheet.absoluteFill} {...canvasPan.panHandlers}>
+        <Image source={source} resizeMode="cover" style={StyleSheet.absoluteFill} />
+        <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
+          {allStrokes.map((stroke, i) =>
+            stroke.points.length === 1 ? (
+              <Circle
+                key={`dot-${i}`}
+                cx={stroke.points[0].x}
+                cy={stroke.points[0].y}
+                r={stroke.size / 2}
+                fill="rgba(255,255,255,0.40)"
+              />
+            ) : (
+              <Path
+                key={`mask-${i}`}
+                d={toPath(stroke.points)}
+                stroke="rgba(255,255,255,0.40)"
+                strokeWidth={stroke.size}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+              />
+            ),
+          )}
+          {/* Dashed centreline gives the cut-out / lasso feel. */}
+          {allStrokes.map((stroke, i) =>
+            stroke.points.length > 1 ? (
+              <Path
+                key={`dash-${i}`}
+                d={toPath(stroke.points)}
+                stroke="rgba(255,255,255,0.95)"
+                strokeWidth={1.5}
+                strokeDasharray="7 6"
+                strokeLinecap="round"
+                fill="none"
+              />
+            ) : null,
+          )}
+          {/* Brush cursor while painting. */}
+          {cursor ? (
+            <Circle
+              cx={cursor.x}
+              cy={cursor.y}
+              r={brushSize / 2}
+              fill="rgba(255,255,255,0.18)"
+              stroke="rgba(255,255,255,0.9)"
+              strokeWidth={1.5}
+            />
+          ) : null}
+        </Svg>
+      </View>
+
+      {/* Top bar — Cancel · Remove · Next (floats over the image) */}
+      <View style={styles.topBar} pointerEvents="box-none">
         <Pressable onPress={onCancel} hitSlop={10} accessibilityRole="button" accessibilityLabel="Cancel">
           <Text style={styles.topAction}>Cancel</Text>
         </Pressable>
@@ -187,87 +214,26 @@ export function AuriaImageRemoveTool({ source, onCancel, onNext }: AuriaImageRem
         </Pressable>
       </View>
 
-      {/* Canvas — the contained image + brushed mask, centred in the safe area */}
-      <View style={styles.canvas} onLayout={onCanvasLayout}>
-        <View
-          style={rect ? [styles.imageBox, { width: rect.w, height: rect.h }] : StyleSheet.absoluteFill}
-          {...canvasPan.panHandlers}
-        >
-          <Image
-            source={source}
-            resizeMode={rect ? 'cover' : 'contain'}
-            style={StyleSheet.absoluteFill}
-            onLoad={onImageLoad}
-          />
-          <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
-            {allStrokes.map((stroke, i) =>
-              stroke.points.length === 1 ? (
-                <Circle
-                  key={`dot-${i}`}
-                  cx={stroke.points[0].x}
-                  cy={stroke.points[0].y}
-                  r={stroke.size / 2}
-                  fill="rgba(255,255,255,0.40)"
-                />
-              ) : (
-                <Path
-                  key={`mask-${i}`}
-                  d={toPath(stroke.points)}
-                  stroke="rgba(255,255,255,0.40)"
-                  strokeWidth={stroke.size}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  fill="none"
-                />
-              ),
-            )}
-            {/* Dashed centreline gives the cut-out / lasso feel. */}
-            {allStrokes.map((stroke, i) =>
-              stroke.points.length > 1 ? (
-                <Path
-                  key={`dash-${i}`}
-                  d={toPath(stroke.points)}
-                  stroke="rgba(255,255,255,0.95)"
-                  strokeWidth={1.5}
-                  strokeDasharray="7 6"
-                  strokeLinecap="round"
-                  fill="none"
-                />
-              ) : null,
-            )}
-            {/* Brush cursor while painting. */}
-            {cursor ? (
-              <Circle
-                cx={cursor.x}
-                cy={cursor.y}
-                r={brushSize / 2}
-                fill="rgba(255,255,255,0.18)"
-                stroke="rgba(255,255,255,0.9)"
-                strokeWidth={1.5}
-              />
-            ) : null}
-          </Svg>
-        </View>
-
-        {/* Brush-size slider (left) */}
-        <View style={styles.sliderWrap} pointerEvents="box-none">
-          <View style={styles.sliderTrack} {...sliderPan.panHandlers}>
-            <View style={[styles.sliderKnob, { top: knobTop - 11 }]}>
-              <View style={[styles.brushPreview, { width: brushSize, height: brushSize, borderRadius: brushSize / 2 }]} />
-            </View>
+      {/* Brush-size slider (left) */}
+      <View style={styles.sliderWrap} pointerEvents="box-none">
+        <View style={styles.sliderTrack} {...sliderPan.panHandlers}>
+          <View style={[styles.sliderKnob, { top: knobTop - 11 }]}>
+            <View style={[styles.brushPreview, { width: brushSize, height: brushSize, borderRadius: brushSize / 2 }]} />
           </View>
         </View>
-
-        {/* Hint — only before the first stroke. */}
-        {!hasPaint ? (
-          <View style={styles.hintWrap} pointerEvents="none">
-            <Text style={styles.hintText}>Tap what you'd like to remove</Text>
-          </View>
-        ) : null}
       </View>
 
-      {/* Bottom bar — undo / redo */}
-      <View style={styles.bottomBar}>
+      {/* Hint — only before the first stroke. */}
+      {!hasPaint ? (
+        <View style={styles.hintWrap} pointerEvents="none">
+          <View style={styles.hintPill}>
+            <Text style={styles.hintText}>Tap what you'd like to remove</Text>
+          </View>
+        </View>
+      ) : null}
+
+      {/* Bottom bar — undo / redo (floats over the image) */}
+      <View style={styles.bottomBar} pointerEvents="box-none">
         <Pressable
           onPress={() => dispatch({ type: 'undo' })}
           disabled={strokes.length === 0}
@@ -280,7 +246,7 @@ export function AuriaImageRemoveTool({ source, onCancel, onNext }: AuriaImageRem
           <AuriaIcon
             name="undo"
             size={AURIA_ICON_SIZE.md}
-            color={strokes.length === 0 ? 'rgba(255,255,255,0.32)' : '#FFFFFF'}
+            color={strokes.length === 0 ? 'rgba(255,255,255,0.4)' : '#FFFFFF'}
             strokeWidth={2}
           />
         </Pressable>
@@ -296,7 +262,7 @@ export function AuriaImageRemoveTool({ source, onCancel, onNext }: AuriaImageRem
           <AuriaIcon
             name="redo"
             size={AURIA_ICON_SIZE.md}
-            color={redo.length === 0 ? 'rgba(255,255,255,0.32)' : '#FFFFFF'}
+            color={redo.length === 0 ? 'rgba(255,255,255,0.4)' : '#FFFFFF'}
             strokeWidth={2}
           />
         </Pressable>
@@ -306,19 +272,25 @@ export function AuriaImageRemoveTool({ source, onCancel, onNext }: AuriaImageRem
 }
 
 function createStyles(topInset: number, bottomInset: number) {
+  const scrim = 'rgba(0, 0, 0, 0.34)';
+  const control = 'rgba(0, 0, 0, 0.4)';
   return StyleSheet.create({
     root: {
       ...StyleSheet.absoluteFillObject,
       backgroundColor: '#000000',
     },
     topBar: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
       paddingTop: topInset + 10,
       paddingBottom: 12,
       paddingHorizontal: 20,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      backgroundColor: '#0B0B0C',
+      backgroundColor: scrim,
     },
     topAction: {
       ...auriaTypography.body,
@@ -334,15 +306,6 @@ function createStyles(topInset: number, bottomInset: number) {
       fontSize: 17,
       fontWeight: '600',
     },
-    canvas: {
-      flex: 1,
-      overflow: 'hidden',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    imageBox: {
-      overflow: 'hidden',
-    },
     sliderWrap: {
       position: 'absolute',
       left: 14,
@@ -354,7 +317,7 @@ function createStyles(topInset: number, bottomInset: number) {
       width: 22,
       height: SLIDER_HEIGHT,
       borderRadius: 11,
-      backgroundColor: 'rgba(255,255,255,0.14)',
+      backgroundColor: 'rgba(255,255,255,0.18)',
       alignItems: 'center',
     },
     sliderKnob: {
@@ -374,30 +337,40 @@ function createStyles(topInset: number, bottomInset: number) {
       position: 'absolute',
       left: 0,
       right: 0,
-      bottom: 24,
+      bottom: bottomInset + 84,
       alignItems: 'center',
+    },
+    hintPill: {
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      paddingHorizontal: 16,
+      paddingVertical: 9,
+      borderRadius: 18,
     },
     hintText: {
       ...auriaTypography.body,
-      color: 'rgba(255,255,255,0.82)',
+      color: '#FFFFFF',
       fontSize: 15,
-      paddingHorizontal: 16,
-      paddingVertical: 8,
     },
     bottomBar: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: 0,
       paddingTop: 14,
       paddingBottom: bottomInset + 18,
       paddingHorizontal: 48,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      backgroundColor: '#0B0B0C',
+      backgroundColor: scrim,
     },
     bottomButton: {
-      width: 52,
-      height: 44,
+      width: 56,
+      height: 48,
+      borderRadius: 24,
       alignItems: 'center',
       justifyContent: 'center',
+      backgroundColor: control,
     },
     bottomButtonPressed: {
       opacity: 0.6,

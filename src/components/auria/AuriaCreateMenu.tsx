@@ -26,7 +26,7 @@ import {
 import { AuriaIcon, AuriaIconName, AURIA_ICON_SIZE } from '../icons';
 import { LiquidGlassSurface } from '../ui/LiquidGlassSurface';
 
-type CreateMode = 'home' | 'tools' | 'image' | 'teammate' | 'websearch' | 'research';
+type CreateMode = 'home' | 'tools' | 'teammate' | 'websearch' | 'research';
 type CreateActionId =
   | 'camera'
   | 'photos'
@@ -37,8 +37,6 @@ type CreateActionId =
   | 'image'
   | 'websearch'
   | 'research';
-type ImageRatio = '1:1' | '4:3' | '3:4' | '16:9' | '9:16';
-
 type AuriaCreateMenuProps = {
   visible: boolean;
   onClose: () => void;
@@ -47,6 +45,8 @@ type AuriaCreateMenuProps = {
   onOpenCamera: () => void;
   /** Adds picked photo URIs as composer attachments. */
   onAddPhotos: (uris: string[]) => void;
+  /** Enters image-generation mode in the main composer (prompt + aspect ratio). */
+  onCreateImage: () => void;
   bottomOffset: number;
 };
 
@@ -72,7 +72,6 @@ const TOOL_ACTIONS: CreateAction[] = [
 /** Create-menu card radius — larger, ChatGPT-style rounded corners. */
 const CARD_RADIUS = 36;
 
-const IMAGE_RATIOS: ImageRatio[] = ['1:1', '4:3', '3:4', '16:9', '9:16'];
 const TEAMMATES = [
   { name: 'Maya Chen', role: 'Finance AI', context: 'Budgets, forecasts, and board reporting' },
   { name: 'Noah Williams', role: 'Sales AI', context: 'Pipeline, accounts, and follow-ups' },
@@ -85,6 +84,7 @@ export function AuriaCreateMenu({
   onSendRequest,
   onOpenCamera,
   onAddPhotos,
+  onCreateImage,
   bottomOffset,
 }: AuriaCreateMenuProps) {
   const { theme } = useTheme();
@@ -95,7 +95,6 @@ export function AuriaCreateMenu({
   );
   const [mode, setMode] = useState<CreateMode>('home');
   const [prompt, setPrompt] = useState('');
-  const [imageRatio, setImageRatio] = useState<ImageRatio>('1:1');
   const [teammate, setTeammate] = useState<(typeof TEAMMATES)[number]>(TEAMMATES[0]);
   const isListMode = mode === 'home' || mode === 'tools';
   const sheetWidth = isListMode
@@ -161,15 +160,18 @@ export function AuriaCreateMenu({
       finish('Create a document. Brief: Product strategy working draft.');
       return;
     }
-    // 'tools' | 'image' | 'teammate' | 'websearch' | 'research' open a sub-view.
+    if (id === 'image') {
+      // Image generation happens in the main composer (prompt + aspect ratio).
+      onCreateImage();
+      return;
+    }
+    // 'tools' | 'teammate' | 'websearch' | 'research' open a sub-view.
     setMode(id);
   };
 
   const submit = () => {
     const detail = prompt.trim() || 'Ask me for the missing details before starting.';
-    if (mode === 'image') {
-      finish(`Create an image with aspect ratio ${imageRatio}. Image brief: ${detail}`);
-    } else if (mode === 'teammate') {
+    if (mode === 'teammate') {
       finish(`Start a shared conversation with ${teammate.name}, ${teammate.role}. Topic: ${detail}`);
     } else if (mode === 'websearch') {
       finish(`Search the web for the latest and answer with sources: ${detail}`);
@@ -183,19 +185,15 @@ export function AuriaCreateMenu({
       ? 'Create with Auria'
       : mode === 'tools'
         ? 'Tools'
-        : mode === 'image'
-          ? 'Create image'
-          : mode === 'websearch'
-            ? 'Web search'
-            : mode === 'research'
-              ? 'Deep research'
-              : 'Talk to teammate AI';
+        : mode === 'websearch'
+          ? 'Web search'
+          : mode === 'research'
+            ? 'Deep research'
+            : 'Talk to teammate AI';
 
-  // image / websearch / research are reached from inside Tools, so back returns there.
+  // websearch / research are reached from inside Tools, so back returns there.
   const goBack = () =>
-    setMode(
-      mode === 'image' || mode === 'websearch' || mode === 'research' ? 'tools' : 'home',
-    );
+    setMode(mode === 'websearch' || mode === 'research' ? 'tools' : 'home');
 
   const menuBody = (
     <>
@@ -246,9 +244,6 @@ export function AuriaCreateMenu({
           </View>
         ) : (
           <>
-            {mode === 'image' ? (
-              <OptionSection label="Proportion" options={IMAGE_RATIOS} value={imageRatio} onChange={setImageRatio} />
-            ) : null}
             {mode === 'teammate' ? (
               <View style={styles.section}>
                 <Text style={styles.sectionLabel}>Employee AI</Text>
@@ -276,13 +271,11 @@ export function AuriaCreateMenu({
             ) : null}
             <View style={styles.section}>
               <Text style={styles.sectionLabel}>
-                {mode === 'image'
-                  ? 'Describe the image'
-                  : mode === 'websearch'
-                    ? 'What to search'
-                    : mode === 'research'
-                      ? 'Research topic'
-                      : 'Brief'}
+                {mode === 'websearch'
+                  ? 'What to search'
+                  : mode === 'research'
+                    ? 'Research topic'
+                    : 'Brief'}
               </Text>
               <LiquidGlassSurface
                 variant="input"
@@ -295,13 +288,11 @@ export function AuriaCreateMenu({
                   value={prompt}
                   onChangeText={setPrompt}
                   placeholder={
-                    mode === 'image'
-                      ? 'A minimal campaign image with soft natural light...'
-                      : mode === 'websearch'
-                        ? 'e.g. latest pricing trends in our market'
-                        : mode === 'research'
-                          ? 'e.g. competitive landscape for our Q3 strategy'
-                          : 'Describe what Auria should create or discuss...'
+                    mode === 'websearch'
+                      ? 'e.g. latest pricing trends in our market'
+                      : mode === 'research'
+                        ? 'e.g. competitive landscape for our Q3 strategy'
+                        : 'Describe what Auria should create or discuss...'
                   }
                   placeholderTextColor={theme.colors.textHint}
                   multiline
@@ -368,49 +359,6 @@ export function AuriaCreateMenu({
         </LiquidGlassSurface>
       </Animated.View>
     </KeyboardAvoidingView>
-  );
-}
-
-function OptionSection<T extends string>({
-  label,
-  options,
-  value,
-  onChange,
-}: {
-  label: string;
-  options: readonly T[];
-  value: T;
-  onChange: (value: T) => void;
-}) {
-  const { theme } = useTheme();
-  const styles = useMemo(() => createStyles(theme), [theme]);
-  return (
-    <View style={styles.section}>
-      <Text style={styles.sectionLabel}>{label}</Text>
-      <View style={styles.chips}>
-        {options.map((option) => {
-          const active = option === value;
-          return (
-            <Pressable
-              key={option}
-              onPress={() => onChange(option)}
-              style={({ pressed }) => [styles.chipPress, pressed && styles.chipPressed]}
-              accessibilityRole="button"
-              accessibilityState={{ selected: active }}
-            >
-              <LiquidGlassSurface
-                interactive
-                elevated={false}
-                borderRadius={MYCEO_CORNER_RADIUS.chip}
-                style={[styles.chip, active && styles.chipActive]}
-              >
-                <Text style={[styles.chipText, active && styles.chipTextActive]}>{option}</Text>
-              </LiquidGlassSurface>
-            </Pressable>
-          );
-        })}
-      </View>
-    </View>
   );
 }
 
@@ -551,38 +499,6 @@ function createStyles(
       fontSize: 11,
       fontWeight: theme.typography.fontWeight.bold,
       textTransform: 'uppercase',
-    },
-    chips: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: 8,
-    },
-    chipPress: {
-      ...myceoCornerStyle('chip'),
-    },
-    chipPressed: {
-      opacity: 0.9,
-      transform: [{ scale: 0.96 }],
-    },
-    chip: {
-      paddingHorizontal: 13,
-      paddingVertical: 9,
-      ...myceoCornerStyle('chip'),
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    chipActive: {
-      backgroundColor: theme.colors.accent,
-    },
-    chipText: {
-      ...auriaTypography.body,
-      color: theme.colors.textSecondary,
-      fontSize: 12,
-      fontWeight: theme.typography.fontWeight.medium,
-    },
-    chipTextActive: {
-      color: theme.colors.surface,
-      fontWeight: theme.typography.fontWeight.semibold,
     },
     personRow: {
       flexDirection: 'row',

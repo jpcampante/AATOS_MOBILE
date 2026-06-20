@@ -1,8 +1,10 @@
 import { forwardRef, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import {
+  Image,
   Keyboard,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -44,6 +46,10 @@ type AuriaComposerProps = {
   selectedModelEffort?: string | null;
   /** Opens the model picker sheet. */
   onOpenModelPicker?: () => void;
+  /** Image attachment URIs shown as thumbnails above the input. */
+  attachments?: string[];
+  /** Removes an attachment by its URI. */
+  onRemoveAttachment?: (uri: string) => void;
 };
 
 const inputWebFocusReset =
@@ -72,6 +78,8 @@ export const AuriaComposer = forwardRef<AuriaComposerHandle, AuriaComposerProps>
       selectedModelName = 'Opus 4.8',
       selectedModelEffort = 'Max',
       onOpenModelPicker,
+      attachments = [],
+      onRemoveAttachment,
     },
     ref,
   ) {
@@ -83,6 +91,8 @@ export const AuriaComposer = forwardRef<AuriaComposerHandle, AuriaComposerProps>
     const text = value ?? draft;
     const setText = onChangeText ?? setDraft;
     const hasText = text.trim().length > 0;
+    const hasAttachments = attachments.length > 0;
+    const canSend = (hasText || hasAttachments) && !isResponding;
 
     useImperativeHandle(ref, () => ({
       blur: () => {
@@ -95,7 +105,7 @@ export const AuriaComposer = forwardRef<AuriaComposerHandle, AuriaComposerProps>
     }));
 
     const handleSend = () => {
-      if (!hasText || isResponding) return;
+      if (!canSend) return;
       inputRef.current?.blur();
       Keyboard.dismiss();
       onSend?.();
@@ -115,6 +125,31 @@ export const AuriaComposer = forwardRef<AuriaComposerHandle, AuriaComposerProps>
         borderRadius={MYCEO_CORNER_RADIUS.panel}
         style={styles.toolbarGlass}
       >
+        {/* Row 0 — image attachment thumbnails */}
+        {hasAttachments ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={styles.attachmentRow}
+          >
+            {attachments.map((uri) => (
+              <View key={uri} style={styles.thumbWrap}>
+                <Image source={{ uri }} style={styles.thumb} />
+                <Pressable
+                  onPress={() => onRemoveAttachment?.(uri)}
+                  style={styles.removeButton}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Remove attachment"
+                >
+                  <AuriaIcon name="close" size={12} color={ds.gray900} strokeWidth={2.5} />
+                </Pressable>
+              </View>
+            ))}
+          </ScrollView>
+        ) : null}
+
         {/* Row 1 — multiline text */}
         <TextInput
           ref={inputRef}
@@ -193,12 +228,12 @@ export const AuriaComposer = forwardRef<AuriaComposerHandle, AuriaComposerProps>
           <Pressable
             style={({ pressed }) => [
               styles.sendButton,
-              hasText && !isResponding && styles.sendButtonActive,
-              (!hasText || isResponding) && styles.sendButtonDisabled,
-              pressed && hasText && !isResponding && styles.sendButtonPressed,
+              canSend && styles.sendButtonActive,
+              !canSend && styles.sendButtonDisabled,
+              pressed && canSend && styles.sendButtonPressed,
             ]}
             onPress={handleSend}
-            disabled={!hasText || isResponding}
+            disabled={!canSend}
             accessibilityRole="button"
             accessibilityLabel="Send"
             hitSlop={8}
@@ -244,6 +279,31 @@ function createStyles(
       paddingBottom: 10,
       gap: 10,
       minHeight: AURIA_COMPOSER_TOOLBAR_HEIGHT,
+    },
+    attachmentRow: {
+      gap: 8,
+      paddingBottom: 2,
+    },
+    thumbWrap: {
+      width: 64,
+      height: 64,
+    },
+    thumb: {
+      width: 64,
+      height: 64,
+      borderRadius: 12,
+      backgroundColor: ds.gray200,
+    },
+    removeButton: {
+      position: 'absolute',
+      top: 4,
+      right: 4,
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      backgroundColor: ds.white,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     input: {
       ...auriaTypography.body,

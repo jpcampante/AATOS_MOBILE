@@ -332,6 +332,111 @@ const initialState: WorkspaceState = {
 
 function buildAssistantReply(text: string): AssistantReply {
   const normalized = text.toLowerCase();
+  if (normalized.includes('search the web') || normalized.includes('web search')) {
+    return {
+      text:
+        'Here is what I found across the web, with sources:\n\n' +
+        '• Usage-based pricing is becoming the default in our segment.\n' +
+        '• Two competitors shipped AI review features this month.\n' +
+        '• Analysts expect continued consolidation through 2026.\n\n' +
+        'Want me to go deeper on any of these?',
+      reasoning: {
+        durationSec: 6,
+        steps: [
+          {
+            kind: 'search',
+            title: 'Searching the web',
+            queries: [
+              'usage-based pricing B2B SaaS 2026 trend',
+              'competitor AI contract review launch',
+              'legal tech market consolidation forecast',
+            ],
+            sources: [
+              { label: 'techcrunch.com', kind: 'web' },
+              { label: 'g2.com', kind: 'web' },
+              { label: 'gartner.com', kind: 'web' },
+            ],
+          },
+        ],
+      },
+      sources: [
+        {
+          id: `web-1-${Date.now()}`,
+          title: 'Usage-based pricing is the new default',
+          kind: 'web',
+          meta: 'techcrunch.com',
+          excerpt:
+            'A majority of B2B SaaS leaders are moving to consumption pricing to align cost with value delivered...',
+        },
+        {
+          id: `web-2-${Date.now()}`,
+          title: 'AI contract-review features compared',
+          kind: 'web',
+          meta: 'g2.com',
+          excerpt:
+            'Side-by-side of the latest AI-assisted review tools and their stated accuracy and turnaround...',
+        },
+      ],
+    };
+  }
+  if (normalized.includes('deep research')) {
+    return {
+      text:
+        'Deep research summary:\n\n' +
+        'I reviewed internal notes and external sources, cross-checked the claims, and synthesised the findings.\n\n' +
+        '1. Where we stand vs the market.\n2. The two biggest risks.\n3. A recommended next step.\n\n' +
+        'I can expand any section into a full brief.',
+      reasoning: {
+        durationSec: 21,
+        steps: [
+          {
+            kind: 'reasoning',
+            title: 'Framing the question',
+            body: 'I split the topic into market position, risks, and a recommendation so the answer is decision-ready.',
+          },
+          {
+            kind: 'search',
+            title: 'Gathering internal and external evidence',
+            queries: [
+              'internal benchmarks',
+              'market share 2026',
+              'competitor pricing',
+              'customer churn drivers',
+              'analyst outlook',
+            ],
+            sources: [
+              { label: 'Strategy_v3.pdf', kind: 'doc', docType: 'doc' },
+              { label: 'gartner.com', kind: 'web' },
+              { label: 'internal-metrics.sheet', kind: 'doc', docType: 'sheet' },
+            ],
+          },
+          {
+            kind: 'reasoning',
+            title: 'Cross-checking and ranking by impact',
+            body: 'I discarded weakly-sourced claims and ranked the rest by how much they affect the decision.',
+          },
+        ],
+      },
+      sources: [
+        {
+          id: `dr-1-${Date.now()}`,
+          title: 'Strategy_v3.pdf',
+          kind: 'pdf',
+          meta: 'Strategy · 1.1 MB',
+          excerpt:
+            'Q3 plan targets a 12% expansion in the enterprise segment, contingent on the new pricing model...',
+        },
+        {
+          id: `dr-2-${Date.now()}`,
+          title: 'Market outlook 2026',
+          kind: 'web',
+          meta: 'gartner.com',
+          excerpt:
+            'Consolidation is expected to continue, favouring platforms with integrated AI workflows...',
+        },
+      ],
+    };
+  }
   if (
     normalized.includes('contrato') ||
     normalized.includes('contract') ||

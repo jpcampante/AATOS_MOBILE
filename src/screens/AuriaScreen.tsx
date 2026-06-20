@@ -15,6 +15,7 @@ import {
 } from '../components/auria/AuriaComposer';
 import { AuriaCreateMenu } from '../components/auria/AuriaCreateMenu';
 import { AuriaModelSheet } from '../components/auria/AuriaModelSheet';
+import { AuriaPromptSuggestions } from '../components/auria/AuriaPromptSuggestions';
 import { getModelById } from '../data/auriaModels';
 import {
   AuriaGalleryPanel,
@@ -31,6 +32,7 @@ import {
 } from '../components/auria/auriaLayout';
 import { AuriaChatView } from '../components/auria/AuriaChatView';
 import { AuriaVoiceMode } from '../components/auria/AuriaVoiceMode';
+import { AuriaCameraView } from '../components/auria/AuriaCameraView';
 import { AuriaNewProjectInput, AuriaNewProjectModal } from '../components/auria/AuriaNewProjectModal';
 import { AuriaSidebar } from '../components/auria/AuriaSidebar';
 import { AuriaWelcomeView } from '../components/auria/AuriaWelcomeView';
@@ -78,6 +80,8 @@ export function AuriaScreen({
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [voiceOpen, setVoiceOpen] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [attachments, setAttachments] = useState<string[]>([]);
   const [composerHeight, setComposerHeight] = useState(
     getAuriaComposerOverlayHeight(),
   );
@@ -221,8 +225,11 @@ export function AuriaScreen({
   };
 
   const handleSend = () => {
-    workspace.sendMessage(workspace.composerText);
+    const text = workspace.composerText.trim();
+    const message = text || (attachments.length ? 'Sent a photo.' : '');
+    workspace.sendMessage(message);
     dismissKeyboard();
+    setAttachments([]);
   };
 
   const openNewProjectModal = () => {
@@ -273,7 +280,6 @@ export function AuriaScreen({
         <AuriaWelcomeView
           contentMaxWidth={contentMaxWidth}
           contentTopPadding={welcomeTopPadding}
-          onSuggestion={handleSuggestion}
         />
       );
     }
@@ -348,6 +354,9 @@ export function AuriaScreen({
 
             {workspace.showComposer ? (
               <View style={styles.composerOverlay} onLayout={handleComposerLayout}>
+                {workspace.isWelcomeHome ? (
+                  <AuriaPromptSuggestions onSelect={handleSuggestion} />
+                ) : null}
                 <AuriaComposer
                   ref={composerRef}
                   value={workspace.composerText}
@@ -366,6 +375,10 @@ export function AuriaScreen({
                     dismissKeyboard();
                     setModelPickerOpen(true);
                   }}
+                  attachments={attachments}
+                  onRemoveAttachment={(uri) =>
+                    setAttachments((current) => current.filter((item) => item !== uri))
+                  }
                 />
               </View>
             ) : null}
@@ -374,7 +387,12 @@ export function AuriaScreen({
               visible={createMenuOpen}
               onClose={() => setCreateMenuOpen(false)}
               onSendRequest={handleCreateRequest}
-              bottomOffset={composerHeight + 4}
+              onOpenCamera={() => {
+                setCreateMenuOpen(false);
+                setCameraOpen(true);
+              }}
+              onAddPhotos={(uris) => setAttachments((current) => [...current, ...uris])}
+              bottomOffset={shellBottomInset - 20}
             />
 
             <AuriaModelSheet
@@ -394,6 +412,15 @@ export function AuriaScreen({
       />
 
       <AuriaVoiceMode visible={voiceOpen} onClose={() => setVoiceOpen(false)} />
+
+      <AuriaCameraView
+        visible={cameraOpen}
+        onClose={() => setCameraOpen(false)}
+        onCapture={(uri) => {
+          setCameraOpen(false);
+          setAttachments((current) => [...current, uri]);
+        }}
+      />
     </View>
   );
 }

@@ -3,6 +3,12 @@ import { AccessibilityInfo, Platform, Pressable, StyleSheet, Switch, Text, View 
 import { auriaTypography, isNativeLiquidGlassAvailable, useTheme } from '../../theme';
 import { AuriaIcon, AURIA_ICON_SIZE } from '../icons';
 import { AuriaPanelScroll } from './AuriaPanelShared';
+import { AuriaTopicChips } from './AuriaTopicChips';
+import {
+  cycleDiscoverTopic,
+  resetDiscoverPrefs,
+  useDiscoverPrefs,
+} from '../../features/auria/discoverPrefsStore';
 
 export function AuriaSettingsPanel() {
   const { theme, preference, setPreference } = useTheme();
@@ -12,6 +18,8 @@ export function AuriaSettingsPanel() {
   const [activity, setActivity] = useState(false);
   const [reduceTransparency, setReduceTransparency] = useState(false);
   const nativeGlass = isNativeLiquidGlassAvailable();
+  const discoverPrefs = useDiscoverPrefs();
+  const tunedCount = Object.values(discoverPrefs).filter((p) => p && p !== 'neutral').length;
 
   useEffect(() => {
     if (Platform.OS !== 'ios') return;
@@ -75,6 +83,30 @@ export function AuriaSettingsPanel() {
             </Text>
           </View>
           <View style={[styles.statusDot, nativeGlass && !reduceTransparency && styles.statusDotActive]} />
+        </View>
+      </SettingsSection>
+
+      <SettingsSection title="Discover interests">
+        <View style={styles.discoverBlock}>
+          <View style={styles.discoverHead}>
+            <View style={styles.copy}>
+              <Text style={styles.rowTitle}>Tune your feed</Text>
+              <Text style={styles.rowDescription}>
+                Tap a topic once to see more, again to see less. Used across Discover.
+              </Text>
+            </View>
+            {tunedCount > 0 ? (
+              <Pressable onPress={resetDiscoverPrefs} accessibilityRole="button" accessibilityLabel="Reset interests">
+                <Text style={styles.resetText}>Reset</Text>
+              </Pressable>
+            ) : null}
+          </View>
+          <AuriaTopicChips
+            prefs={discoverPrefs}
+            onCycle={cycleDiscoverTopic}
+            showHeading={false}
+            wrapChips
+          />
         </View>
       </SettingsSection>
 
@@ -171,6 +203,9 @@ function createStyles(theme: ReturnType<typeof useTheme>['theme']) {
     copy: { flex: 1, gap: 3 },
     rowTitle: { ...auriaTypography.body, fontSize: 14, fontWeight: theme.typography.fontWeight.semibold, color: theme.colors.text },
     rowDescription: { ...auriaTypography.body, fontSize: 12, lineHeight: 17, color: theme.colors.textTertiary },
+    discoverBlock: { padding: 14, gap: 6 },
+    discoverHead: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+    resetText: { ...auriaTypography.body, fontSize: 13, fontWeight: theme.typography.fontWeight.semibold, color: theme.colors.accent },
     themeOptions: { flexDirection: 'row', gap: 7, padding: 12 },
     themeOption: { flex: 1, alignItems: 'center', paddingVertical: 10, borderWidth: 1, borderColor: theme.colors.divider, borderRadius: theme.radius.pill },
     themeOptionActive: { backgroundColor: theme.colors.offBlack, borderColor: theme.colors.offBlack },

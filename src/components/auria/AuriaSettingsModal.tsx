@@ -17,6 +17,8 @@ import {
 import { auriaProfileInitials, auriaWelcomeName } from '../../data/auriaMockData';
 import { AuriaIcon, AuriaIconName, AURIA_ICON_SIZE } from '../icons';
 import { AURIA_SCRIM } from './auriaLayout';
+import { AuriaTopicChips } from './AuriaTopicChips';
+import { cycleDiscoverTopic, useDiscoverPrefs } from '../../features/auria/discoverPrefsStore';
 
 type AuriaSettingsModalProps = {
   visible: boolean;
@@ -82,6 +84,8 @@ export function AuriaSettingsModal({ visible, onClose }: AuriaSettingsModalProps
               <NavRow icon="grid" title="Apps" last />
             </Section>
 
+            <DiscoverInterests />
+
             <Section title="Account">
               <ValueRow icon="messageSquare" title="Email" value={EMAIL} />
               <ValueRow icon="idCard" title="Phone number" value={PHONE} />
@@ -132,6 +136,23 @@ export function AuriaSettingsModal({ visible, onClose }: AuriaSettingsModalProps
         </View>
       </View>
     </Modal>
+  );
+}
+
+function DiscoverInterests() {
+  const { ds, theme } = useTheme();
+  const styles = useMemo(() => createStyles(ds, theme, 0, 0), [ds, theme]);
+  const prefs = useDiscoverPrefs();
+  return (
+    <View style={styles.sectionWrap}>
+      <Text style={styles.sectionTitle}>Discover interests</Text>
+      <View style={[styles.card, styles.discoverCard]}>
+        <Text style={styles.discoverHint}>
+          Tap a topic once to see it more in Discover, again to see it less.
+        </Text>
+        <AuriaTopicChips prefs={prefs} onCycle={cycleDiscoverTopic} showHeading={false} wrapChips />
+      </View>
+    </View>
   );
 }
 
@@ -393,6 +414,16 @@ function createStyles(
       backgroundColor: ds.white,
       borderRadius: 14,
       overflow: 'hidden',
+    },
+    discoverCard: {
+      padding: 14,
+      gap: 8,
+    },
+    discoverHint: {
+      ...auriaTypography.body,
+      color: ds.gray500,
+      fontSize: 13,
+      lineHeight: 18,
     },
     row: {
       flexDirection: 'row',

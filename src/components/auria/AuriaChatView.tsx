@@ -6,6 +6,7 @@ import type { AuriaChatMessage } from '../../features/auria/types';
 import { useTypewriter } from '../../features/auria/useTypewriter';
 import { AuriaDocumentArtifact } from './AuriaDocumentArtifact';
 import { AuriaImageArtifact } from './AuriaImageArtifact';
+import { AuriaMessageActions } from './AuriaMessageActions';
 import { AuriaReasoningBlock } from './AuriaReasoningBlock';
 import { AuriaSourceChips } from './AuriaSourceChips';
 import { AuriaTypingCursor } from './AuriaTypingCursor';
@@ -15,6 +16,16 @@ type AuriaChatViewProps = {
   isResponding?: boolean;
   /** Redirect to the files area when an internal document is opened. */
   onOpenFiles?: () => void;
+  /** Fired when a fresh reply has finished writing, so the Stop button can clear. */
+  onMessageDone?: (id: string) => void;
+  /** Model label shown in a reply's "•••" menu (e.g. "Used Opus 4.8"). */
+  modelLabel?: string;
+  /** Starts a new chat from a reply ("Branch in new chat"). */
+  onBranch?: () => void;
+  /** Re-answers the turn a reply belongs to, optionally with thinking / web search. */
+  onRegenerate?: (messageId: string, mode: 'retry' | 'thinking' | 'search') => void;
+  /** Transient feedback from a message action (copied, reading aloud, …). */
+  onActionFeedback?: (message: string) => void;
 };
 
 const ATTACHMENT_MAX_W = 230;
@@ -63,7 +74,16 @@ function ChatAttachmentImage({ uri, placeholderColor }: { uri: string; placehold
   );
 }
 
-export function AuriaChatView({ messages, isResponding = false, onOpenFiles }: AuriaChatViewProps) {
+export function AuriaChatView({
+  messages,
+  isResponding = false,
+  onOpenFiles,
+  onMessageDone,
+  modelLabel,
+  onBranch,
+  onRegenerate,
+  onActionFeedback,
+}: AuriaChatViewProps) {
   const { ds, theme } = useTheme();
   const styles = useMemo(() => createStyles(ds, theme), [ds, theme]);
   const scrollRef = useRef<ScrollView>(null);
@@ -128,6 +148,11 @@ export function AuriaChatView({ messages, isResponding = false, onOpenFiles }: A
                     styles={styles}
                     cursorColor={ds.gray500}
                     onOpenFiles={onOpenFiles}
+                    onMessageDone={onMessageDone}
+                    modelLabel={modelLabel}
+                    onBranch={onBranch}
+                    onRegenerate={onRegenerate}
+                    onActionFeedback={onActionFeedback}
                   />
                 )}
               </View>
@@ -159,16 +184,31 @@ function AssistantBubbleContent({
   styles,
   cursorColor,
   onOpenFiles,
+  onMessageDone,
+  modelLabel,
+  onBranch,
+  onRegenerate,
+  onActionFeedback,
 }: {
   message: AuriaChatMessage;
   styles: ReturnType<typeof createStyles>;
   cursorColor: string;
   onOpenFiles?: () => void;
+  onMessageDone?: (id: string) => void;
+  modelLabel?: string;
+  onBranch?: () => void;
+  onRegenerate?: (messageId: string, mode: 'retry' | 'thinking' | 'search') => void;
+  onActionFeedback?: (message: string) => void;
 }) {
   const fresh = !!message.fresh;
   const { shown, done } = useTypewriter(message.text, { enabled: fresh, cps: 50 });
   // Hold the trailing content back until the prose finishes writing.
   const revealRest = !fresh || done;
+
+  // Once a fresh reply finishes writing, let the workspace clear its busy state.
+  useEffect(() => {
+    if (fresh && done) onMessageDone?.(message.id);
+  }, [fresh, done, message.id, onMessageDone]);
 
   return (
     <>
@@ -189,6 +229,17 @@ function AssistantBubbleContent({
       ) : null}
       {revealRest && message.artifact?.kind === 'image' ? (
         <AuriaImageArtifact artifact={message.artifact} />
+      ) : null}
+      {revealRest && message.text ? (
+        <AuriaMessageActions
+          text={message.text}
+          modelLabel={modelLabel}
+          onBranch={onBranch}
+          onRetry={() => onRegenerate?.(message.id, 'retry')}
+          onUseThinking={() => onRegenerate?.(message.id, 'thinking')}
+          onSearchWeb={() => onRegenerate?.(message.id, 'search')}
+          onFeedback={onActionFeedback}
+        />
       ) : null}
     </>
   );

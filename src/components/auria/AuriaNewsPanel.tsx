@@ -1,315 +1,346 @@
-import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  auriaNewsArticles,
-  AuriaNewsArticle,
-  AuriaNewsTopic,
-} from '../../data/auriaMockData';
-import {
-  AuriaNewsTab,
-  buildNewsFeed,
-  partitionNewsFeed,
-} from '../../features/auria/newsLogic';
-import { auriaTypography, liquidGlassTokens, useTheme } from '../../theme';
-import { AuriaIcon, AURIA_ICON_SIZE, AURIA_ICON_STROKE_NAV } from '../icons';
-import {
-  AuriaEmptyState,
-  AuriaPanelCard,
-  AuriaPanelHeader,
-  AuriaPanelScroll,
-  AuriaSegmentedControl,
-} from './AuriaPanelShared';
+  ActivityIndicator,
+  Platform,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+import { useDiscoverFeed } from '../../features/auria/useDiscoverFeed';
+import type { DiscoverArticle } from '../../features/auria/newsTypes';
+import { speak, stopSpeaking, shareText, copyText } from '../../features/auria/mediaActions';
+import { auriaTypography, useTheme } from '../../theme';
+import { AURIA_CONTENT_HORIZONTAL_INSET, AURIA_PANEL_SCROLL_END_PADDING } from './auriaLayout';
+import { AuriaDiscoverTabs } from './AuriaDiscoverTabs';
+import { AuriaDiscoverCard } from './AuriaDiscoverCard';
+import { AuriaTopicChips } from './AuriaTopicChips';
+import { AuriaSourcesSheet } from './AuriaSourcesSheet';
+import { AuriaFollowUpComposer } from './AuriaFollowUpComposer';
+import { AuriaArticleMenu, ArticleMenuAction } from './AuriaArticleMenu';
+import { AuriaIcon, AURIA_ICON_SIZE } from '../icons';
 
-const NEWS_TABS = [
-  { id: 'for-you', label: 'For You' },
-  { id: 'top', label: 'Top' },
-  { id: 'topics', label: 'Topics' },
-] as const;
+type AuriaNewsPanelProps = {
+  onFeedback?: (message: string) => void;
+  onAskFollowUp?: (article: DiscoverArticle, question: string) => void;
+  searchOpen?: boolean;
+  onCloseSearch?: () => void;
+  customizeOpen?: boolean;
+  onCloseCustomize?: () => void;
+};
 
-const NEWS_TOPICS: AuriaNewsTopic[] = ['Business', 'Technology', 'Markets', 'World'];
+type ReportMode = 'summary' | 'full';
+type Feedback = 'like' | 'dislike';
 
-export function AuriaNewsPanel() {
-  const { theme } = useTheme();
-  const styles = useMemo(() => createStyles(theme), [theme]);
-  const [tab, setTab] = useState<AuriaNewsTab>('for-you');
-  const [selectedTopic, setSelectedTopic] = useState<AuriaNewsTopic | null>('World');
-  const [openArticle, setOpenArticle] = useState<AuriaNewsArticle | null>(null);
+export function AuriaNewsPanel({
+  onFeedback,
+  onAskFollowUp,
+  searchOpen = false,
+  onCloseSearch,
+  customizeOpen = false,
+  onCloseCustomize,
+}: AuriaNewsPanelProps) {
+  const { ds, theme } = useTheme();
+  const styles = useMemo(() => createStyles(ds, theme), [ds, theme]);
+  const { category, setCategory, articles, loading, refreshing, refresh, topicPrefs, cycleTopic } =
+    useDiscoverFeed();
 
-  const feed = useMemo(
-    () => buildNewsFeed(auriaNewsArticles, { tab, selectedTopic }),
-    [selectedTopic, tab],
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
+  const [reportMode, setReportMode] = useState<Record<string, ReportMode>>({});
+  const [feedback, setFeedback] = useState<Record<string, Feedback>>({});
+  const [speakingId, setSpeakingId] = useState<string | null>(null);
+  const [sourcesArticle, setSourcesArticle] = useState<DiscoverArticle | null>(null);
+  const [followUpArticle, setFollowUpArticle] = useState<DiscoverArticle | null>(null);
+  const [menuArticle, setMenuArticle] = useState<DiscoverArticle | null>(null);
+  const [query, setQuery] = useState('');
+  const searchRef = useRef<TextInput>(null);
+
+  useEffect(() => {
+    if (searchOpen) searchRef.current?.focus();
+    else setQuery('');
+  }, [searchOpen]);
+
+  const toggleExpand = useCallback((id: string) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const toggleReport = useCallback((id: string) => {
+    setReportMode((prev) => ({ ...prev, [id]: prev[id] === 'full' ? 'summary' : 'full' }));
+  }, []);
+
+  const toggleListen = useCallback(
+    (article: DiscoverArticle) => {
+      if (speakingId === article.id) {
+        stopSpeaking();
+        setSpeakingId(null);
+        return;
+      }
+      stopSpeaking();
+      const body = article.bullets.map((b) => b.text).join(' ') || article.summary;
+      const started = speak(`${article.title}. ${body}`, {
+        onDone: () => setSpeakingId(null),
+        onStopped: () => setSpeakingId(null),
+      });
+      if (started) {
+        setSpeakingId(article.id);
+        onFeedback?.('Reading aloud');
+      } else onFeedback?.('Audio not available');
+    },
+    [onFeedback, speakingId],
   );
-  const { featured, remaining } = partitionNewsFeed(feed);
 
-  if (openArticle) {
-    return (
-      <AuriaPanelScroll>
-        <Pressable
-          style={styles.backButton}
-          onPress={() => setOpenArticle(null)}
-          accessibilityRole="button"
-        >
-          <AuriaIcon
-            name="arrowLeft"
-            size={AURIA_ICON_SIZE.sm}
-            strokeWidth={AURIA_ICON_STROKE_NAV}
-          />
-          <Text style={styles.backText}>Back to News</Text>
-        </Pressable>
-        <View style={[styles.detailHero, { backgroundColor: openArticle.accent }]} />
-        <Text style={styles.detailTitle}>{openArticle.title}</Text>
-        <Text style={styles.detailMeta}>
-          {openArticle.sources} sources {'\u00B7'} {openArticle.publishedAgo}
-        </Text>
-        <Text style={styles.detailSummary}>{openArticle.summary}</Text>
-        <View style={styles.topicRow}>
-          {openArticle.topics.map((topic) => (
-            <View key={topic} style={styles.topicChip}>
-              <Text style={styles.topicText}>{topic}</Text>
-            </View>
-          ))}
-        </View>
-      </AuriaPanelScroll>
-    );
-  }
+  const handleShare = useCallback(
+    async (article: DiscoverArticle) => {
+      const msg = await shareText(article.title, article.url);
+      if (msg) onFeedback?.(msg);
+    },
+    [onFeedback],
+  );
+
+  const handleLike = useCallback(
+    (article: DiscoverArticle) => {
+      setFeedback((prev) => {
+        const isLiked = prev[article.id] === 'like';
+        const next = { ...prev };
+        if (isLiked) delete next[article.id];
+        else next[article.id] = 'like';
+        return next;
+      });
+      onFeedback?.('Thanks — more like this');
+    },
+    [onFeedback],
+  );
+
+  const handleDislike = useCallback(
+    (article: DiscoverArticle) => {
+      setFeedback((prev) => {
+        const isDis = prev[article.id] === 'dislike';
+        const next = { ...prev };
+        if (isDis) delete next[article.id];
+        else next[article.id] = 'dislike';
+        return next;
+      });
+      onFeedback?.('Got it — less like this');
+    },
+    [onFeedback],
+  );
+
+  const handleMenuAction = useCallback(
+    async (action: ArticleMenuAction) => {
+      const article = menuArticle;
+      setMenuArticle(null);
+      if (!article) return;
+      if (action === 'copy') {
+        const r = await copyText(article.url);
+        onFeedback?.(r === 'Copied' ? 'Link copied' : r);
+      } else if (action === 'share') {
+        await handleShare(article);
+      } else if (action === 'save') {
+        onFeedback?.('Saved to your library');
+      } else if (action === 'hide') {
+        onFeedback?.("Got it — we'll show less like this");
+      } else if (action === 'report') {
+        onFeedback?.('Reported. Thank you');
+      }
+    },
+    [handleShare, menuArticle, onFeedback],
+  );
+
+  // ---- Feed ----
+  const q = query.trim().toLowerCase();
+  const shown =
+    searchOpen && q
+      ? articles.filter((a) => `${a.title} ${a.summary} ${a.sourceName}`.toLowerCase().includes(q))
+      : articles;
+  const [lead, ...rest] = shown;
+  const searching = searchOpen && q.length > 0;
+
+  const renderCard = (article: DiscoverArticle) => (
+    <AuriaDiscoverCard
+      key={article.id}
+      article={article}
+      expanded={expanded.has(article.id)}
+      reportMode={reportMode[article.id] ?? 'summary'}
+      feedback={feedback[article.id] ?? null}
+      listening={speakingId === article.id}
+      onToggleExpand={() => toggleExpand(article.id)}
+      onToggleReport={() => toggleReport(article.id)}
+      onOpenSources={() => setSourcesArticle(article)}
+      onAskFollowUp={() => setFollowUpArticle(article)}
+      onListen={() => toggleListen(article)}
+      onShare={() => handleShare(article)}
+      onLike={() => handleLike(article)}
+      onDislike={() => handleDislike(article)}
+      onMore={() => setMenuArticle(article)}
+    />
+  );
 
   return (
-    <AuriaPanelScroll>
-      <AuriaPanelHeader title="News" subtitle="A focused briefing for your workspace." />
-      <AuriaSegmentedControl value={tab} items={NEWS_TABS} onChange={setTab} />
-
-      {tab === 'topics' ? (
-        <View style={styles.topicRow}>
-          {NEWS_TOPICS.map((topic) => {
-            const active = topic === selectedTopic;
-            return (
+    <View style={styles.fill}>
+      <ScrollView
+        style={styles.fill}
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        stickyHeaderIndices={[0]}
+        keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={ds.gray500} />
+        }
+      >
+        <View style={styles.tabsBar}>
+          <AuriaDiscoverTabs value={category} onChange={setCategory} />
+          {searchOpen ? (
+            <View style={styles.searchRow}>
+              <AuriaIcon name="search" size={AURIA_ICON_SIZE.sm} color={ds.gray500} strokeWidth={1.8} />
+              <TextInput
+                ref={searchRef}
+                value={query}
+                onChangeText={setQuery}
+                placeholder="Search Discover…"
+                placeholderTextColor={ds.gray400}
+                style={styles.searchInput}
+                returnKeyType="search"
+                autoCorrect={false}
+              />
               <Pressable
-                key={topic}
-                style={[styles.topicChip, active && styles.topicChipActive]}
-                onPress={() => setSelectedTopic(topic)}
+                onPress={() => {
+                  setQuery('');
+                  onCloseSearch?.();
+                }}
+                hitSlop={8}
                 accessibilityRole="button"
-                accessibilityState={{ selected: active }}
+                accessibilityLabel="Close search"
               >
-                <Text style={[styles.topicText, active && styles.topicTextActive]}>{topic}</Text>
+                <AuriaIcon name="close" size={AURIA_ICON_SIZE.sm} color={ds.gray500} strokeWidth={2.2} />
               </Pressable>
-            );
-          })}
+            </View>
+          ) : null}
+        </View>
+
+        {loading && articles.length === 0 ? (
+          <View style={styles.loading}>
+            <ActivityIndicator color={ds.gray500} />
+            <Text style={styles.loadingText}>Loading the latest…</Text>
+          </View>
+        ) : shown.length === 0 ? (
+          <View style={styles.loading}>
+            <Text style={styles.loadingText}>
+              {searching ? `No results for “${query.trim()}”` : 'No stories right now. Pull to refresh.'}
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.feed}>
+            {lead ? renderCard(lead) : null}
+            {!searching ? <AuriaTopicChips prefs={topicPrefs} onCycle={cycleTopic} /> : null}
+            {rest.map(renderCard)}
+          </View>
+        )}
+      </ScrollView>
+
+      <AuriaSourcesSheet
+        visible={!!sourcesArticle}
+        sources={sourcesArticle?.sources ?? []}
+        onClose={() => setSourcesArticle(null)}
+      />
+
+      <AuriaFollowUpComposer
+        visible={!!followUpArticle}
+        article={followUpArticle}
+        onClose={() => setFollowUpArticle(null)}
+        onSend={(question) => {
+          const article = followUpArticle;
+          setFollowUpArticle(null);
+          if (article) onAskFollowUp?.(article, question);
+        }}
+      />
+
+      <AuriaArticleMenu
+        visible={!!menuArticle}
+        onClose={() => setMenuArticle(null)}
+        onAction={handleMenuAction}
+      />
+
+      {customizeOpen ? (
+        <View style={styles.customizeOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={onCloseCustomize} accessibilityLabel="Close customize" />
+          <View style={styles.customizeSheet}>
+            <View style={styles.sheetHandle} />
+            <AuriaTopicChips prefs={topicPrefs} onCycle={cycleTopic} />
+            <Pressable
+              onPress={onCloseCustomize}
+              style={({ pressed }) => [styles.doneBtn, pressed && styles.donePressed]}
+              accessibilityRole="button"
+              accessibilityLabel="Done"
+            >
+              <Text style={styles.doneText}>Done</Text>
+            </Pressable>
+          </View>
         </View>
       ) : null}
-
-      {!featured ? (
-        <AuriaEmptyState
-          title="No stories available"
-          message="Choose another topic to continue reading."
-        />
-      ) : (
-        <>
-          <FeaturedArticle article={featured} onPress={() => setOpenArticle(featured)} />
-          <View style={styles.articleList}>
-            {remaining.map((article) => (
-              <ArticleRow
-                key={article.id}
-                article={article}
-                onPress={() => setOpenArticle(article)}
-              />
-            ))}
-          </View>
-        </>
-      )}
-    </AuriaPanelScroll>
+    </View>
   );
 }
 
-function FeaturedArticle({
-  article,
-  onPress,
-}: {
-  article: AuriaNewsArticle;
-  onPress: () => void;
-}) {
-  const { theme } = useTheme();
-  const styles = useMemo(() => createStyles(theme), [theme]);
-  return (
-    <AuriaPanelCard onPress={onPress} style={styles.featuredCard}>
-      <View style={[styles.featuredImage, { backgroundColor: article.accent }]}>
-        <View style={styles.featuredBadge}>
-          <Text style={styles.featuredBadgeText}>Featured</Text>
-        </View>
-      </View>
-      <Text style={styles.featuredTitle}>{article.title}</Text>
-      <Text style={styles.summary} numberOfLines={3}>
-        {article.summary}
-      </Text>
-      <Text style={styles.meta}>
-        {article.sources} sources {'\u00B7'} {article.publishedAgo}
-      </Text>
-    </AuriaPanelCard>
-  );
-}
-
-function ArticleRow({
-  article,
-  onPress,
-}: {
-  article: AuriaNewsArticle;
-  onPress: () => void;
-}) {
-  const { theme } = useTheme();
-  const styles = useMemo(() => createStyles(theme), [theme]);
-  return (
-    <AuriaPanelCard onPress={onPress} style={styles.articleRow}>
-      <View style={[styles.articleImage, { backgroundColor: article.accent }]} />
-      <View style={styles.articleCopy}>
-        <Text style={styles.articleTitle} numberOfLines={3}>
-          {article.title}
-        </Text>
-        <Text style={styles.rowMeta}>
-          {article.sources} sources {'\u00B7'} {article.publishedAgo}
-        </Text>
-      </View>
-    </AuriaPanelCard>
-  );
-}
-
-function createStyles(theme: ReturnType<typeof useTheme>['theme']) {
-  const glass = liquidGlassTokens(theme);
+function createStyles(
+  ds: ReturnType<typeof useTheme>['ds'],
+  theme: ReturnType<typeof useTheme>['theme'],
+) {
   return StyleSheet.create({
-    topicRow: {
+    fill: { flex: 1 },
+    scroll: { paddingBottom: AURIA_PANEL_SCROLL_END_PADDING },
+    tabsBar: {
+      paddingHorizontal: AURIA_CONTENT_HORIZONTAL_INSET,
+      paddingBottom: 10,
+      paddingTop: 2,
+      backgroundColor: theme.colors.page,
+      gap: 10,
+    },
+    searchRow: {
       flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: 7,
-    },
-    topicChip: {
-      paddingHorizontal: 10,
-      paddingVertical: 6,
-      borderRadius: theme.radius.pill,
-      backgroundColor: glass.fill,
-    },
-    topicChipActive: {
-      backgroundColor: glass.fillStrong,
-    },
-    topicText: {
-      ...auriaTypography.body,
-      color: theme.colors.textTertiary,
-      fontSize: 12,
-      fontWeight: theme.typography.fontWeight.medium,
-    },
-    topicTextActive: {
-      color: theme.colors.text,
-      fontWeight: theme.typography.fontWeight.semibold,
-    },
-    featuredCard: {
-      padding: 0,
-      overflow: 'hidden',
-      gap: 0,
-    },
-    featuredImage: {
-      height: 142,
-      padding: 12,
-      justifyContent: 'flex-end',
-    },
-    featuredBadge: {
-      alignSelf: 'flex-start',
-      paddingHorizontal: 8,
-      paddingVertical: 4,
-      borderRadius: theme.radius.pill,
-      backgroundColor: glass.fillStrong,
-    },
-    featuredBadgeText: {
-      ...auriaTypography.label,
-      color: theme.colors.text,
-      fontSize: 11,
-      fontWeight: theme.typography.fontWeight.bold,
-    },
-    featuredTitle: {
-      ...auriaTypography.title,
-      color: theme.colors.text,
-      fontSize: 17,
-      lineHeight: 23,
-      fontWeight: theme.typography.fontWeight.bold,
-      marginHorizontal: 14,
-      marginTop: 13,
-    },
-    summary: {
-      ...auriaTypography.body,
-      color: theme.colors.textSecondary,
-      fontSize: 13,
-      lineHeight: 19,
-      marginHorizontal: 14,
-      marginTop: 6,
-    },
-    meta: {
-      ...auriaTypography.body,
-      color: theme.colors.textTertiary,
-      fontSize: 11,
-      fontWeight: theme.typography.fontWeight.medium,
-      margin: 14,
-      marginTop: 8,
-    },
-    rowMeta: {
-      ...auriaTypography.body,
-      color: theme.colors.textTertiary,
-      fontSize: 11,
-      fontWeight: theme.typography.fontWeight.medium,
-      marginTop: 7,
-    },
-    articleList: {
+      alignItems: 'center',
       gap: 8,
+      height: 42,
+      paddingHorizontal: 12,
+      borderRadius: 14,
+      backgroundColor: ds.sectionFill,
     },
-    articleRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 12,
-    },
-    articleImage: {
-      width: 76,
-      height: 76,
-      borderRadius: theme.radius.md,
-    },
-    articleCopy: {
+    searchInput: {
+      ...auriaTypography.body,
       flex: 1,
-    },
-    articleTitle: {
-      ...auriaTypography.body,
-      color: theme.colors.text,
-      fontSize: 14,
-      lineHeight: 19,
-      fontWeight: theme.typography.fontWeight.semibold,
-    },
-    backButton: {
-      minHeight: 40,
-      flexDirection: 'row',
-      alignItems: 'center',
-      alignSelf: 'flex-start',
-      gap: 7,
-    },
-    backText: {
-      ...auriaTypography.body,
-      color: theme.colors.textSecondary,
-      fontSize: 13,
-      fontWeight: theme.typography.fontWeight.semibold,
-    },
-    detailHero: {
-      height: 180,
-      borderRadius: theme.radius.card,
-    },
-    detailTitle: {
-      ...auriaTypography.title,
-      color: theme.colors.text,
-      fontSize: 24,
-      lineHeight: 31,
-      fontWeight: theme.typography.fontWeight.bold,
-    },
-    detailMeta: {
-      ...auriaTypography.body,
-      color: theme.colors.textTertiary,
-      fontSize: 12,
-    },
-    detailSummary: {
-      ...auriaTypography.body,
-      color: theme.colors.textSecondary,
       fontSize: 15,
-      lineHeight: 23,
+      color: ds.gray900,
+      backgroundColor: 'transparent',
+      ...(Platform.OS === 'web' ? ({ outlineWidth: 0, outlineStyle: 'none' } as object) : null),
     },
+    feed: { paddingHorizontal: AURIA_CONTENT_HORIZONTAL_INSET, gap: 22 },
+    loading: { alignItems: 'center', justifyContent: 'center', paddingVertical: 80, gap: 12 },
+    loadingText: { ...auriaTypography.body, color: ds.gray500, fontSize: 14 },
+    customizeOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      justifyContent: 'flex-end',
+      backgroundColor: 'rgba(0,0,0,0.35)',
+      zIndex: 50,
+    },
+    customizeSheet: {
+      backgroundColor: theme.colors.surface,
+      borderTopLeftRadius: 28,
+      borderTopRightRadius: 28,
+      paddingHorizontal: 16,
+      paddingTop: 10,
+      paddingBottom: 28,
+      gap: 14,
+    },
+    sheetHandle: { alignSelf: 'center', width: 38, height: 5, borderRadius: 3, backgroundColor: ds.gray300 },
+    doneBtn: { height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: ds.offBlack },
+    donePressed: { transform: [{ scale: 0.99 }] },
+    doneText: { ...auriaTypography.body, color: ds.white, fontSize: 16, fontWeight: theme.typography.fontWeight.bold },
   });
 }

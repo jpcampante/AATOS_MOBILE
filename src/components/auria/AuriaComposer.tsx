@@ -36,6 +36,8 @@ type AuriaComposerProps = {
   value?: string;
   onChangeText?: (text: string) => void;
   onSend?: () => void;
+  /** Cancels the in-progress reply. Shown as a stop button while responding. */
+  onStop?: () => void;
   onAttach?: () => void;
   onVoice?: () => void;
   bottomInset?: number;
@@ -82,6 +84,7 @@ export const AuriaComposer = forwardRef<AuriaComposerHandle, AuriaComposerProps>
       value,
       onChangeText,
       onSend,
+      onStop,
       onAttach,
       onVoice,
       bottomInset = 0,
@@ -124,6 +127,16 @@ export const AuriaComposer = forwardRef<AuriaComposerHandle, AuriaComposerProps>
       inputRef.current?.blur();
       Keyboard.dismiss();
       onSend?.();
+    };
+
+    // On web/desktop, Enter sends and Shift+Enter inserts a newline.
+    const handleKeyPress = (event: { nativeEvent: { key: string; shiftKey?: boolean }; preventDefault?: () => void }) => {
+      if (Platform.OS !== 'web') return;
+      const { key, shiftKey } = event.nativeEvent;
+      if (key === 'Enter' && !shiftKey) {
+        event.preventDefault?.();
+        handleSend();
+      }
     };
 
     const shellPaddingTop = AURIA_COMPOSER_CONTENT_GAP + AURIA_COMPOSER_DOCK_PADDING_V;
@@ -213,12 +226,14 @@ export const AuriaComposer = forwardRef<AuriaComposerHandle, AuriaComposerProps>
           placeholderTextColor={ds.gray400}
           style={[styles.input, inputWebFocusReset]}
           multiline
+          scrollEnabled
           blurOnSubmit={false}
           returnKeyType="default"
           enablesReturnKeyAutomatically
           keyboardAppearance={theme.mode === 'dark' ? 'dark' : 'light'}
           textAlignVertical="top"
           submitBehavior="newline"
+          onKeyPress={handleKeyPress}
           onSubmitEditing={Platform.OS === 'ios' ? undefined : () => Keyboard.dismiss()}
         />
 
@@ -282,21 +297,21 @@ export const AuriaComposer = forwardRef<AuriaComposerHandle, AuriaComposerProps>
           <Pressable
             style={({ pressed }) => [
               styles.sendButton,
-              canSend && styles.sendButtonActive,
-              !canSend && styles.sendButtonDisabled,
-              pressed && canSend && styles.sendButtonPressed,
+              (canSend || isResponding) && styles.sendButtonActive,
+              !canSend && !isResponding && styles.sendButtonDisabled,
+              pressed && (canSend || isResponding) && styles.sendButtonPressed,
             ]}
-            onPress={handleSend}
-            disabled={!canSend}
+            onPress={isResponding ? onStop : handleSend}
+            disabled={isResponding ? false : !canSend}
             accessibilityRole="button"
-            accessibilityLabel="Send"
+            accessibilityLabel={isResponding ? 'Stop' : 'Send'}
             hitSlop={8}
           >
             <AuriaIcon
-              name="arrowUp"
+              name={isResponding ? 'stop' : 'arrowUp'}
               size={AURIA_ICON_SIZE.sm}
               color={ds.white}
-              strokeWidth={AURIA_ICON_STROKE_SEND}
+              strokeWidth={isResponding ? 2.5 : AURIA_ICON_STROKE_SEND}
             />
           </Pressable>
         </View>
@@ -320,7 +335,9 @@ function createStyles(
     outer: {
       width: '100%',
       paddingHorizontal: AURIA_CONTENT_HORIZONTAL_INSET,
-      backgroundColor: 'transparent',
+      // Solid page backing so a tall (e.g. pasted) draft never bleeds the chat
+      // through the translucent glass — keeps long text readable.
+      backgroundColor: theme.colors.page,
     },
     shell: {
       paddingHorizontal: 4,

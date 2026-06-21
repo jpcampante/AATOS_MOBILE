@@ -43,6 +43,9 @@ type WorkspaceAction =
   | { type: 'new-chat' }
   | { type: 'send-message'; text: string; attachments?: string[]; id: number }
   | { type: 'receive-reply'; reply: AssistantReply; id: number }
+  | { type: 'stop-reply' }
+  | { type: 'finish-message'; id: string }
+  | { type: 'regenerate'; messageId: string; mode: 'retry' | 'thinking' | 'search'; id: number }
   | { type: 'open-conversation'; conversationId: string }
   | { type: 'open-project-modal' }
   | { type: 'close-project-modal' }
@@ -630,6 +633,45 @@ function workspaceReducer(state: WorkspaceState, action: WorkspaceAction): Works
           ],
         };
       }
+    case 'stop-reply':
+      // While "thinking", cancel the pending reply. While "writing", end the
+      // typewriter by clearing the fresh flag so the text snaps to full.
+      if (state.pendingReply) return { ...state, pendingReply: null };
+      if (state.messages.some((m) => m.fresh)) {
+        return {
+          ...state,
+          messages: state.messages.map((m) => (m.fresh ? { ...m, fresh: false } : m)),
+        };
+      }
+      return state;
+    case 'finish-message':
+      if (!state.messages.some((m) => m.id === action.id && m.fresh)) return state;
+      return {
+        ...state,
+        messages: state.messages.map((m) => (m.id === action.id ? { ...m, fresh: false } : m)),
+      };
+    case 'regenerate': {
+      if (state.pendingReply) return state;
+      const idx = state.messages.findIndex((m) => m.id === action.messageId);
+      if (idx < 0) return state;
+      // Walk back to the user turn that produced this reply.
+      let userIdx = idx - 1;
+      while (userIdx >= 0 && state.messages[userIdx].role !== 'user') userIdx -= 1;
+      if (userIdx < 0) return state;
+      const basePrompt = state.messages[userIdx].text ?? '';
+      const prompt =
+        action.mode === 'search'
+          ? `Search the web for the latest and answer with sources: ${basePrompt}`
+          : action.mode === 'thinking'
+            ? `Do deep research on: ${basePrompt}`
+            : basePrompt;
+      // Drop the previous reply (and anything after it) before re-answering.
+      return {
+        ...state,
+        messages: state.messages.slice(0, idx),
+        pendingReply: { id: action.id, text: prompt, hasAttachments: false },
+      };
+    }
     case 'open-conversation': {
       const mock = AURIA_CONVERSATION_MOCKS[action.conversationId] ?? legalMockConversation;
       return {
@@ -710,6 +752,9 @@ export function useAuriaWorkspace() {
       isWelcomeHome: state.showWelcome && state.panel === 'chat' && state.messages.length === 0,
       showComposer: state.panel === 'chat',
       isResponding: state.pendingReply !== null,
+      // The AI is "busy" while thinking (pending) OR while the typewriter is
+      // still writing a fresh reply — the Stop button stays up the whole time.
+      isBusy: state.pendingReply !== null || state.messages.some((m) => m.fresh),
       setComposerText: (value: string) => dispatch({ type: 'set-composer', value }),
       setSelectedModel: (value: string) => dispatch({ type: 'set-model', value }),
       openPanel: (panel: AuriaPanel) => dispatch({ type: 'open-panel', panel }),
@@ -718,6 +763,10 @@ export function useAuriaWorkspace() {
         if (state.pendingReply) return;
         dispatch({ type: 'send-message', text, attachments, id: nextSeq() });
       },
+      stopResponding: () => dispatch({ type: 'stop-reply' }),
+      finishMessage: (id: string) => dispatch({ type: 'finish-message', id }),
+      regenerate: (messageId: string, mode: 'retry' | 'thinking' | 'search' = 'retry') =>
+        dispatch({ type: 'regenerate', messageId, mode, id: nextSeq() }),
       openConversation: (conversationId: string) =>
         dispatch({ type: 'open-conversation', conversationId }),
       openProjectModal: () => dispatch({ type: 'open-project-modal' }),

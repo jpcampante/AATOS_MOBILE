@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { ReactNode, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { AuriaIcon, AURIA_ICON_SIZE, AURIA_ICON_STROKE_NAV } from '../icons';
 import { auriaTypography, useTheme } from '../../theme';
@@ -17,6 +17,9 @@ type AuriaWorkspaceHeaderProps = {
    *  the new-chat pencil. */
   onPlus?: () => void;
   plusLabel?: string;
+  /** Custom right-hand controls (e.g. Discover's search + filter). Overrides
+   *  the default new-chat / plus button when provided. */
+  rightSlot?: ReactNode;
 };
 
 export function AuriaWorkspaceHeader({
@@ -25,6 +28,7 @@ export function AuriaWorkspaceHeader({
   title,
   onPlus,
   plusLabel = 'New',
+  rightSlot,
 }: AuriaWorkspaceHeaderProps) {
   const { ds, theme } = useTheme();
   const styles = useMemo(() => createStyles(ds, theme), [ds, theme]);
@@ -43,23 +47,27 @@ export function AuriaWorkspaceHeader({
         </View>
       ) : null}
 
-      <View style={styles.sideRail}>
-        <AuriaGlassButton
-          onPress={onPlus ?? onNewChat}
-          accessibilityLabel={onPlus ? plusLabel : 'New chat'}
-          hitSlop={8}
-          elevated={false}
-          borderRadius={theme.radius.md}
-          surfaceStyle={styles.sideSlot}
-        >
-          <AuriaIcon
-            name={onPlus ? 'plus' : 'squarePen'}
-            size={AURIA_ICON_SIZE.sm}
-            color={ds.gray700}
-            strokeWidth={AURIA_ICON_STROKE_NAV}
-          />
-        </AuriaGlassButton>
-      </View>
+      {rightSlot ? (
+        <View style={styles.rightCluster}>{rightSlot}</View>
+      ) : (
+        <View style={styles.sideRail}>
+          <AuriaGlassButton
+            onPress={onPlus ?? onNewChat}
+            accessibilityLabel={onPlus ? plusLabel : 'New chat'}
+            hitSlop={8}
+            elevated={false}
+            borderRadius={theme.radius.md}
+            surfaceStyle={styles.sideSlot}
+          >
+            <AuriaIcon
+              name={onPlus ? 'plus' : 'squarePen'}
+              size={AURIA_ICON_SIZE.sm}
+              color={ds.gray700}
+              strokeWidth={AURIA_ICON_STROKE_NAV}
+            />
+          </AuriaGlassButton>
+        </View>
+      )}
     </View>
   );
 }
@@ -81,6 +89,11 @@ function createStyles(
       width: 44,
       alignItems: 'center',
       justifyContent: 'center',
+    },
+    rightCluster: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
     },
     titleWrap: {
       ...StyleSheet.absoluteFillObject,

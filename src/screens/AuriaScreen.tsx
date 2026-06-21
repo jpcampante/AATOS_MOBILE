@@ -42,6 +42,9 @@ import { AuriaWorkspaceHeader, WORKSPACE_HEADER_HEIGHT } from '../components/aur
 import { APP_SHELL_BOTTOM_INSET } from '../components/navigation/AppShell';
 import { AuriaPanel } from '../data/auriaMockData';
 import { useAuriaWorkspace } from '../features/auria/useAuriaWorkspace';
+import { useAuriaToast } from '../features/auria/useAuriaToast';
+import { AuriaActionToast } from '../components/auria/AuriaActionToast';
+import { AuriaDiscoverHeaderActions } from '../components/auria/AuriaDiscoverHeaderActions';
 import { useKeyboardInset } from '../hooks/useKeyboardInset';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SUPPORTS_NATIVE_DRIVER, motionDuration, motionEasing, useTheme } from '../theme';
@@ -68,6 +71,7 @@ export function AuriaScreen({
   const composerRef = useRef<AuriaComposerHandle>(null);
   const workspace = useAuriaWorkspace();
   const activeModel = getModelById(workspace.selectedModel);
+  const { toast, showToast } = useAuriaToast();
 
   // Deep-link from Insights "Ask Auria": seed the composer once, then clear it.
   useEffect(() => {
@@ -87,6 +91,8 @@ export function AuriaScreen({
   const [imageMode, setImageMode] = useState(false);
   const [imageRatio, setImageRatio] = useState('1:1');
   const [docTemplatesOpen, setDocTemplatesOpen] = useState(false);
+  const [newsSearchOpen, setNewsSearchOpen] = useState(false);
+  const [newsCustomizeOpen, setNewsCustomizeOpen] = useState(false);
   const [composerHeight, setComposerHeight] = useState(
     getAuriaComposerOverlayHeight(),
   );
@@ -233,6 +239,18 @@ export function AuriaScreen({
     setImageMode(false);
   };
 
+  const handleAskAboutArticle = (
+    article: { title: string; sourceName: string; url: string },
+    question: string,
+  ) => {
+    dismissKeyboard();
+    workspace.sendMessage(
+      `About the article "${article.title}" (${article.sourceName} — ${article.url}): ${question}`,
+    );
+    setAttachments([]);
+    setImageMode(false);
+  };
+
   const handleSend = () => {
     const text = workspace.composerText.trim();
     if (imageMode) {
@@ -311,7 +329,17 @@ export function AuriaScreen({
       );
     }
 
-    if (workspace.panel === 'news') return <AuriaNewsPanel />;
+    if (workspace.panel === 'news')
+      return (
+        <AuriaNewsPanel
+          onFeedback={showToast}
+          onAskFollowUp={handleAskAboutArticle}
+          searchOpen={newsSearchOpen}
+          onCloseSearch={() => setNewsSearchOpen(false)}
+          customizeOpen={newsCustomizeOpen}
+          onCloseCustomize={() => setNewsCustomizeOpen(false)}
+        />
+      );
     if (workspace.panel === 'gallery') return <AuriaGalleryPanel />;
     if (workspace.panel === 'search') return <AuriaSearchPanel />;
     if (workspace.panel === 'settings') return <AuriaSettingsPanel />;
@@ -332,6 +360,11 @@ export function AuriaScreen({
         messages={workspace.messages}
         isResponding={workspace.isResponding}
         onOpenFiles={() => transitionPanel('gallery')}
+        onMessageDone={workspace.finishMessage}
+        modelLabel={`Used ${activeModel?.name ?? 'Auria'}${activeModel?.effort ? ` ${activeModel.effort}` : ''}`}
+        onBranch={handleNewChat}
+        onRegenerate={workspace.regenerate}
+        onActionFeedback={showToast}
       />
     );
   };
@@ -364,9 +397,24 @@ export function AuriaScreen({
             <AuriaWorkspaceHeader
               onToggleSidebar={() => setSidebarOpen((open) => !open)}
               onNewChat={handleNewChat}
-              title={workspace.panel === 'projects' ? 'Projects' : undefined}
+              title={
+                workspace.panel === 'projects'
+                  ? 'Projects'
+                  : workspace.panel === 'news'
+                    ? 'Discover'
+                    : undefined
+              }
               onPlus={workspace.panel === 'projects' ? openNewProjectModal : undefined}
               plusLabel="New project"
+              rightSlot={
+                workspace.panel === 'news' ? (
+                  <AuriaDiscoverHeaderActions
+                    onSearch={() => setNewsSearchOpen((open) => !open)}
+                    onCustomize={() => setNewsCustomizeOpen(true)}
+                    searchActive={newsSearchOpen}
+                  />
+                ) : undefined
+              }
             />
           </View>
 
@@ -394,13 +442,14 @@ export function AuriaScreen({
                   value={workspace.composerText}
                   onChangeText={workspace.setComposerText}
                   onSend={handleSend}
+                  onStop={workspace.stopResponding}
                   onAttach={openCreateMenu}
                   onVoice={() => {
                     dismissKeyboard();
                     setVoiceOpen(true);
                   }}
                   bottomInset={keyboardInset}
-                  isResponding={workspace.isResponding}
+                  isResponding={workspace.isBusy}
                   selectedModelName={activeModel?.name ?? 'Opus 4.8'}
                   selectedModelEffort={activeModel?.effort ?? null}
                   onOpenModelPicker={() => {
@@ -471,6 +520,8 @@ export function AuriaScreen({
           setAttachments((current) => [...current, uri]);
         }}
       />
+
+      <AuriaActionToast message={toast} />
     </View>
   );
 }

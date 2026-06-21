@@ -3,10 +3,12 @@ import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, View } from 're
 import { AURIA_CHAT_SCROLL_END_PADDING, AURIA_CONTENT_HORIZONTAL_INSET } from './auriaLayout';
 import { auriaTypography, liquidGlassBorder, liquidGlassTokens, useTheme } from '../../theme';
 import type { AuriaChatMessage } from '../../features/auria/types';
+import { useTypewriter } from '../../features/auria/useTypewriter';
 import { AuriaDocumentArtifact } from './AuriaDocumentArtifact';
 import { AuriaImageArtifact } from './AuriaImageArtifact';
 import { AuriaReasoningBlock } from './AuriaReasoningBlock';
 import { AuriaSourceChips } from './AuriaSourceChips';
+import { AuriaTypingCursor } from './AuriaTypingCursor';
 
 type AuriaChatViewProps = {
   messages: AuriaChatMessage[];
@@ -116,23 +118,18 @@ export function AuriaChatView({ messages, isResponding = false, onOpenFiles }: A
                   message.artifact && styles.bubbleWithArtifact,
                 ]}
               >
-                {message.reasoning ? (
-                  <AuriaReasoningBlock reasoning={message.reasoning} onOpenFiles={onOpenFiles} />
-                ) : null}
-                {message.text ? (
-                  <Text style={[styles.text, isUser ? styles.textUser : styles.textAssistant]}>
-                    {message.text}
-                  </Text>
-                ) : null}
-                {message.sources && message.sources.length > 0 ? (
-                  <AuriaSourceChips sources={message.sources} onOpenFiles={onOpenFiles} />
-                ) : null}
-                {message.artifact?.kind === 'document' ? (
-                  <AuriaDocumentArtifact artifact={message.artifact} />
-                ) : null}
-                {message.artifact?.kind === 'image' ? (
-                  <AuriaImageArtifact artifact={message.artifact} />
-                ) : null}
+                {isUser ? (
+                  message.text ? (
+                    <Text style={[styles.text, styles.textUser]}>{message.text}</Text>
+                  ) : null
+                ) : (
+                  <AssistantBubbleContent
+                    message={message}
+                    styles={styles}
+                    cursorColor={ds.gray500}
+                    onOpenFiles={onOpenFiles}
+                  />
+                )}
               </View>
             ) : null}
           </View>
@@ -147,6 +144,53 @@ export function AuriaChatView({ messages, isResponding = false, onOpenFiles }: A
         </View>
       ) : null}
     </ScrollView>
+  );
+}
+
+/**
+ * Renders an assistant reply across every response mode (text, reasoning,
+ * sources, document/image artifacts). For a freshly-arrived reply the text
+ * streams in like Auria is writing it, and the sources/artifact reveal only
+ * once the text has finished — a calm, natural sequence. History renders
+ * instantly (no `fresh` flag) so reopening a chat doesn't re-animate.
+ */
+function AssistantBubbleContent({
+  message,
+  styles,
+  cursorColor,
+  onOpenFiles,
+}: {
+  message: AuriaChatMessage;
+  styles: ReturnType<typeof createStyles>;
+  cursorColor: string;
+  onOpenFiles?: () => void;
+}) {
+  const fresh = !!message.fresh;
+  const { shown, done } = useTypewriter(message.text, { enabled: fresh, cps: 50 });
+  // Hold the trailing content back until the prose finishes writing.
+  const revealRest = !fresh || done;
+
+  return (
+    <>
+      {message.reasoning ? (
+        <AuriaReasoningBlock reasoning={message.reasoning} onOpenFiles={onOpenFiles} />
+      ) : null}
+      {message.text ? (
+        <Text style={[styles.text, styles.textAssistant]}>
+          {shown}
+          {fresh && !done ? <AuriaTypingCursor color={cursorColor} style={styles.text} /> : null}
+        </Text>
+      ) : null}
+      {revealRest && message.sources && message.sources.length > 0 ? (
+        <AuriaSourceChips sources={message.sources} onOpenFiles={onOpenFiles} />
+      ) : null}
+      {revealRest && message.artifact?.kind === 'document' ? (
+        <AuriaDocumentArtifact artifact={message.artifact} />
+      ) : null}
+      {revealRest && message.artifact?.kind === 'image' ? (
+        <AuriaImageArtifact artifact={message.artifact} />
+      ) : null}
+    </>
   );
 }
 

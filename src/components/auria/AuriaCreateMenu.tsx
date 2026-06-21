@@ -47,6 +47,8 @@ type AuriaCreateMenuProps = {
   onAddPhotos: (uris: string[]) => void;
   /** Enters image-generation mode in the main composer (prompt + aspect ratio). */
   onCreateImage: () => void;
+  /** Opens the document-templates picker. */
+  onCreateDocument: () => void;
   bottomOffset: number;
 };
 
@@ -85,6 +87,7 @@ export function AuriaCreateMenu({
   onOpenCamera,
   onAddPhotos,
   onCreateImage,
+  onCreateDocument,
   bottomOffset,
 }: AuriaCreateMenuProps) {
   const { theme } = useTheme();
@@ -157,7 +160,8 @@ export function AuriaCreateMenu({
       return;
     }
     if (id === 'document') {
-      finish('Create a document. Brief: Product strategy working draft.');
+      // Document creation opens a templates picker (ported from web doc-welcome).
+      onCreateDocument();
       return;
     }
     if (id === 'image') {

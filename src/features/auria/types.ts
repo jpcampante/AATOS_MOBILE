@@ -78,4 +78,10 @@ export type AuriaChatMessage = {
   artifact?: AuriaArtifact;
   reasoning?: AuriaReasoning;
   sources?: AuriaSource[];
+  /**
+   * True for a reply that just arrived live, so the chat streams its text in
+   * like Auria is writing it. History (saved conversations) loads without this
+   * flag and renders instantly.
+   */
+  fresh?: boolean;
 };

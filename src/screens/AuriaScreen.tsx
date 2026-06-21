@@ -14,6 +14,8 @@ import {
   AuriaComposerHandle,
 } from '../components/auria/AuriaComposer';
 import { AuriaCreateMenu } from '../components/auria/AuriaCreateMenu';
+import { AuriaDocTemplatesModal } from '../components/auria/AuriaDocTemplatesModal';
+import type { AuriaDocTemplate } from '../data/auriaDocTemplates';
 import { AuriaModelSheet } from '../components/auria/AuriaModelSheet';
 import { AuriaPromptSuggestions } from '../components/auria/AuriaPromptSuggestions';
 import { getModelById } from '../data/auriaModels';
@@ -84,6 +86,7 @@ export function AuriaScreen({
   const [attachments, setAttachments] = useState<string[]>([]);
   const [imageMode, setImageMode] = useState(false);
   const [imageRatio, setImageRatio] = useState('1:1');
+  const [docTemplatesOpen, setDocTemplatesOpen] = useState(false);
   const [composerHeight, setComposerHeight] = useState(
     getAuriaComposerOverlayHeight(),
   );
@@ -269,6 +272,13 @@ export function AuriaScreen({
     panelAnim.setValue(1);
   };
 
+  const handleUseTemplate = (template: AuriaDocTemplate) => {
+    setDocTemplatesOpen(false);
+    workspace.sendMessage(`Create a document from the "${template.label}" template.`);
+    setPanelKey((key) => key + 1);
+    panelAnim.setValue(1);
+  };
+
   const handleCreateProject = (input: AuriaNewProjectInput) => {
     workspace.createProject(input);
     closeSidebar();
@@ -417,6 +427,10 @@ export function AuriaScreen({
                 setCreateMenuOpen(false);
                 setImageMode(true);
               }}
+              onCreateDocument={() => {
+                setCreateMenuOpen(false);
+                setDocTemplatesOpen(true);
+              }}
               bottomOffset={shellBottomInset - 20}
             />
 
@@ -425,6 +439,12 @@ export function AuriaScreen({
               selectedId={workspace.selectedModel}
               onSelect={workspace.setSelectedModel}
               onClose={() => setModelPickerOpen(false)}
+            />
+
+            <AuriaDocTemplatesModal
+              visible={docTemplatesOpen}
+              onClose={() => setDocTemplatesOpen(false)}
+              onUse={handleUseTemplate}
             />
           </View>
         </View>

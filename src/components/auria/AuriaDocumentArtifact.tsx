@@ -1,8 +1,11 @@
 import { useMemo, useState } from 'react';
 import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { AuriaDocumentArtifact as AuriaDocumentArtifactData } from '../../features/auria/types';
-import { auriaTypography, myceoCornerStyle, useTheme } from '../../theme';
+import { useTypewriter } from '../../features/auria/useTypewriter';
+import { auriaTypography, liquidGlassBorder, myceoCornerStyle, useTheme } from '../../theme';
 import { AuriaIcon, AURIA_ICON_SIZE, AURIA_ICON_STROKE_NAV } from '../icons';
+import { AuriaTypingCursor } from './AuriaTypingCursor';
+import { ShimmerText } from './ShimmerText';
 
 type AuriaDocumentArtifactProps = {
   artifact: AuriaDocumentArtifactData;
@@ -14,9 +17,14 @@ export function AuriaDocumentArtifact({ artifact }: AuriaDocumentArtifactProps) 
   const [expanded, setExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  // Typewriter: reveal the body progressively so you watch Auria "write" it.
+  // A calm, deliberate pace — not a fast burst — that scales with the length.
+  const body = artifact.body;
+  const { shown: shownBody, done } = useTypewriter(body, { cps: 34, minMs: 1600, maxMs: 12000 });
+
   const copyDocument = () => {
     if (Platform.OS === 'web' && typeof navigator !== 'undefined') {
-      void navigator.clipboard?.writeText(artifact.body);
+      void navigator.clipboard?.writeText(body);
     }
     setCopied(true);
     setTimeout(() => setCopied(false), 1400);
@@ -24,34 +32,36 @@ export function AuriaDocumentArtifact({ artifact }: AuriaDocumentArtifactProps) 
 
   const header = (
     <View style={styles.header}>
-      <Text style={styles.eyebrow}>Writing</Text>
-      <View style={styles.actions}>
-        <Pressable
-          onPress={copyDocument}
-          style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}
-          accessibilityRole="button"
-          accessibilityLabel="Copy document"
-        >
-          <AuriaIcon name="copy" size={AURIA_ICON_SIZE.sm} strokeWidth={AURIA_ICON_STROKE_NAV} />
-        </Pressable>
-        <Pressable
-          onPress={() => setExpanded((value) => !value)}
-          style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}
-          accessibilityRole="button"
-          accessibilityLabel={expanded ? 'Close expanded document' : 'Expand document'}
-        >
-          <AuriaIcon name="expand" size={AURIA_ICON_SIZE.sm} strokeWidth={AURIA_ICON_STROKE_NAV} />
-        </Pressable>
+      <View style={styles.eyebrowRow}>
+        <AuriaIcon name="document" size={15} color={ds.gray500} strokeWidth={2} />
+        {done ? (
+          <Text style={styles.eyebrow}>Document</Text>
+        ) : (
+          <ShimmerText text="Writing…" color={ds.gray500} style={styles.eyebrow} />
+        )}
       </View>
+      {done ? (
+        <View style={styles.actions}>
+          {copied ? <Text style={styles.copied}>Copied</Text> : null}
+          <Pressable
+            onPress={copyDocument}
+            style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}
+            accessibilityRole="button"
+            accessibilityLabel="Copy document"
+          >
+            <AuriaIcon name="copy" size={AURIA_ICON_SIZE.sm} strokeWidth={AURIA_ICON_STROKE_NAV} />
+          </Pressable>
+          <Pressable
+            onPress={() => setExpanded(true)}
+            style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}
+            accessibilityRole="button"
+            accessibilityLabel="Expand document"
+          >
+            <AuriaIcon name="expand" size={AURIA_ICON_SIZE.sm} strokeWidth={AURIA_ICON_STROKE_NAV} />
+          </Pressable>
+        </View>
+      ) : null}
     </View>
-  );
-
-  const content = (
-    <>
-      {copied ? <Text style={styles.copied}>Copied</Text> : null}
-      <Text style={styles.title}>{artifact.title}</Text>
-      <Text style={styles.body}>{artifact.body}</Text>
-    </>
   );
 
   return (
@@ -60,12 +70,24 @@ export function AuriaDocumentArtifact({ artifact }: AuriaDocumentArtifactProps) 
         {header}
         <Pressable
           onPress={() => setExpanded(true)}
+          disabled={!done}
           accessibilityRole="button"
           accessibilityLabel="Open document"
         >
-          {content}
+          <Text style={styles.title}>{artifact.title}</Text>
+          <Text style={styles.body}>
+            {shownBody}
+            {!done ? <AuriaTypingCursor color={ds.auriaBlue} style={styles.cursor} /> : null}
+          </Text>
+          {done ? (
+            <View style={styles.openRow}>
+              <Text style={styles.openHint}>Tap to open</Text>
+              <AuriaIcon name="chevronRight" size={14} color={ds.gray400} strokeWidth={2} />
+            </View>
+          ) : null}
         </Pressable>
       </View>
+
       <Modal
         visible={expanded}
         animationType="slide"
@@ -73,9 +95,20 @@ export function AuriaDocumentArtifact({ artifact }: AuriaDocumentArtifactProps) 
         onRequestClose={() => setExpanded(false)}
       >
         <View style={styles.modal}>
-          <ScrollView contentContainerStyle={styles.modalContent}>
-            {header}
-            {content}
+          <View style={styles.modalBar}>
+            <Text style={styles.modalEyebrow}>Document</Text>
+            <Pressable
+              onPress={() => setExpanded(false)}
+              style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}
+              accessibilityRole="button"
+              accessibilityLabel="Close document"
+            >
+              <AuriaIcon name="close" size={20} color={ds.gray700} strokeWidth={2} />
+            </Pressable>
+          </View>
+          <ScrollView contentContainerStyle={styles.modalContent} showsVerticalScrollIndicator={false}>
+            <Text style={styles.title}>{artifact.title}</Text>
+            <Text style={styles.body}>{body}</Text>
           </ScrollView>
         </View>
       </Modal>
@@ -87,32 +120,40 @@ function createStyles(
   ds: ReturnType<typeof useTheme>['ds'],
   theme: ReturnType<typeof useTheme>['theme'],
 ) {
+  const rim = liquidGlassBorder(theme);
   return StyleSheet.create({
     card: {
       width: '100%',
-      maxHeight: 440,
       overflow: 'hidden',
-      paddingHorizontal: 16,
-      paddingTop: 12,
-      paddingBottom: 20,
+      paddingHorizontal: 18,
+      paddingTop: 14,
+      paddingBottom: 16,
       backgroundColor: ds.gray100,
+      ...rim,
       ...myceoCornerStyle('menu'),
     },
     header: {
-      minHeight: 32,
+      minHeight: 28,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       gap: 12,
     },
+    eyebrowRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
     eyebrow: {
       ...auriaTypography.label,
       color: ds.gray500,
-      fontSize: 12,
-      fontWeight: theme.typography.fontWeight.medium,
+      fontSize: 12.5,
+      fontWeight: theme.typography.fontWeight.semibold,
+      letterSpacing: 0.2,
     },
     actions: {
       flexDirection: 'row',
+      alignItems: 'center',
       gap: 4,
     },
     iconButton: {
@@ -127,18 +168,19 @@ function createStyles(
     },
     copied: {
       ...auriaTypography.label,
-      alignSelf: 'flex-end',
       color: ds.gray500,
       fontSize: 11,
+      marginRight: 2,
     },
     title: {
       ...auriaTypography.title,
       color: ds.gray900,
-      fontSize: 20,
-      lineHeight: 26,
+      fontSize: 21,
+      lineHeight: 27,
       fontWeight: theme.typography.fontWeight.bold,
-      marginTop: 6,
-      marginBottom: 14,
+      letterSpacing: -0.3,
+      marginTop: 10,
+      marginBottom: 12,
     },
     body: {
       ...auriaTypography.body,
@@ -146,13 +188,47 @@ function createStyles(
       fontSize: 15,
       lineHeight: 24,
     },
+    cursor: {
+      ...auriaTypography.body,
+      color: ds.auriaBlue,
+      fontSize: 15,
+      lineHeight: 24,
+      fontWeight: theme.typography.fontWeight.bold,
+    },
+    openRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 2,
+      marginTop: 14,
+    },
+    openHint: {
+      ...auriaTypography.label,
+      color: ds.gray400,
+      fontSize: 12,
+      fontWeight: theme.typography.fontWeight.medium,
+    },
     modal: {
       flex: 1,
       backgroundColor: ds.gray50,
     },
+    modalBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 20,
+      paddingTop: 18,
+      paddingBottom: 8,
+    },
+    modalEyebrow: {
+      ...auriaTypography.label,
+      color: ds.gray500,
+      fontSize: 12.5,
+      fontWeight: theme.typography.fontWeight.semibold,
+      letterSpacing: 0.2,
+    },
     modalContent: {
-      padding: 20,
-      paddingTop: 28,
+      paddingHorizontal: 20,
+      paddingTop: 8,
       paddingBottom: 56,
     },
   });

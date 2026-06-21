@@ -11,6 +11,7 @@ import {
 } from '../../data/auriaMockData';
 import type { AuriaChatMessage, AuriaDocumentArtifact, AuriaImageArtifact } from './types';
 import { DEFAULT_MODEL_ID } from '../../data/auriaModels';
+import { AURIA_DOC_TEMPLATES } from '../../data/auriaDocTemplates';
 
 type AssistantReply = string | Pick<AuriaChatMessage, 'text' | 'artifact' | 'reasoning' | 'sources'>;
 
@@ -348,6 +349,18 @@ function buildAssistantReply(text: string, hasAttachments = false): AssistantRep
       },
     };
   }
+  const templateMatch = text.match(/from the "([^"]+)" template/i);
+  if (templateMatch) {
+    const tpl = AURIA_DOC_TEMPLATES.find(
+      (t) => t.label.toLowerCase() === templateMatch[1].toLowerCase(),
+    );
+    if (tpl) {
+      return {
+        text: `Here's your ${tpl.label} draft — open it full-screen to read or edit.`,
+        artifact: { kind: 'document', title: tpl.title, body: tpl.body },
+      };
+    }
+  }
   if (normalized.includes('search the web') || normalized.includes('web search')) {
     return {
       text:
@@ -605,7 +618,7 @@ function workspaceReducer(state: WorkspaceState, action: WorkspaceAction): Works
           pendingReply: null,
           messages: [
             ...state.messages,
-            { id: `m-${action.id}-a`, role: 'assistant', ...reply },
+            { id: `m-${action.id}-a`, role: 'assistant', ...reply, fresh: true },
           ],
         };
       }

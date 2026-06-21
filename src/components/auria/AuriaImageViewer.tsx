@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { auriaTypography, useTheme } from '../../theme';
+import { useAuriaToast } from '../../features/auria/useAuriaToast';
 import { AuriaIcon, AURIA_ICON_SIZE } from '../icons';
 import { AuriaImageRemoveTool } from './AuriaImageRemoveTool';
 
@@ -55,8 +56,7 @@ export function AuriaImageViewer({ visible, source, prompt, onClose }: AuriaImag
   const [inputMode, setInputMode] = useState<InputMode>(null);
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { toast, showToast, clearToast } = useAuriaToast(1600);
   const busyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Reset transient state whenever the viewer is dismissed, and cancel any
@@ -68,25 +68,18 @@ export function AuriaImageViewer({ visible, source, prompt, onClose }: AuriaImag
       setInputMode(null);
       setDraft('');
       setBusy(null);
-      setToast(null);
-      if (toastTimer.current) clearTimeout(toastTimer.current);
+      clearToast();
       if (busyTimer.current) clearTimeout(busyTimer.current);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
   useEffect(
     () => () => {
-      if (toastTimer.current) clearTimeout(toastTimer.current);
       if (busyTimer.current) clearTimeout(busyTimer.current);
     },
     [],
   );
-
-  const showToast = (message: string) => {
-    setToast(message);
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(null), 1600);
-  };
 
   const runBusy = (label: string, done: string) => {
     setBusy(label);

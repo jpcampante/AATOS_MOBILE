@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Modal,
   Platform,
@@ -12,6 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AuriaProject, auriaProjects } from '../../data/auriaMockData';
 import { getProjectIcon } from '../../features/auria/projectIcons';
+import { useAuriaToast } from '../../features/auria/useAuriaToast';
 import { auriaTypography, myceoCornerStyle, useTheme } from '../../theme';
 import { AuriaIcon, AURIA_ICON_SIZE, AURIA_ICON_STROKE_NAV } from '../icons';
 import { AuriaProjectDetail } from './AuriaProjectDetail';
@@ -51,14 +52,7 @@ export function AuriaProjectsPanel({
   const [query, setQuery] = useState('');
   const [openProject, setOpenProject] = useState<AuriaProject | null>(null);
   const [menuProject, setMenuProject] = useState<AuriaProject | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const showToast = (message: string) => {
-    setToast(message);
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(null), 2200);
-  };
+  const { toast, showToast } = useAuriaToast();
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();

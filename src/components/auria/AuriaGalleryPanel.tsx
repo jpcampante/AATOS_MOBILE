@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import * as DocumentPicker from 'expo-document-picker';
 import {
   Platform,
@@ -17,6 +17,7 @@ import {
   filterGalleryItems,
   sortGalleryItems,
 } from '../../features/auria/galleryLogic';
+import { useAuriaToast } from '../../features/auria/useAuriaToast';
 import { auriaTypography, useTheme } from '../../theme';
 import { AuriaIcon, AURIA_ICON_SIZE, AURIA_ICON_STROKE_NAV } from '../icons';
 import { AuriaEmptyState, AuriaPanelScroll } from './AuriaPanelShared';
@@ -52,8 +53,7 @@ export function AuriaGalleryPanel() {
   const [moveItem, setMoveItem] = useState<AuriaGalleryItem | null>(null);
   const [previewItem, setPreviewItem] = useState<AuriaGalleryItem | null>(null);
   const [sortOpen, setSortOpen] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { toast, showToast } = useAuriaToast();
 
   const displayed = useMemo(
     () => sortGalleryItems(filterGalleryItems(items, { tab, query, typeFilter: null }), sort),
@@ -61,12 +61,6 @@ export function AuriaGalleryPanel() {
   );
   const columns = width >= 960 ? 4 : width >= 680 ? 3 : 2;
   const cardWidth = `${100 / columns - 1.6}%` as const;
-
-  const showToast = (message: string) => {
-    setToast(message);
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(null), 2200);
-  };
 
   const upload = async () => {
     const result = await DocumentPicker.getDocumentAsync({ multiple: true, copyToCacheDirectory: true });

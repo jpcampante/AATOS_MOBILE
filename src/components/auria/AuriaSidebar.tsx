@@ -226,7 +226,8 @@ export function AuriaSidebar({
           </Pressable>
           <Pressable
             style={({ pressed }) => [styles.profileBtn, pressed && styles.profileBtnPressed]}
-            accessibilityLabel="Profile"
+            accessibilityRole="button"
+            accessibilityLabel="Profile and settings"
             onPress={() => onSelectPanel('settings')}
           >
             <Text style={styles.profileInitials}>{auriaProfileInitials}</Text>

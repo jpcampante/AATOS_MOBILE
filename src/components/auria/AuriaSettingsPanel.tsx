@@ -146,7 +146,7 @@ function SettingsLink({ title, description }: { title: string; description: stri
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   return (
-    <Pressable style={styles.settingRow} accessibilityRole="button">
+    <Pressable style={styles.settingRow} accessibilityRole="button" accessibilityLabel={title}>
       <View style={styles.copy}>
         <Text style={styles.rowTitle}>{title}</Text>
         <Text style={styles.rowDescription}>{description}</Text>

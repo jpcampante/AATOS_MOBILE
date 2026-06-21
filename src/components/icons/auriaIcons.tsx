@@ -162,6 +162,21 @@ export const AURIA_ICON_PATHS = {
     'm7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21M22 21H7M5 11l9 9',
   undo: 'M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3',
   redo: 'M15 15l6-6m0 0-6-6m6 6H9a6 6 0 0 0 0 12h3',
+  // --- Rich-text editor toolbar glyphs ---
+  alignLeft: 'M3.75 6.75h16.5M3.75 12h10.5M3.75 17.25h13.5',
+  alignCenter: 'M3.75 6.75h16.5M6.75 12h10.5M5.25 17.25h13.5',
+  alignRight: 'M3.75 6.75h16.5M9.75 12h10.5M6.75 17.25h13.5',
+  alignJustify: 'M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5',
+  listNumbered:
+    'M9 6.75h11.25M9 12h11.25M9 17.25h11.25M3.75 6.75h.75v3M3.75 9.75h1.5M4.5 13.5H3.75c0-.75 1.5-.75 1.5 0 0 .6-1.5 1.2-1.5 2.25h1.5',
+  listCheck:
+    'M11.25 7.5h9m-9 9h9M3.75 5.25h3.75v3.75H3.75zM3.75 14.25h3.75v3.75H3.75zM4.5 6.9l.9.9 1.6-1.65',
+  indentIncrease: 'M9 6.75h11.25M9 17.25h11.25M3.75 12h16.5M3.75 8.25 6.75 12l-3 3.75z',
+  indentDecrease: 'M9 6.75h11.25M9 17.25h11.25M3.75 12h16.5M6.75 8.25 3.75 12l3 3.75z',
+  highlighter:
+    'm9 11.5-5.25 5.25v3h3L12 14.5M14.5 4l5.5 5.5-7 7-5.5-5.5z',
+  atSymbol:
+    'M16.5 12a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0Zm0 0c0 1.657 1.12 3 2.5 3 1.38 0 2.5-1.343 2.5-3a9 9 0 1 0-3 6.708M16.5 12V8.25',
 } as const;
 
 export type AuriaIconName = keyof typeof AURIA_ICON_PATHS;

@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
-import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { AuriaDocumentArtifact as AuriaDocumentArtifactData } from '../../features/auria/types';
 import { useTypewriter } from '../../features/auria/useTypewriter';
 import { auriaTypography, liquidGlassBorder, myceoCornerStyle, useTheme } from '../../theme';
 import { AuriaIcon, AURIA_ICON_SIZE, AURIA_ICON_STROKE_NAV } from '../icons';
+import { AuriaDocEditor } from './AuriaDocEditor';
 import { AuriaTypingCursor } from './AuriaTypingCursor';
 import { ShimmerText } from './ShimmerText';
 
@@ -92,30 +93,12 @@ export function AuriaDocumentArtifact({ artifact }: AuriaDocumentArtifactProps) 
         </Pressable>
       </View>
 
-      <Modal
+      <AuriaDocEditor
         visible={expanded}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setExpanded(false)}
-      >
-        <View style={styles.modal}>
-          <View style={styles.modalBar}>
-            <Text style={styles.modalEyebrow}>Document</Text>
-            <Pressable
-              onPress={() => setExpanded(false)}
-              style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}
-              accessibilityRole="button"
-              accessibilityLabel="Close document"
-            >
-              <AuriaIcon name="close" size={20} color={ds.gray700} strokeWidth={2} />
-            </Pressable>
-          </View>
-          <ScrollView contentContainerStyle={styles.modalContent} showsVerticalScrollIndicator={false}>
-            <Text style={styles.title}>{artifact.title}</Text>
-            <Text style={styles.body}>{body}</Text>
-          </ScrollView>
-        </View>
-      </Modal>
+        title={artifact.title}
+        body={body}
+        onClose={() => setExpanded(false)}
+      />
     </>
   );
 }
@@ -210,30 +193,6 @@ function createStyles(
       color: ds.gray400,
       fontSize: 12,
       fontWeight: theme.typography.fontWeight.medium,
-    },
-    modal: {
-      flex: 1,
-      backgroundColor: ds.gray50,
-    },
-    modalBar: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: 20,
-      paddingTop: 18,
-      paddingBottom: 8,
-    },
-    modalEyebrow: {
-      ...auriaTypography.label,
-      color: ds.gray500,
-      fontSize: 12.5,
-      fontWeight: theme.typography.fontWeight.semibold,
-      letterSpacing: 0.2,
-    },
-    modalContent: {
-      paddingHorizontal: 20,
-      paddingTop: 8,
-      paddingBottom: 56,
     },
   });
 }

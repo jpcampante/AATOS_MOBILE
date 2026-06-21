@@ -13,6 +13,14 @@ import type { AuriaChatMessage, AuriaDocumentArtifact, AuriaImageArtifact } from
 import { DEFAULT_MODEL_ID } from '../../data/auriaModels';
 import { AURIA_DOC_TEMPLATES } from '../../data/auriaDocTemplates';
 
+/**
+ * Monotonic id source. Date.now() collides when two events land in the same
+ * millisecond (double-tap send, rapid project creation), which produces
+ * duplicate React keys and dropped/merged rows. A counter is always unique.
+ */
+let __auriaSeq = 0;
+const nextSeq = () => (__auriaSeq += 1);
+
 type AssistantReply = string | Pick<AuriaChatMessage, 'text' | 'artifact' | 'reasoning' | 'sources'>;
 
 type WorkspaceState = {
@@ -390,7 +398,7 @@ function buildAssistantReply(text: string, hasAttachments = false): AssistantRep
       },
       sources: [
         {
-          id: `web-1-${Date.now()}`,
+          id: `web-1-${nextSeq()}`,
           title: 'Usage-based pricing is the new default',
           kind: 'web',
           meta: 'techcrunch.com',
@@ -398,7 +406,7 @@ function buildAssistantReply(text: string, hasAttachments = false): AssistantRep
             'A majority of B2B SaaS leaders are moving to consumption pricing to align cost with value delivered...',
         },
         {
-          id: `web-2-${Date.now()}`,
+          id: `web-2-${nextSeq()}`,
           title: 'AI contract-review features compared',
           kind: 'web',
           meta: 'g2.com',
@@ -448,7 +456,7 @@ function buildAssistantReply(text: string, hasAttachments = false): AssistantRep
       },
       sources: [
         {
-          id: `dr-1-${Date.now()}`,
+          id: `dr-1-${nextSeq()}`,
           title: 'Strategy_v3.pdf',
           kind: 'pdf',
           meta: 'Strategy · 1.1 MB',
@@ -456,7 +464,7 @@ function buildAssistantReply(text: string, hasAttachments = false): AssistantRep
             'Q3 plan targets a 12% expansion in the enterprise segment, contingent on the new pricing model...',
         },
         {
-          id: `dr-2-${Date.now()}`,
+          id: `dr-2-${nextSeq()}`,
           title: 'Market outlook 2026',
           kind: 'web',
           meta: 'gartner.com',
@@ -515,7 +523,7 @@ function buildAssistantReply(text: string, hasAttachments = false): AssistantRep
       },
       sources: [
         {
-          id: `src-live-1-${Date.now()}`,
+          id: `src-live-1-${nextSeq()}`,
           title: 'MSA_Contract_v3.pdf',
           kind: 'pdf',
           meta: 'Legal team · 2.4 MB',
@@ -523,7 +531,7 @@ function buildAssistantReply(text: string, hasAttachments = false): AssistantRep
             'Section 9.2 — Limitation of Liability. Aggregate liability shall not exceed fees paid in the preceding twelve (12) months...',
         },
         {
-          id: `src-live-2-${Date.now()}`,
+          id: `src-live-2-${nextSeq()}`,
           title: 'Legal review notes.docx',
           kind: 'doc',
           meta: 'Research chat · 84 KB',
@@ -708,7 +716,7 @@ export function useAuriaWorkspace() {
       newChat: () => dispatch({ type: 'new-chat' }),
       sendMessage: (text: string, attachments?: string[]) => {
         if (state.pendingReply) return;
-        dispatch({ type: 'send-message', text, attachments, id: Date.now() });
+        dispatch({ type: 'send-message', text, attachments, id: nextSeq() });
       },
       openConversation: (conversationId: string) =>
         dispatch({ type: 'open-conversation', conversationId }),
@@ -720,7 +728,7 @@ export function useAuriaWorkspace() {
         visibility: AuriaProjectVisibility;
         iconId?: string;
         description?: string;
-      }) => dispatch({ type: 'create-project', ...input, id: Date.now() }),
+      }) => dispatch({ type: 'create-project', ...input, id: nextSeq() }),
     }),
     [state],
   );

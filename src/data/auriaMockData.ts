@@ -43,26 +43,6 @@ export type AuriaProject = {
   createdByYou?: boolean;
 };
 
-/** A chat thread inside a project (shown on the project's "Chats" tab). */
-export type AuriaProjectChat = {
-  id: string;
-  title: string;
-  preview: string;
-};
-
-/** Mock chat threads shown inside an opened project. */
-export const auriaProjectChats: AuriaProjectChat[] = [
-  { id: 'pc1', title: 'Prompt Ajustado 1 Personagem', preview: 'quero que faça nesse prompt somente o background…' },
-  { id: 'pc2', title: 'Sistema semelhante ao Gusto', preview: 'obrigado somente responda de nada! …' },
-  { id: 'pc3', title: 'Confirming pillars concept', preview: 'Mas você falou que eu poderia quitar o financiam…' },
-  { id: 'pc4', title: 'Responder mensagem usuário', preview: '' },
-  { id: 'pc5', title: 'Business Finland importante', preview: 'Qual é o plano que se adequa para a minha situaç…' },
-  { id: 'pc6', title: 'Saudação e conversa casual', preview: 'O que eu pago nesse fim neto, hein?' },
-  { id: 'pc7', title: 'Foco das empresas', preview: 'Qual é a média de porcentagem que eles ganham…' },
-  { id: 'pc8', title: 'vitoria contrato', preview: 'quero um resumo detalhado de como escrevemo…' },
-  { id: 'pc9', title: 'Branch · PRH_MAIN', preview: 'me dê a instrução para o que tenho que fazer par…' },
-  { id: 'pc10', title: 'Branch · PRH_MAIN', preview: 'sim! me dê o site também!' },
-];
 
 export type AuriaSidebarProjectRow = {
   id: string;

@@ -34,10 +34,14 @@ function relativeLabel(label: string) {
 export function AuriaProjectsPanel({
   projects = auriaProjects,
   onDeleteProject,
+  onOpenConversation,
+  onOpenSources,
 }: {
   projects?: AuriaProject[];
   onCreateProject?: () => void;
   onDeleteProject?: (id: string) => void;
+  onOpenConversation?: (conversationId: string) => void;
+  onOpenSources?: () => void;
 }) {
   const { ds, theme } = useTheme();
   const insets = useSafeAreaInsets();
@@ -175,6 +179,8 @@ export function AuriaProjectsPanel({
         project={openProject}
         onClose={() => setOpenProject(null)}
         onMenu={setMenuProject}
+        onOpenConversation={onOpenConversation}
+        onOpenSources={onOpenSources}
         onShare={(p) => {
           if (Platform.OS === 'web' && typeof navigator !== 'undefined') {
             void navigator.clipboard?.writeText(`https://aatos.app/project/${encodeURIComponent(p.name)}`);

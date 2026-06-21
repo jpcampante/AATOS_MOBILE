@@ -321,6 +321,8 @@ export function AuriaScreen({
           projects={workspace.projects}
           onCreateProject={openNewProjectModal}
           onDeleteProject={workspace.deleteProject}
+          onOpenConversation={handleConversation}
+          onOpenSources={() => transitionPanel('gallery')}
         />
       );
     }

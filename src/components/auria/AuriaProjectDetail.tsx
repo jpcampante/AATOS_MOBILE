@@ -10,23 +10,52 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { AuriaProject, auriaProjectChats } from '../../data/auriaMockData';
+import {
+  AuriaGalleryItem,
+  AuriaProject,
+  auriaConversations,
+  auriaGalleryItems,
+} from '../../data/auriaMockData';
+import { AURIA_CONVERSATION_MOCKS } from '../../features/auria/useAuriaWorkspace';
 import { getProjectIcon } from '../../features/auria/projectIcons';
 import { auriaTypography, myceoCornerStyle, useTheme } from '../../theme';
 import { AuriaIcon } from '../icons';
 
 type DetailTab = 'chats' | 'sources';
 
+/** The icon glyph for a gallery file type. */
+const SOURCE_ICON: Record<AuriaGalleryItem['type'], 'document' | 'frame' | 'globe'> = {
+  PDF: 'document',
+  Document: 'document',
+  Spreadsheet: 'document',
+  Data: 'globe',
+  Image: 'frame',
+};
+
+/** Real chats that live inside a project — the saved conversations, each one
+ *  showcasing a live AI response mode (document, reasoning, image, sources). */
+const PROJECT_CHATS = auriaConversations.map((conversation) => {
+  const mock = AURIA_CONVERSATION_MOCKS[conversation.id];
+  const firstUser = mock?.find((message) => message.role === 'user')?.text ?? '';
+  return { id: conversation.id, title: conversation.title, preview: firstUser };
+});
+
 export function AuriaProjectDetail({
   project,
   onClose,
   onMenu,
   onShare,
+  onOpenConversation,
+  onOpenSources,
 }: {
   project: AuriaProject | null;
   onClose: () => void;
   onMenu: (project: AuriaProject) => void;
   onShare: (project: AuriaProject) => void;
+  /** Open one of the project's chats in the main conversation view. */
+  onOpenConversation?: (conversationId: string) => void;
+  /** Open the files / sources area. */
+  onOpenSources?: () => void;
 }) {
   const { ds, theme } = useTheme();
   const insets = useSafeAreaInsets();
@@ -34,6 +63,12 @@ export function AuriaProjectDetail({
   const [tab, setTab] = useState<DetailTab>('chats');
 
   const icon = project ? getProjectIcon(project.iconId) : null;
+  const sources = auriaGalleryItems;
+
+  const openConversation = (conversationId: string) => {
+    onClose();
+    onOpenConversation?.(conversationId);
+  };
 
   return (
     <Modal
@@ -124,9 +159,10 @@ export function AuriaProjectDetail({
 
               {tab === 'chats' ? (
                 <View style={styles.chatList}>
-                  {auriaProjectChats.map((chat) => (
+                  {PROJECT_CHATS.map((chat) => (
                     <Pressable
                       key={chat.id}
+                      onPress={() => openConversation(chat.id)}
                       style={({ pressed }) => [styles.chatRow, pressed && styles.chatRowPressed]}
                       accessibilityRole="button"
                       accessibilityLabel={chat.title}
@@ -142,7 +178,7 @@ export function AuriaProjectDetail({
                     </Pressable>
                   ))}
                 </View>
-              ) : (
+              ) : sources.length === 0 ? (
                 <View style={styles.sourcesEmpty}>
                   <View style={styles.sourceTiles}>
                     <View style={[styles.sourceTile, { transform: [{ rotate: '-7deg' }] }]}>
@@ -161,11 +197,47 @@ export function AuriaProjectDetail({
                     your project.
                   </Text>
                   <Pressable
+                    onPress={onOpenSources}
                     style={({ pressed }) => [styles.addButton, pressed && styles.addButtonPressed]}
                     accessibilityRole="button"
                     accessibilityLabel="Add sources"
                   >
                     <Text style={styles.addText}>Add</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <View style={styles.sourceList}>
+                  {sources.map((item) => (
+                    <Pressable
+                      key={item.id}
+                      onPress={onOpenSources}
+                      style={({ pressed }) => [styles.sourceRow, pressed && styles.chatRowPressed]}
+                      accessibilityRole="button"
+                      accessibilityLabel={item.name}
+                    >
+                      <View style={[styles.sourceBadge, { backgroundColor: item.accent }]}>
+                        <AuriaIcon name={SOURCE_ICON[item.type]} size={18} color={item.text} strokeWidth={1.8} />
+                      </View>
+                      <View style={styles.sourceCopy}>
+                        <Text style={styles.sourceName} numberOfLines={1}>
+                          {item.name}
+                        </Text>
+                        <Text style={styles.sourceMeta} numberOfLines={1}>
+                          {item.type} · {item.sizeLabel} · {item.source}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  ))}
+                  <Pressable
+                    onPress={onOpenSources}
+                    style={({ pressed }) => [styles.addSourceRow, pressed && styles.chatRowPressed]}
+                    accessibilityRole="button"
+                    accessibilityLabel="Add sources"
+                  >
+                    <View style={styles.addSourceIcon}>
+                      <AuriaIcon name="plus" size={18} color={ds.gray700} strokeWidth={2} />
+                    </View>
+                    <Text style={styles.addSourceText}>Add sources</Text>
                   </Pressable>
                 </View>
               )}
@@ -284,6 +356,55 @@ function createStyles(
       color: ds.gray900,
     },
     chatPreview: { ...auriaTypography.body, fontSize: 14.5, color: ds.gray400 },
+    sourceList: { gap: 0 },
+    sourceRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 13,
+      paddingVertical: 11,
+      paddingHorizontal: 6,
+      ...myceoCornerStyle('inset'),
+    },
+    sourceBadge: {
+      width: 42,
+      height: 42,
+      alignItems: 'center',
+      justifyContent: 'center',
+      ...myceoCornerStyle('icon'),
+    },
+    sourceCopy: { flex: 1, gap: 2 },
+    sourceName: {
+      ...auriaTypography.body,
+      fontSize: 15.5,
+      fontWeight: theme.typography.fontWeight.semibold,
+      color: ds.gray900,
+    },
+    sourceMeta: { ...auriaTypography.body, fontSize: 13.5, color: ds.gray400 },
+    addSourceRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 13,
+      paddingVertical: 11,
+      paddingHorizontal: 6,
+      marginTop: 4,
+    },
+    addSourceIcon: {
+      width: 42,
+      height: 42,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: ds.gray100,
+      borderWidth: 1,
+      borderColor: ds.gray200,
+      borderStyle: 'dashed',
+      ...myceoCornerStyle('icon'),
+    },
+    addSourceText: {
+      ...auriaTypography.body,
+      fontSize: 15.5,
+      fontWeight: theme.typography.fontWeight.semibold,
+      color: ds.gray700,
+    },
     sourcesEmpty: { alignItems: 'center', paddingTop: 70, paddingHorizontal: 16 },
     sourceTiles: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
     sourceTile: {

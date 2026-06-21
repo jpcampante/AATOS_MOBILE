@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { auriaTypography, myceoCornerStyle, useTheme } from '../../theme';
 import { AuriaIcon, AURIA_ICON_SIZE } from '../icons';
 import { AURIA_DOC_TEMPLATES, type AuriaDocTemplate } from '../../data/auriaDocTemplates';
+import { AURIA_SCRIM } from './auriaLayout';
 
 type AuriaDocTemplatesModalProps = {
   visible: boolean;
@@ -141,7 +142,7 @@ function createStyles(
 ) {
   return StyleSheet.create({
     overlay: { flex: 1, justifyContent: 'flex-end' },
-    backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(15,18,22,0.34)' },
+    backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: AURIA_SCRIM },
     sheet: {
       backgroundColor: theme.colors.surface,
       borderTopLeftRadius: 24,

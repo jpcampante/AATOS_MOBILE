@@ -16,6 +16,7 @@ import {
 } from '../../theme';
 import { auriaProfileInitials, auriaWelcomeName } from '../../data/auriaMockData';
 import { AuriaIcon, AuriaIconName, AURIA_ICON_SIZE } from '../icons';
+import { AURIA_SCRIM } from './auriaLayout';
 
 type AuriaSettingsModalProps = {
   visible: boolean;
@@ -299,7 +300,7 @@ function createStyles(
     },
     backdrop: {
       ...StyleSheet.absoluteFillObject,
-      backgroundColor: 'rgba(15, 18, 22, 0.32)',
+      backgroundColor: AURIA_SCRIM,
     },
     sheet: {
       flex: 1,

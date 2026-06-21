@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { AuriaThoughtSource, AuriaReasoning, AuriaThoughtStep } from '../../features/auria/types';
 import { auriaTypography, myceoCornerStyle, useTheme } from '../../theme';
 import { AuriaIcon, type AuriaIconName } from '../icons';
+import { AURIA_SCRIM } from './auriaLayout';
 
 type AuriaThinkingSheetProps = {
   visible: boolean;
@@ -279,7 +280,7 @@ function createStyles(
 ) {
   return StyleSheet.create({
     overlay: { flex: 1, justifyContent: 'flex-end' },
-    backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(15,18,22,0.32)' },
+    backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: AURIA_SCRIM },
     sheet: {
       maxHeight: Math.round(windowHeight * 0.9),
       backgroundColor: ds.white,

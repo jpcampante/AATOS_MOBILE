@@ -5,6 +5,9 @@ export const AURIA_COMPOSER_DOCK_PADDING_V = 12;
 export const AURIA_COMPOSER_CONTENT_GAP = 8;
 export const AURIA_COMPOSER_BOTTOM_PADDING = 8;
 
+/** Shared dim behind modals / bottom sheets, so every Auria overlay matches. */
+export const AURIA_SCRIM = 'rgba(15,18,22,0.34)';
+
 /** Extra scroll padding below panel lists — AppShell already reserves nav space. */
 export const AURIA_PANEL_SCROLL_END_PADDING = 24;
 /** Breathing room above the composer in chat scroll — nav gap lives in AppShell only. */

@@ -11,6 +11,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { auriaTypography, myceoCornerStyle, useTheme } from '../../theme';
 import { AuriaIcon } from '../icons';
+import { AURIA_SCRIM } from './auriaLayout';
 import {
   MODELS_BY_PROVIDER,
   PROVIDER_LABEL,
@@ -132,7 +133,7 @@ export function AuriaModelSheet({ visible, selectedId, onSelect, onClose }: Auri
 function createStyles(theme: ReturnType<typeof useTheme>['theme'], safeBottom: number) {
   return StyleSheet.create({
     overlay: { flex: 1, justifyContent: 'flex-end' },
-    backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(15,18,22,0.34)' },
+    backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: AURIA_SCRIM },
     sheet: {
       backgroundColor: theme.colors.surface,
       borderTopLeftRadius: 24,

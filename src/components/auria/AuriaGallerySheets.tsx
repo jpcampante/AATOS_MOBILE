@@ -15,6 +15,7 @@ import type { AuriaGalleryItem, AuriaProject } from '../../data/auriaMockData';
 import type { AuriaGallerySort } from '../../features/auria/galleryLogic';
 import { auriaTypography, myceoCornerStyle, useTheme } from '../../theme';
 import { AuriaIcon, type AuriaIconName } from '../icons';
+import { AURIA_SCRIM } from './auriaLayout';
 
 export type GalleryActionId =
   | 'open'
@@ -412,7 +413,7 @@ function createStyles(theme: ReturnType<typeof useTheme>['theme'], safeBottom: n
   return StyleSheet.create({
     overlay: { flex: 1, justifyContent: 'flex-end' },
     centerOverlay: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 26 },
-    backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(15,18,22,0.34)' },
+    backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: AURIA_SCRIM },
     sheet: {
       backgroundColor: theme.colors.surface,
       borderTopLeftRadius: 24,

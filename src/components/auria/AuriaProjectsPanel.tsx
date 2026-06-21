@@ -17,6 +17,7 @@ import { AuriaIcon, AURIA_ICON_SIZE, AURIA_ICON_STROKE_NAV } from '../icons';
 import { AuriaProjectDetail } from './AuriaProjectDetail';
 import { GalleryToast } from './AuriaGallerySheets';
 import { APP_SHELL_BOTTOM_INSET } from '../navigation/AppShell';
+import { AURIA_SCRIM } from './auriaLayout';
 
 type ProjectTab = 'all' | 'created' | 'shared';
 
@@ -330,7 +331,7 @@ function createStyles(
     emptyMessage: { ...auriaTypography.body, fontSize: 13, color: ds.gray400, textAlign: 'center' },
     /* action sheet */
     overlay: { flex: 1, justifyContent: 'flex-end' },
-    backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(15,18,22,0.34)' },
+    backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: AURIA_SCRIM },
     sheet: {
       backgroundColor: theme.colors.surface,
       borderTopLeftRadius: 24,

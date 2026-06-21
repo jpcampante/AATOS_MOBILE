@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { AuriaSource, AuriaSourceKind } from '../../features/auria/types';
 import { auriaTypography, myceoCornerStyle, useTheme } from '../../theme';
 import { AuriaIcon, type AuriaIconName } from '../icons';
+import { AURIA_SCRIM } from './auriaLayout';
 
 type AuriaSourceChipsProps = {
   sources: AuriaSource[];
@@ -172,7 +173,7 @@ function createStyles(
       color: ds.gray800,
     },
     overlay: { flex: 1, justifyContent: 'flex-end' },
-    backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(15,18,22,0.32)' },
+    backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: AURIA_SCRIM },
     sheet: {
       maxHeight: '72%',
       backgroundColor: ds.gray50,

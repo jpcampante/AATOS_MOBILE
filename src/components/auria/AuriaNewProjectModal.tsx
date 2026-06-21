@@ -41,8 +41,6 @@ const inputWebFocusReset =
       } as object)
     : null;
 
-const RADIO_GREEN = '#2CB34A';
-
 export function AuriaNewProjectModal({ visible, onClose, onCreate }: AuriaNewProjectModalProps) {
   const { ds, theme } = useTheme();
   const styles = useMemo(() => createStyles(ds, theme), [ds, theme]);
@@ -174,7 +172,7 @@ export function AuriaNewProjectModal({ visible, onClose, onCreate }: AuriaNewPro
               accessibilityRole="radio"
               accessibilityState={{ selected: active }}
             >
-              <View style={[styles.radioOuter, { borderColor: active ? RADIO_GREEN : ds.gray300 }]}>
+              <View style={[styles.radioOuter, { borderColor: active ? theme.colors.success : ds.gray300 }]}>
                 {active ? <View style={styles.radioInner} /> : null}
               </View>
               <View style={{ flex: 1 }}>
@@ -441,7 +439,7 @@ function createStyles(
       width: 9,
       height: 9,
       borderRadius: 5,
-      backgroundColor: RADIO_GREEN,
+      backgroundColor: theme.colors.success,
     },
     radioTitle: {
       ...auriaTypography.body,

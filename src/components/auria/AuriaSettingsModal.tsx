@@ -305,7 +305,7 @@ function createStyles(
     sheet: {
       flex: 1,
       marginTop: Math.max(safeTop + 14, 60),
-      backgroundColor: '#EFEFF2',
+      backgroundColor: theme.colors.input,
       borderTopLeftRadius: 22,
       borderTopRightRadius: 22,
       overflow: 'hidden',
@@ -369,7 +369,7 @@ function createStyles(
       justifyContent: 'center',
       backgroundColor: ds.white,
       borderWidth: 2,
-      borderColor: '#EFEFF2',
+      borderColor: theme.colors.input,
     },
     handle: {
       ...auriaTypography.title,

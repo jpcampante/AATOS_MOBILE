@@ -475,11 +475,11 @@ function createStyles(
     },
     auriaCurrent: {
       fontFamily: SERIF,
-      color: '#6F6D67',
+      color: ds.gray600,
     },
     auriaUpcoming: {
       fontFamily: SERIF,
-      color: '#BBB9B3',
+      color: ds.gray400,
     },
     feedbackRow: {
       flexDirection: 'row',
@@ -530,7 +530,7 @@ function createStyles(
       elevation: 4,
     },
     circleRecording: {
-      backgroundColor: '#3D7BE0',
+      backgroundColor: ds.auriaBlue,
     },
     pressed: {
       transform: [{ scale: 0.94 }],

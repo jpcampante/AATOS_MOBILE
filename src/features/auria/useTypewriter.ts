@@ -1,27 +1,50 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 type TypewriterOptions = {
   /** When false, the full text is shown immediately (used for history). */
   enabled?: boolean;
   /** Characters revealed per second — the "writing" pace. */
   cps?: number;
-  /** Floor/ceiling on total duration so short notes aren't instant and long
-   *  documents don't drag on forever. */
+  /** Floor/ceiling on total duration so short notes aren't instant and very
+   *  long documents stay reasonable. */
   minMs?: number;
   maxMs?: number;
+  /**
+   * 'word' reveals whole words at a time (token-stream feel, like ChatGPT /
+   * Claude writing a document). 'char' reveals character by character.
+   */
+  mode?: 'word' | 'char';
 };
 
+/** Indices just past each word, so we can snap a char count up to a whole word. */
+function wordBoundaries(text: string): number[] {
+  const bounds: number[] = [];
+  const re = /\S+\s*/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    bounds.push(m.index + m[0].length);
+  }
+  if (bounds.length === 0 || bounds[bounds.length - 1] !== text.length) {
+    bounds.push(text.length);
+  }
+  return bounds;
+}
+
 /**
- * A smooth, time-based typewriter. Reveals `text` progressively using
- * requestAnimationFrame (not chunked setInterval, which reads as jittery
- * bursts) with a gentle ease-out so the writing settles at the end instead of
- * stopping abruptly. Returns the visible slice and whether it has finished.
+ * A smooth, steady typewriter that mirrors how Claude / ChatGPT stream a
+ * reply: a constant cadence (no acceleration) revealing whole words at a time,
+ * driven by requestAnimationFrame. Returns the visible slice and whether it
+ * has finished.
  */
 export function useTypewriter(text: string, options: TypewriterOptions = {}) {
-  const { enabled = true, cps = 42, minMs = 900, maxMs = 11000 } = options;
+  const { enabled = true, cps = 26, minMs = 1200, maxMs = 26000, mode = 'word' } = options;
   const [shown, setShown] = useState(enabled ? '' : text);
   const [done, setDone] = useState(!enabled);
   const rafRef = useRef<number | null>(null);
+  const bounds = useMemo(
+    () => (mode === 'word' ? wordBoundaries(text) : null),
+    [text, mode],
+  );
 
   useEffect(() => {
     const total = text.length;
@@ -38,10 +61,16 @@ export function useTypewriter(text: string, options: TypewriterOptions = {}) {
 
     const tick = (now: number) => {
       if (!start) start = now;
+      // Linear, steady cadence — the constant clip of a token stream.
       const t = Math.min(1, (now - start) / duration);
-      // Ease-out: writes at a steady clip, then eases into the final words.
-      const eased = 1 - Math.pow(1 - t, 1.7);
-      const count = Math.max(1, Math.floor(eased * total));
+      const target = Math.floor(t * total);
+
+      let count = target;
+      if (bounds) {
+        // Snap up to the end of the current word so we never show a half-word.
+        count = bounds.find((b) => b >= target) ?? total;
+      }
+
       setShown(text.slice(0, count));
       if (t >= 1) {
         setShown(text);
@@ -57,7 +86,7 @@ export function useTypewriter(text: string, options: TypewriterOptions = {}) {
       if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     };
-  }, [text, enabled, cps, minMs, maxMs]);
+  }, [text, enabled, cps, minMs, maxMs, bounds]);
 
   return { shown, done };
 }

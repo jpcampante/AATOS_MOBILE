@@ -20,7 +20,11 @@ export function AuriaDocumentArtifact({ artifact }: AuriaDocumentArtifactProps) 
   // Typewriter: reveal the body progressively so you watch Auria "write" it.
   // A calm, deliberate pace — not a fast burst — that scales with the length.
   const body = artifact.body;
-  const { shown: shownBody, done } = useTypewriter(body, { cps: 34, minMs: 1600, maxMs: 12000 });
+  const { shown: shownBody, done } = useTypewriter(body, {
+    cps: 22,
+    minMs: 3000,
+    maxMs: 26000,
+  });
 
   const copyDocument = () => {
     if (Platform.OS === 'web' && typeof navigator !== 'undefined') {

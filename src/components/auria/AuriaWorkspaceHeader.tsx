@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { AuriaIcon, AURIA_ICON_SIZE, AURIA_ICON_STROKE_NAV } from '../icons';
-import { useTheme } from '../../theme';
+import { auriaTypography, useTheme } from '../../theme';
 import { AuriaDrawerToggle } from './AuriaDrawerToggle';
 import { AuriaGlassButton } from './AuriaGlassButton';
 
@@ -11,9 +11,21 @@ export const WORKSPACE_HEADER_HEIGHT = 54;
 type AuriaWorkspaceHeaderProps = {
   onToggleSidebar: () => void;
   onNewChat: () => void;
+  /** When set, the bar shows a centered title (e.g. on the Projects panel). */
+  title?: string;
+  /** When set, the right slot is a "+" action (e.g. New project) instead of
+   *  the new-chat pencil. */
+  onPlus?: () => void;
+  plusLabel?: string;
 };
 
-export function AuriaWorkspaceHeader({ onToggleSidebar, onNewChat }: AuriaWorkspaceHeaderProps) {
+export function AuriaWorkspaceHeader({
+  onToggleSidebar,
+  onNewChat,
+  title,
+  onPlus,
+  plusLabel = 'New',
+}: AuriaWorkspaceHeaderProps) {
   const { ds, theme } = useTheme();
   const styles = useMemo(() => createStyles(ds, theme), [ds, theme]);
 
@@ -23,17 +35,25 @@ export function AuriaWorkspaceHeader({ onToggleSidebar, onNewChat }: AuriaWorksp
         <AuriaDrawerToggle onPress={onToggleSidebar} accessibilityLabel="Open history and sidebar" />
       </View>
 
+      {title ? (
+        <View style={styles.titleWrap} pointerEvents="none">
+          <Text style={styles.title} numberOfLines={1}>
+            {title}
+          </Text>
+        </View>
+      ) : null}
+
       <View style={styles.sideRail}>
         <AuriaGlassButton
-          onPress={onNewChat}
-          accessibilityLabel="New chat"
+          onPress={onPlus ?? onNewChat}
+          accessibilityLabel={onPlus ? plusLabel : 'New chat'}
           hitSlop={8}
           elevated={false}
           borderRadius={theme.radius.md}
           surfaceStyle={styles.sideSlot}
         >
           <AuriaIcon
-            name="squarePen"
+            name={onPlus ? 'plus' : 'squarePen'}
             size={AURIA_ICON_SIZE.sm}
             color={ds.gray700}
             strokeWidth={AURIA_ICON_STROKE_NAV}
@@ -61,6 +81,17 @@ function createStyles(
       width: 44,
       alignItems: 'center',
       justifyContent: 'center',
+    },
+    titleWrap: {
+      ...StyleSheet.absoluteFillObject,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    title: {
+      ...auriaTypography.title,
+      fontSize: 17,
+      fontWeight: theme.typography.fontWeight.semibold,
+      color: ds.gray900,
     },
     sideSlot: {
       width: 40,

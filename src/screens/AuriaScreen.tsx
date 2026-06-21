@@ -362,6 +362,9 @@ export function AuriaScreen({
             <AuriaWorkspaceHeader
               onToggleSidebar={() => setSidebarOpen((open) => !open)}
               onNewChat={handleNewChat}
+              title={workspace.panel === 'projects' ? 'Projects' : undefined}
+              onPlus={workspace.panel === 'projects' ? openNewProjectModal : undefined}
+              plusLabel="New project"
             />
           </View>
 

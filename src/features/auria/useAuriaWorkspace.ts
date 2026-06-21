@@ -657,6 +657,7 @@ function workspaceReducer(state: WorkspaceState, action: WorkspaceAction): Works
         chatCount: 0,
         iconId: action.iconId ?? 'folder',
         description: action.description,
+        createdByYou: true,
       };
       const moreIndex = state.projectRows.findIndex((row) => row.kind === 'more');
       const row: AuriaSidebarProjectRow = { id: project.id, name: project.name, kind: 'folder' };

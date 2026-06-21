@@ -126,24 +126,33 @@ export function AuriaCreateMenu({
   };
 
   const addFiles = async () => {
-    const result = await DocumentPicker.getDocumentAsync({
-      multiple: true,
-      copyToCacheDirectory: true,
-    });
-    if (result.canceled) return;
-    const names = result.assets.map((asset) => asset.name).join(', ');
-    finish(`Analyze the attached files: ${names}. Ask me what outcome I need before starting.`);
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        multiple: true,
+        copyToCacheDirectory: true,
+      });
+      if (result.canceled) return;
+      const names = result.assets.map((asset) => asset.name).join(', ');
+      finish(`Analyze the attached files: ${names}. Ask me what outcome I need before starting.`);
+    } catch {
+      // Permission denied / IO error — fail closed rather than crash.
+      onClose();
+    }
   };
 
   const pickPhotos = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsMultipleSelection: true,
-      selectionLimit: 10,
-    });
-    if (result.canceled) return;
-    onAddPhotos(result.assets.map((asset) => asset.uri));
-    onClose();
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsMultipleSelection: true,
+        selectionLimit: 10,
+      });
+      if (result.canceled) return;
+      onAddPhotos(result.assets.map((asset) => asset.uri));
+      onClose();
+    } catch {
+      onClose();
+    }
   };
 
   const openAction = (id: CreateActionId) => {

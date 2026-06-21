@@ -25,7 +25,7 @@ function clean(ranges: MarkRange[]): MarkRange[] {
 }
 
 /** Merge touching/overlapping ranges of the same type into a minimal set. */
-export function normalizeMarks(ranges: MarkRange[]): MarkRange[] {
+function normalizeMarks(ranges: MarkRange[]): MarkRange[] {
   const out: MarkRange[] = [];
   for (const type of INLINE_MARKS) {
     const ofType = clean(ranges.filter((r) => r.type === type)).sort((a, b) => a.start - b.start);
@@ -44,7 +44,7 @@ export function normalizeMarks(ranges: MarkRange[]): MarkRange[] {
 }
 
 /** True when every character in [start,end) already carries `type`. */
-export function isRangeMarked(
+function isRangeMarked(
   ranges: MarkRange[],
   type: InlineMark,
   start: number,

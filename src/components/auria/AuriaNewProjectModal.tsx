@@ -492,7 +492,12 @@ function createStyles(
     sheet: {
       padding: 0,
       overflow: 'hidden',
-      alignSelf: 'center',
+      // Anchored to the layout viewport's left inset rather than centered in the
+      // Modal portal: react-native-web portals to the OS window, which can be
+      // wider than the app's viewport (device emulation), so centering there
+      // pushes the sheet off-screen. At mobile widths width === viewport-32, so
+      // a 16px left inset reads as centered.
+      alignSelf: 'flex-start',
     },
     sheetScroll: {
       padding: 20,

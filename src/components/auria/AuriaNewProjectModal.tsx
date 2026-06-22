@@ -12,10 +12,16 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import { AuriaProjectVisibility, auriaWorkspaceName } from '../../data/auriaMockData';
+import {
+  AuriaGalleryItem,
+  AuriaProjectVisibility,
+  auriaConversations,
+  auriaGalleryItems,
+  auriaWorkspaceName,
+} from '../../data/auriaMockData';
 import { PROJECT_ICON_OPTIONS, getProjectIcon } from '../../features/auria/projectIcons';
 import { LiquidGlassSurface } from '../ui/LiquidGlassSurface';
-import { AuriaIcon } from '../icons';
+import { AuriaIcon, AuriaIconName } from '../icons';
 import { auriaTypography, myceoCornerStyle, useTheme } from '../../theme';
 
 export type AuriaNewProjectInput = {
@@ -23,7 +29,44 @@ export type AuriaNewProjectInput = {
   iconId: string;
   description?: string;
   visibility: AuriaProjectVisibility;
+  /** Chat + doc source ids Auria should pull from for this project. */
+  sourceIds: string[];
 };
+
+/** The glyph for each gallery/doc source type. */
+const SOURCE_DOC_ICON: Record<AuriaGalleryItem['type'], AuriaIconName> = {
+  PDF: 'document',
+  Document: 'document',
+  Spreadsheet: 'document',
+  Data: 'globe',
+  Image: 'frame',
+};
+
+type SourceOption = { id: string; name: string; icon: AuriaIconName; meta: string };
+
+/** What we have to draw on when creating a project: saved chats and docs. */
+const SOURCE_GROUPS: { key: string; label: string; items: SourceOption[] }[] = [
+  {
+    key: 'chats',
+    label: 'Chats',
+    items: auriaConversations.map((c) => ({
+      id: c.id,
+      name: c.title,
+      icon: 'messageSquare' as AuriaIconName,
+      meta: 'Chat',
+    })),
+  },
+  {
+    key: 'docs',
+    label: 'Docs',
+    items: auriaGalleryItems.map((d) => ({
+      id: d.id,
+      name: d.name,
+      icon: SOURCE_DOC_ICON[d.type],
+      meta: `${d.type} · ${d.sizeLabel}`,
+    })),
+  },
+];
 
 type AuriaNewProjectModalProps = {
   visible: boolean;
@@ -50,6 +93,7 @@ export function AuriaNewProjectModal({ visible, onClose, onCreate }: AuriaNewPro
   const [iconId, setIconId] = useState('folder');
   const [description, setDescription] = useState('');
   const [visibility, setVisibility] = useState<AuriaProjectVisibility>('Team');
+  const [sourceIds, setSourceIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (!visible) {
@@ -57,8 +101,14 @@ export function AuriaNewProjectModal({ visible, onClose, onCreate }: AuriaNewPro
       setIconId('folder');
       setDescription('');
       setVisibility('Team');
+      setSourceIds([]);
     }
   }, [visible]);
+
+  const toggleSource = (id: string) =>
+    setSourceIds((current) =>
+      current.includes(id) ? current.filter((s) => s !== id) : [...current, id],
+    );
 
   const trimmedName = name.trim();
   const canCreate = trimmedName.length > 0;
@@ -72,6 +122,7 @@ export function AuriaNewProjectModal({ visible, onClose, onCreate }: AuriaNewPro
       iconId,
       description: description.trim() || undefined,
       visibility,
+      sourceIds,
     });
   };
 
@@ -143,6 +194,56 @@ export function AuriaNewProjectModal({ visible, onClose, onCreate }: AuriaNewPro
         multiline
         textAlignVertical="top"
       />
+
+      <View style={styles.labelRow}>
+        <Text style={styles.label}>Sources</Text>
+        <Text style={styles.labelMeta}>
+          {sourceIds.length > 0 ? `${sourceIds.length} selected` : 'Optional'}
+        </Text>
+      </View>
+      <Text style={styles.sourcesHint}>
+        Pick the chats and docs Auria should pull from for this project.
+      </Text>
+      {SOURCE_GROUPS.map((group) => (
+        <View key={group.key} style={styles.sourceGroup}>
+          <Text style={styles.sourceGroupLabel}>{group.label}</Text>
+          {group.items.map((item) => {
+            const selected = sourceIds.includes(item.id);
+            return (
+              <Pressable
+                key={item.id}
+                onPress={() => toggleSource(item.id)}
+                style={[styles.sourceRow, selected && styles.sourceRowActive]}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: selected }}
+                accessibilityLabel={item.name}
+              >
+                <View style={styles.sourceRowIcon}>
+                  <AuriaIcon
+                    name={item.icon}
+                    size={16}
+                    color={selected ? ds.auriaBlue : ds.gray600}
+                    strokeWidth={1.8}
+                  />
+                </View>
+                <View style={styles.sourceRowCopy}>
+                  <Text style={styles.sourceRowName} numberOfLines={1}>
+                    {item.name}
+                  </Text>
+                  <Text style={styles.sourceRowMeta} numberOfLines={1}>
+                    {item.meta}
+                  </Text>
+                </View>
+                <View style={[styles.sourceCheck, selected && styles.sourceCheckOn]}>
+                  {selected ? (
+                    <AuriaIcon name="checkCircle" size={18} color={ds.auriaBlue} strokeWidth={2} />
+                  ) : null}
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
+      ))}
 
       <View style={styles.companyBox}>
         <View style={styles.companyIcon}>
@@ -275,6 +376,9 @@ function createStyles(
     sheet: {
       padding: 0,
       overflow: 'hidden',
+      alignSelf: 'center',
+      width: '100%',
+      maxWidth: 540,
     },
     sheetScroll: {
       padding: 20,
@@ -373,6 +477,71 @@ function createStyles(
       ...myceoCornerStyle('inset'),
       ...(inputWebFocusReset ?? {}),
     },
+    sourcesHint: {
+      ...auriaTypography.body,
+      fontSize: 11,
+      lineHeight: 16,
+      color: ds.gray500,
+      marginTop: -2,
+      marginBottom: 2,
+    },
+    sourceGroup: {
+      gap: 4,
+    },
+    sourceGroupLabel: {
+      ...auriaTypography.label,
+      fontSize: 10.5,
+      fontWeight: theme.typography.fontWeight.semibold,
+      letterSpacing: 0.6,
+      textTransform: 'uppercase',
+      color: ds.gray400,
+      marginTop: 4,
+    },
+    sourceRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      paddingHorizontal: 10,
+      paddingVertical: 8,
+      backgroundColor: theme.colors.input,
+      borderWidth: 1,
+      borderColor: 'transparent',
+      ...myceoCornerStyle('inset'),
+    },
+    sourceRowActive: {
+      borderColor: ds.auriaBlue,
+      backgroundColor: theme.mode === 'dark' ? 'rgba(107,168,255,0.12)' : 'rgba(43,124,216,0.08)',
+    },
+    sourceRowIcon: {
+      width: 28,
+      height: 28,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.colors.surface,
+      ...myceoCornerStyle('iconSm'),
+    },
+    sourceRowCopy: {
+      flex: 1,
+      gap: 1,
+    },
+    sourceRowName: {
+      ...auriaTypography.body,
+      fontSize: 13,
+      fontWeight: theme.typography.fontWeight.medium,
+      color: ds.gray900,
+    },
+    sourceRowMeta: {
+      ...auriaTypography.body,
+      fontSize: 11,
+      color: ds.gray500,
+    },
+    sourceCheck: {
+      width: 20,
+      height: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    sourceCheckOn: {},
     companyBox: {
       flexDirection: 'row',
       alignItems: 'flex-start',

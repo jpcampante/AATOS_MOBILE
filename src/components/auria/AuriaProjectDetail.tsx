@@ -107,7 +107,7 @@ export function AuriaProjectDetail({
                   accessibilityLabel="Share project"
                   hitSlop={6}
                 >
-                  <AuriaIcon name="upload" size={18} color={ds.gray800} strokeWidth={2} />
+                  <AuriaIcon name="upload" size={20} color={ds.gray800} strokeWidth={2} />
                 </Pressable>
                 <Pressable
                   onPress={() => onMenu(project)}
@@ -116,7 +116,7 @@ export function AuriaProjectDetail({
                   accessibilityLabel="Project actions"
                   hitSlop={6}
                 >
-                  <AuriaIcon name="moreHorizontal" size={18} color={ds.gray800} strokeWidth={2} />
+                  <AuriaIcon name="moreHorizontal" size={20} color={ds.gray800} strokeWidth={2} />
                 </Pressable>
               </View>
             </View>

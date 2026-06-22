@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { DiscoverSource } from '../../features/auria/newsTypes';
 import { auriaTypography, useTheme } from '../../theme';
 import { AuriaIcon, AURIA_ICON_SIZE } from '../icons';
+import { IconButton } from '../ui/IconButton';
 
 type AuriaSourcesSheetProps = {
   visible: boolean;
@@ -65,16 +66,11 @@ export function AuriaSourcesSheet({ visible, sources, onClose }: AuriaSourcesShe
       >
         <View style={styles.handle} />
         <View style={styles.header}>
-          <Pressable
-            onPress={onClose}
-            style={styles.closeBtn}
-            accessibilityRole="button"
-            accessibilityLabel="Close"
-          >
-            <AuriaIcon name="close" size={AURIA_ICON_SIZE.sm} color={ds.gray700} strokeWidth={2.2} />
-          </Pressable>
+          <IconButton variant="filled" onPress={onClose} accessibilityLabel="Close">
+            <AuriaIcon name="close" size={AURIA_ICON_SIZE.lg} color={ds.gray700} strokeWidth={2} />
+          </IconButton>
           <Text style={styles.title}>Sources</Text>
-          <View style={styles.closeBtn} />
+          <View style={styles.spacer} />
         </View>
 
         <ScrollView
@@ -160,13 +156,9 @@ function createStyles(
       paddingHorizontal: 16,
       paddingVertical: 8,
     },
-    closeBtn: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: ds.sectionFill,
+    spacer: {
+      width: 40,
+      height: 40,
     },
     title: {
       ...auriaTypography.title,

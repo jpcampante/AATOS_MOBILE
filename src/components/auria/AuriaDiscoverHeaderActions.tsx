@@ -1,8 +1,6 @@
-import { useMemo } from 'react';
-import { StyleSheet } from 'react-native';
 import { useTheme } from '../../theme';
-import { AuriaIcon, AURIA_ICON_SIZE, AURIA_ICON_STROKE_NAV } from '../icons';
-import { AuriaGlassButton } from './AuriaGlassButton';
+import { AuriaIcon, AURIA_ICON_SIZE, AURIA_ICON_STROKE } from '../icons';
+import { IconButton } from '../ui/IconButton';
 
 type AuriaDiscoverHeaderActionsProps = {
   onSearch: () => void;
@@ -17,52 +15,25 @@ export function AuriaDiscoverHeaderActions({
   onCustomize,
   searchActive = false,
 }: AuriaDiscoverHeaderActionsProps) {
-  const { ds, theme } = useTheme();
-  const styles = useMemo(() => createStyles(theme), [theme]);
+  const { ds } = useTheme();
   return (
     <>
-      <AuriaGlassButton
-        onPress={onSearch}
-        accessibilityLabel="Search Discover"
-        hitSlop={8}
-        elevated={false}
-        borderRadius={theme.radius.md}
-        surfaceStyle={styles.slot}
-      >
+      <IconButton onPress={onSearch} accessibilityLabel="Search Discover">
         <AuriaIcon
           name="search"
-          size={AURIA_ICON_SIZE.sm}
+          size={AURIA_ICON_SIZE.header}
           color={searchActive ? ds.auriaBlue : ds.gray700}
-          strokeWidth={AURIA_ICON_STROKE_NAV}
+          strokeWidth={AURIA_ICON_STROKE}
         />
-      </AuriaGlassButton>
-      <AuriaGlassButton
-        onPress={onCustomize}
-        accessibilityLabel="Customize feed"
-        hitSlop={8}
-        elevated={false}
-        borderRadius={theme.radius.md}
-        surfaceStyle={styles.slot}
-      >
+      </IconButton>
+      <IconButton onPress={onCustomize} accessibilityLabel="Customize feed">
         <AuriaIcon
           name="sliders"
-          size={AURIA_ICON_SIZE.sm}
+          size={AURIA_ICON_SIZE.header}
           color={ds.gray700}
-          strokeWidth={AURIA_ICON_STROKE_NAV}
+          strokeWidth={AURIA_ICON_STROKE}
         />
-      </AuriaGlassButton>
+      </IconButton>
     </>
   );
-}
-
-function createStyles(theme: ReturnType<typeof useTheme>['theme']) {
-  return StyleSheet.create({
-    slot: {
-      width: 40,
-      height: 40,
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderRadius: theme.radius.md,
-    },
-  });
 }

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AuriaIcon, AURIA_ICON_SIZE } from '../icons';
+import { IconButton } from '../ui/IconButton';
 import { Popover } from '../ui/Popover';
 import { Snackbar } from '../ui/Snackbar';
 import {
@@ -84,20 +85,14 @@ export function ComposeModal({ visible, initialDraft, onSend, onClose }: Compose
       <View style={styles.root}>
         <View style={styles.sheet}>
           <View style={styles.header}>
-            <Pressable
-              onPress={close}
-              style={({ pressed }) => [styles.closeCircle, pressed && styles.iconPressed]}
-              accessibilityLabel="Close"
-              accessibilityRole="button"
-              hitSlop={6}
-            >
-              <AuriaIcon name="close" size={AURIA_ICON_SIZE.md} color={ds.gray700} strokeWidth={2} />
-            </Pressable>
+            <IconButton variant="filled" onPress={close} accessibilityLabel="Close">
+              <AuriaIcon name="close" size={AURIA_ICON_SIZE.lg} color={ds.gray700} strokeWidth={2} />
+            </IconButton>
             <View style={styles.flex} />
-            <HeaderAction icon="pencil" label="Formatting" color={ds.gray800} styles={styles} onPress={() => info('Formatting options')} />
-            <HeaderAction icon="paperclip" label="Attach file" color={ds.gray800} styles={styles} onPress={() => info('Attach a file')} />
-            <HeaderAction icon="send" label="Send" color={canSend ? ds.auriaBlue : ds.gray400} styles={styles} onPress={send} />
-            <HeaderAction icon="moreCircle" label="More options" color={ds.gray800} styles={styles} onPress={() => info('More options')} />
+            <HeaderAction icon="pencil" label="Formatting" color={ds.gray800} onPress={() => info('Formatting options')} />
+            <HeaderAction icon="paperclip" label="Attach file" color={ds.gray800} onPress={() => info('Attach a file')} />
+            <HeaderAction icon="send" label="Send" color={canSend ? ds.auriaBlue : ds.gray400} onPress={send} />
+            <HeaderAction icon="moreCircle" label="More options" color={ds.gray800} onPress={() => info('More options')} />
           </View>
 
           <ScrollView
@@ -254,21 +249,14 @@ type HeaderActionProps = {
   icon: 'pencil' | 'paperclip' | 'send' | 'moreCircle';
   label: string;
   color: string;
-  styles: ReturnType<typeof createStyles>;
   onPress?: () => void;
 };
 
-function HeaderAction({ icon, label, color, styles, onPress }: HeaderActionProps) {
+function HeaderAction({ icon, label, color, onPress }: HeaderActionProps) {
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [styles.headerIcon, pressed && styles.iconPressed]}
-      accessibilityLabel={label}
-      accessibilityRole="button"
-      hitSlop={6}
-    >
-      <AuriaIcon name={icon} size={AURIA_ICON_SIZE.md} color={color} strokeWidth={1.8} />
-    </Pressable>
+    <IconButton onPress={onPress} accessibilityLabel={label}>
+      <AuriaIcon name={icon} size={AURIA_ICON_SIZE.lg} color={color} strokeWidth={1.8} />
+    </IconButton>
   );
 }
 
@@ -295,22 +283,6 @@ function createStyles(
       paddingHorizontal: 12,
       paddingVertical: 10,
     },
-    closeCircle: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: ds.gray100,
-    },
-    headerIcon: {
-      width: 38,
-      height: 38,
-      borderRadius: 19,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    iconPressed: { opacity: 0.55, backgroundColor: ds.gray100 },
     chevronUp: { transform: [{ rotate: '180deg' }] },
     scroll: { flex: 1 },
     scrollContent: { paddingBottom: 40 },

@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { TaskItem, TaskSource } from '../../data/tasksMockData';
 import { auriaTypography, myceoCornerStyle, useTheme } from '../../theme';
 import { AuriaIcon, AURIA_ICON_SIZE, type AuriaIconName } from '../icons';
+import { IconButton } from '../ui/IconButton';
 import { tasksCardCorner, tasksSheetCorner } from './tasksCorners';
 import { recordSuggestionAccepted, recordSuggestionShown } from '../../data/insights/auriaAcceptance';
 
@@ -73,16 +74,9 @@ export function TaskReviewModal({ visible, suggestions, onClose, onCreateTask }:
               <Text style={styles.title}>AI task suggestions</Text>
               <Text style={styles.subtitle}>Actions detected by Auria across connected workspace sources.</Text>
             </View>
-            <Pressable
-              onPress={onClose}
-              style={({ pressed }) => [styles.closeButton, pressed && styles.closeButtonPressed]}
-              accessibilityLabel="Close"
-              accessibilityRole="button"
-            >
-              <View style={styles.closeIcon}>
-                <AuriaIcon name="plus" size={14} color={ds.gray600} strokeWidth={2.4} />
-              </View>
-            </Pressable>
+            <IconButton variant="filled" onPress={onClose} accessibilityLabel="Close">
+              <AuriaIcon name="close" size={AURIA_ICON_SIZE.lg} color={ds.gray600} strokeWidth={2} />
+            </IconButton>
           </View>
 
           {/* ── Stats row ── */}
@@ -267,21 +261,6 @@ function createStyles(
       color: ds.gray500,
       fontSize: 11.5,
       lineHeight: 16,
-    },
-    closeButton: {
-      marginTop: 2,
-    },
-    closeButtonPressed: {
-      opacity: 0.6,
-    },
-    closeIcon: {
-      width: 32,
-      height: 32,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: ds.gray100,
-      transform: [{ rotate: '45deg' }],
-      ...myceoCornerStyle('icon'),
     },
 
     // Stats

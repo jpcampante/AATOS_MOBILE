@@ -1,9 +1,9 @@
 import { ReactNode, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { AuriaIcon, AURIA_ICON_SIZE, AURIA_ICON_STROKE_NAV } from '../icons';
+import { AuriaIcon, AURIA_ICON_SIZE, AURIA_ICON_STROKE } from '../icons';
 import { auriaTypography, useTheme } from '../../theme';
 import { AuriaDrawerToggle } from './AuriaDrawerToggle';
-import { AuriaGlassButton } from './AuriaGlassButton';
+import { IconButton } from '../ui/IconButton';
 
 /** Fixed workspace bar — keep in sync with AuriaScreen top inset. */
 export const WORKSPACE_HEADER_HEIGHT = 54;
@@ -51,21 +51,17 @@ export function AuriaWorkspaceHeader({
         <View style={styles.rightCluster}>{rightSlot}</View>
       ) : (
         <View style={styles.sideRail}>
-          <AuriaGlassButton
+          <IconButton
             onPress={onPlus ?? onNewChat}
             accessibilityLabel={onPlus ? plusLabel : 'New chat'}
-            hitSlop={8}
-            elevated={false}
-            borderRadius={theme.radius.md}
-            surfaceStyle={styles.sideSlot}
           >
             <AuriaIcon
               name={onPlus ? 'plus' : 'squarePen'}
-              size={AURIA_ICON_SIZE.sm}
+              size={AURIA_ICON_SIZE.header}
               color={ds.gray700}
-              strokeWidth={AURIA_ICON_STROKE_NAV}
+              strokeWidth={AURIA_ICON_STROKE}
             />
-          </AuriaGlassButton>
+          </IconButton>
         </View>
       )}
     </View>
@@ -105,13 +101,6 @@ function createStyles(
       fontSize: 17,
       fontWeight: theme.typography.fontWeight.semibold,
       color: ds.gray900,
-    },
-    sideSlot: {
-      width: 40,
-      height: 40,
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderRadius: theme.radius.md,
     },
   });
 }

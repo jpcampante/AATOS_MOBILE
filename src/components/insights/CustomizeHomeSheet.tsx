@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { auriaTypography, myceoCornerStyle, useTheme } from '../../theme';
 import { AuriaIcon, type AuriaIconName } from '../icons';
+import { IconButton } from '../ui/IconButton';
 import { getMetric } from '../../data/insights/metrics';
 import {
   HOME_CARD_META,
@@ -82,16 +83,9 @@ export function CustomizeHomeSheet({ visible, onClose }: CustomizeHomeSheetProps
               <Text style={styles.title}>Customize your Insights</Text>
               <Text style={styles.subtitle}>Drag to reorder · tap to add or remove</Text>
             </View>
-            <Pressable
-              onPress={onClose}
-              style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}
-              accessibilityRole="button"
-              accessibilityLabel="Close"
-            >
-              <View style={styles.closeIcon}>
-                <AuriaIcon name="plus" size={14} color={insights.textMuted} strokeWidth={2.4} />
-              </View>
-            </Pressable>
+            <IconButton variant="filled" onPress={onClose} accessibilityLabel="Close">
+              <AuriaIcon name="close" size={20} color={insights.textMuted} strokeWidth={2} />
+            </IconButton>
           </View>
 
           <ScrollView
@@ -370,17 +364,7 @@ function createStyles(
       color: insights.text,
     },
     subtitle: { ...auriaTypography.body, fontSize: 12, color: insights.textMuted },
-    closeButton: { alignSelf: 'flex-start' },
     pressed: { opacity: 0.6 },
-    closeIcon: {
-      width: 32,
-      height: 32,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: insights.page,
-      transform: [{ rotate: '45deg' }],
-      ...myceoCornerStyle('icon'),
-    },
     body: {},
     bodyContent: { paddingHorizontal: 18, paddingBottom: 8 },
     addChartSection: { marginTop: 8, gap: 8 },

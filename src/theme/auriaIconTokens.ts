@@ -25,4 +25,6 @@ export const AURIA_ICON_SIZE = {
   lg: 20,
   /** Slot container (web: w-5 h-5) */
   slot: 20,
+  /** Top-bar action buttons (drawer, new chat, Discover search/filter). */
+  header: 22,
 } as const;

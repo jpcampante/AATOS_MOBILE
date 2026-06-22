@@ -16,7 +16,7 @@ import { MailRow } from '../components/integrations/MailRow';
 import { MailSidebar } from '../components/integrations/MailSidebar';
 import { ActionFab } from '../components/ui/ActionFab';
 import { Snackbar } from '../components/ui/Snackbar';
-import { AuriaIcon, AURIA_ICON_SIZE } from '../components/icons';
+import { AuriaIcon, AURIA_ICON_SIZE, AURIA_ICON_STROKE } from '../components/icons';
 import { FOLDER_LABELS } from '../data/integrationsMockData';
 import { auriaProfileInitials } from '../data/auriaMockData';
 import { useMailbox } from '../features/integrations/useMailbox';
@@ -68,7 +68,7 @@ export function IntegrationsScreen({ onOpenSettings }: IntegrationsScreenProps) 
               accessibilityRole="button"
               accessibilityLabel="Open menu"
             >
-              <AuriaIcon name="menu" size={AURIA_ICON_SIZE.md} color={ds.gray600} strokeWidth={1.8} />
+              <AuriaIcon name="menu" size={AURIA_ICON_SIZE.header} color={ds.gray700} strokeWidth={AURIA_ICON_STROKE} />
             </Pressable>
             <TextInput
               value={mb.query}

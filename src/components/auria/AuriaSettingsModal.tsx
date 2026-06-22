@@ -87,22 +87,22 @@ export function AuriaSettingsModal({ visible, onClose }: AuriaSettingsModalProps
             <DiscoverInterests />
 
             <Section title="Account">
-              <ValueRow icon="messageSquare" title="Email" value={EMAIL} />
+              <ValueRow icon="mail" title="Email" value={EMAIL} />
               <ValueRow icon="idCard" title="Phone number" value={PHONE} />
-              <ValueRow icon="plus" title="Subscription" value={PLAN} />
+              <ValueRow icon="star" title="Subscription" value={PLAN} />
               <NavRow icon="arrowPath" title="Restore purchases" chevron={false} />
               <AccentRow icon="sparkles" title="Upgrade to AATOS Ultra" last />
             </Section>
 
             <Section title="Theme">
               <ValueRow
-                icon="sparkles"
+                icon="sun"
                 title="Appearance"
                 value="System"
                 trailing={<UpDownGlyph color={ds.gray500} />}
               />
               <NavRow
-                icon="photo"
+                icon="paintBrush"
                 title="Accent color"
                 trailing={
                   <View style={styles.accentTrailing}>
@@ -117,18 +117,18 @@ export function AuriaSettingsModal({ visible, onClose }: AuriaSettingsModalProps
 
             <Section title="App settings">
               <NavRow icon="settings" title="General" />
-              <NavRow icon="newspaper" title="Notifications" />
+              <NavRow icon="bell" title="Notifications" />
               <NavRow icon="mic" title="Voice" />
-              <NavRow icon="idCard" title="Safety and security" />
+              <NavRow icon="shieldCheck" title="Safety and security" />
               <NavRow icon="folder" title="Data controls" />
               <NavRow icon="users" title="Parental controls" />
-              <NavRow icon="library" title="Storage" last />
+              <NavRow icon="database" title="Storage" last />
             </Section>
 
             <Section title="Get help">
-              <NavRow icon="pin" title="Report app issue" />
+              <NavRow icon="flag" title="Report app issue" />
               <NavRow icon="messageSquare" title="Help Center" />
-              <NavRow icon="sparkles" title="About" last />
+              <NavRow icon="exclaimCircle" title="About" last />
             </Section>
 
             <LogoutCard />

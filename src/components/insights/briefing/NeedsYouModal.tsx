@@ -3,6 +3,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, Vi
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { auriaTypography, myceoCornerStyle, useTheme } from '../../../theme';
 import { AuriaIcon } from '../../icons';
+import { IconButton } from '../../ui/IconButton';
 import type { NavigateFn, ProductTabId } from '../../../data/productNavigation';
 import type { InsightAction, Signal } from '../../../data/insights/types';
 import { needsYou, risks } from '../../../data/insights/selectors';
@@ -50,16 +51,9 @@ export function NeedsYouModal({ visible, onClose, onNavigate }: NeedsYouModalPro
               <Text style={styles.title}>Needs you now</Text>
               <Text style={styles.subtitle}>Everything that needs a decision</Text>
             </View>
-            <Pressable
-              onPress={onClose}
-              style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}
-              accessibilityRole="button"
-              accessibilityLabel="Close"
-            >
-              <View style={styles.closeIcon}>
-                <AuriaIcon name="plus" size={14} color={insights.textMuted} strokeWidth={2.4} />
-              </View>
-            </Pressable>
+            <IconButton variant="filled" onPress={onClose} accessibilityLabel="Close">
+              <AuriaIcon name="close" size={20} color={insights.textMuted} strokeWidth={2} />
+            </IconButton>
           </View>
 
           <View style={styles.filters}>
@@ -126,17 +120,6 @@ function createStyles(
     headerText: { flex: 1, gap: 2 },
     title: { ...auriaTypography.title, fontSize: 18, fontWeight: theme.typography.fontWeight.extrabold, color: insights.text },
     subtitle: { ...auriaTypography.body, fontSize: 12, color: insights.textMuted },
-    closeButton: { alignSelf: 'flex-start' },
-    pressed: { opacity: 0.6 },
-    closeIcon: {
-      width: 32,
-      height: 32,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: insights.page,
-      transform: [{ rotate: '45deg' }],
-      ...myceoCornerStyle('icon'),
-    },
     filters: { flexDirection: 'row', gap: 7, paddingHorizontal: 18, paddingBottom: 12 },
     filter: {
       paddingHorizontal: 13,

@@ -14,7 +14,6 @@ import {
 } from 'react-native';
 import { AuriaProjectVisibility, auriaWorkspaceName } from '../../data/auriaMockData';
 import { PROJECT_ICON_OPTIONS, getProjectIcon } from '../../features/auria/projectIcons';
-import { AuriaGlassButton } from './AuriaGlassButton';
 import { LiquidGlassSurface } from '../ui/LiquidGlassSurface';
 import { AuriaIcon } from '../icons';
 import { auriaTypography, myceoCornerStyle, useTheme } from '../../theme';
@@ -185,9 +184,14 @@ export function AuriaNewProjectModal({ visible, onClose, onCreate }: AuriaNewPro
       </View>
 
       <View style={styles.actions}>
-        <AuriaGlassButton onPress={onClose} borderRadius={theme.radius.pill} surfaceStyle={styles.actionGlass}>
+        <Pressable
+          onPress={onClose}
+          accessibilityRole="button"
+          accessibilityLabel="Cancel"
+          style={({ pressed }) => [styles.cancelButton, pressed && styles.cancelButtonPressed]}
+        >
           <Text style={styles.cancelText}>Cancel</Text>
-        </AuriaGlassButton>
+        </Pressable>
         <Pressable
           style={[styles.createButton, !canCreate && styles.createButtonDisabled]}
           onPress={handleCreate}
@@ -460,9 +464,14 @@ function createStyles(
       gap: 10,
       marginTop: 10,
     },
-    actionGlass: {
-      paddingHorizontal: 16,
-      paddingVertical: 10,
+    cancelButton: {
+      paddingHorizontal: 18,
+      paddingVertical: 11,
+      borderRadius: theme.radius.pill,
+      backgroundColor: ds.gray100,
+    },
+    cancelButtonPressed: {
+      backgroundColor: ds.gray200,
     },
     cancelText: {
       ...auriaTypography.body,

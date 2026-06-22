@@ -18,7 +18,7 @@ export const auriaWelcomeSuggestionPool = [
 export const auriaSidebarTopItems = [
   { id: 'gallery' as const, label: 'Gallery', icon: 'photo' as const },
   { id: 'news' as const, label: 'News', icon: 'newspaper' as const },
-  { id: 'more' as const, label: 'More', icon: 'moreHorizontal' as const },
+  { id: 'projects' as const, label: 'Projects', icon: 'folder' as const },
 ];
 
 export type AuriaPanel = 'chat' | 'news' | 'gallery' | 'search' | 'projects' | 'settings';
@@ -47,7 +47,7 @@ export type AuriaProject = {
 export type AuriaSidebarProjectRow = {
   id: string;
   name: string;
-  kind: 'new' | 'folder' | 'more';
+  kind: 'folder' | 'more';
 };
 
 export const PROJECT_ACCENT_PALETTE = contentColors.project;
@@ -335,7 +335,6 @@ export const auriaConversations = [
 ] as const;
 
 export const auriaSidebarProjects: AuriaSidebarProjectRow[] = [
-  { id: 'new', name: 'New project', kind: 'new' },
   { id: 'f-finance', name: 'Finance team', kind: 'folder' },
   { id: 'f-sales', name: 'Sales team', kind: 'folder' },
   { id: 'f-legal', name: 'Legal team', kind: 'folder' },

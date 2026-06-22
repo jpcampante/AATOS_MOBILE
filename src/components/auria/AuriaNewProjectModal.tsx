@@ -44,11 +44,22 @@ const SOURCE_DOC_ICON: Record<AuriaGalleryItem['type'], AuriaIconName> = {
 
 type SourceOption = { id: string; name: string; icon: AuriaIconName; meta: string };
 
+type SourceGroup = {
+  key: string;
+  label: string;
+  /** Glyph + word used when adding a brand-new source to this group. */
+  icon: AuriaIconName;
+  noun: string;
+  items: SourceOption[];
+};
+
 /** What we have to draw on when creating a project: saved chats and docs. */
-const SOURCE_GROUPS: { key: string; label: string; items: SourceOption[] }[] = [
+const SOURCE_GROUPS: SourceGroup[] = [
   {
     key: 'chats',
     label: 'Chats',
+    icon: 'messageSquare',
+    noun: 'chat',
     items: auriaConversations.map((c) => ({
       id: c.id,
       name: c.title,
@@ -59,6 +70,8 @@ const SOURCE_GROUPS: { key: string; label: string; items: SourceOption[] }[] = [
   {
     key: 'docs',
     label: 'Docs',
+    icon: 'document',
+    noun: 'doc',
     items: auriaGalleryItems.map((d) => ({
       id: d.id,
       name: d.name,
@@ -94,6 +107,9 @@ export function AuriaNewProjectModal({ visible, onClose, onCreate }: AuriaNewPro
   const [description, setDescription] = useState('');
   const [visibility, setVisibility] = useState<AuriaProjectVisibility>('Team');
   const [sourceIds, setSourceIds] = useState<string[]>([]);
+  // Per-group search text + sources the user adds on the fly.
+  const [sourceQueries, setSourceQueries] = useState<Record<string, string>>({});
+  const [customSources, setCustomSources] = useState<Record<string, SourceOption[]>>({});
 
   useEffect(() => {
     if (!visible) {
@@ -102,8 +118,29 @@ export function AuriaNewProjectModal({ visible, onClose, onCreate }: AuriaNewPro
       setDescription('');
       setVisibility('Team');
       setSourceIds([]);
+      setSourceQueries({});
+      setCustomSources({});
     }
   }, [visible]);
+
+  const setQuery = (groupKey: string, value: string) =>
+    setSourceQueries((current) => ({ ...current, [groupKey]: value }));
+
+  /** Add a brand-new source to a group from the search text, then select it. */
+  const addSource = (group: SourceGroup, rawName: string) => {
+    const label = rawName.trim();
+    if (!label) return;
+    const id = `custom-${group.key}-${Date.now()}`;
+    setCustomSources((current) => ({
+      ...current,
+      [group.key]: [
+        { id, name: label, icon: group.icon, meta: 'Added' },
+        ...(current[group.key] ?? []),
+      ],
+    }));
+    setSourceIds((current) => [...current, id]);
+    setQuery(group.key, '');
+  };
 
   const toggleSource = (id: string) =>
     setSourceIds((current) =>
@@ -204,46 +241,98 @@ export function AuriaNewProjectModal({ visible, onClose, onCreate }: AuriaNewPro
       <Text style={styles.sourcesHint}>
         Pick the chats and docs Auria should pull from for this project.
       </Text>
-      {SOURCE_GROUPS.map((group) => (
-        <View key={group.key} style={styles.sourceGroup}>
-          <Text style={styles.sourceGroupLabel}>{group.label}</Text>
-          {group.items.map((item) => {
-            const selected = sourceIds.includes(item.id);
-            return (
+      {SOURCE_GROUPS.map((group) => {
+        const query = sourceQueries[group.key] ?? '';
+        const q = query.trim().toLowerCase();
+        const all = [...(customSources[group.key] ?? []), ...group.items];
+        const filtered = q ? all.filter((i) => i.name.toLowerCase().includes(q)) : all;
+        const hasExact = all.some((i) => i.name.trim().toLowerCase() === q);
+        const canAdd = q.length > 0 && !hasExact;
+        return (
+          <View key={group.key} style={styles.sourceGroup}>
+            <Text style={styles.sourceGroupLabel}>{group.label}</Text>
+
+            <View style={styles.searchRow}>
+              <AuriaIcon name="search" size={15} color={ds.gray500} strokeWidth={1.8} />
+              <TextInput
+                value={query}
+                onChangeText={(text) => setQuery(group.key, text)}
+                placeholder={`Search ${group.label.toLowerCase()}`}
+                placeholderTextColor={ds.gray400}
+                style={styles.searchInput}
+                returnKeyType="done"
+                onSubmitEditing={() => addSource(group, query)}
+              />
+              {query.length > 0 ? (
+                <Pressable
+                  onPress={() => setQuery(group.key, '')}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Clear search"
+                >
+                  <AuriaIcon name="close" size={14} color={ds.gray400} strokeWidth={2} />
+                </Pressable>
+              ) : null}
+            </View>
+
+            {canAdd ? (
               <Pressable
-                key={item.id}
-                onPress={() => toggleSource(item.id)}
-                style={[styles.sourceRow, selected && styles.sourceRowActive]}
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: selected }}
-                accessibilityLabel={item.name}
+                onPress={() => addSource(group, query)}
+                style={({ pressed }) => [styles.addRow, pressed && styles.addRowPressed]}
+                accessibilityRole="button"
+                accessibilityLabel={`Add ${group.noun} ${query.trim()}`}
               >
-                <View style={styles.sourceRowIcon}>
-                  <AuriaIcon
-                    name={item.icon}
-                    size={16}
-                    color={selected ? ds.auriaBlue : ds.gray600}
-                    strokeWidth={1.8}
-                  />
+                <View style={styles.addRowIcon}>
+                  <AuriaIcon name="plus" size={16} color={ds.auriaBlue} strokeWidth={2.2} />
                 </View>
-                <View style={styles.sourceRowCopy}>
-                  <Text style={styles.sourceRowName} numberOfLines={1}>
-                    {item.name}
-                  </Text>
-                  <Text style={styles.sourceRowMeta} numberOfLines={1}>
-                    {item.meta}
-                  </Text>
-                </View>
-                <View style={[styles.sourceCheck, selected && styles.sourceCheckOn]}>
-                  {selected ? (
-                    <AuriaIcon name="checkCircle" size={18} color={ds.auriaBlue} strokeWidth={2} />
-                  ) : null}
-                </View>
+                <Text style={styles.addRowText} numberOfLines={1}>
+                  Add {group.noun} “{query.trim()}”
+                </Text>
               </Pressable>
-            );
-          })}
-        </View>
-      ))}
+            ) : null}
+
+            {filtered.length === 0 && !canAdd ? (
+              <Text style={styles.sourceEmpty}>No {group.label.toLowerCase()} found.</Text>
+            ) : null}
+
+            {filtered.map((item) => {
+              const selected = sourceIds.includes(item.id);
+              return (
+                <Pressable
+                  key={item.id}
+                  onPress={() => toggleSource(item.id)}
+                  style={[styles.sourceRow, selected && styles.sourceRowActive]}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: selected }}
+                  accessibilityLabel={item.name}
+                >
+                  <View style={styles.sourceRowIcon}>
+                    <AuriaIcon
+                      name={item.icon}
+                      size={16}
+                      color={selected ? ds.auriaBlue : ds.gray600}
+                      strokeWidth={1.8}
+                    />
+                  </View>
+                  <View style={styles.sourceRowCopy}>
+                    <Text style={styles.sourceRowName} numberOfLines={1}>
+                      {item.name}
+                    </Text>
+                    <Text style={styles.sourceRowMeta} numberOfLines={1}>
+                      {item.meta}
+                    </Text>
+                  </View>
+                  <View style={[styles.sourceCheck, selected && styles.sourceCheckOn]}>
+                    {selected ? (
+                      <AuriaIcon name="checkCircle" size={18} color={ds.auriaBlue} strokeWidth={2} />
+                    ) : null}
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
+        );
+      })}
 
       <View style={styles.companyBox}>
         <View style={styles.companyIcon}>
@@ -487,6 +576,61 @@ function createStyles(
     },
     sourceGroup: {
       gap: 4,
+    },
+    searchRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      marginBottom: 2,
+      backgroundColor: theme.colors.input,
+      ...myceoCornerStyle('inset'),
+    },
+    searchInput: {
+      ...auriaTypography.body,
+      flex: 1,
+      fontSize: 13,
+      color: ds.gray900,
+      padding: 0,
+      ...(inputWebFocusReset ?? {}),
+    },
+    addRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      paddingHorizontal: 10,
+      paddingVertical: 8,
+      marginBottom: 2,
+      borderWidth: 1,
+      borderColor: ds.auriaBlue,
+      backgroundColor: theme.mode === 'dark' ? 'rgba(107,168,255,0.12)' : 'rgba(43,124,216,0.08)',
+      ...myceoCornerStyle('inset'),
+    },
+    addRowPressed: {
+      opacity: 0.85,
+    },
+    addRowIcon: {
+      width: 28,
+      height: 28,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.colors.surface,
+      ...myceoCornerStyle('iconSm'),
+    },
+    addRowText: {
+      ...auriaTypography.body,
+      flex: 1,
+      fontSize: 13,
+      fontWeight: theme.typography.fontWeight.semibold,
+      color: ds.auriaBlue,
+    },
+    sourceEmpty: {
+      ...auriaTypography.body,
+      fontSize: 12,
+      color: ds.gray500,
+      paddingHorizontal: 4,
+      paddingVertical: 6,
     },
     sourceGroupLabel: {
       ...auriaTypography.label,

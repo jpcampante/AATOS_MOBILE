@@ -5,6 +5,10 @@ import { ScreenTransition } from './src/components/ui/transitions';
 import { ProductTabId } from './src/data/productNavigation';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { ThemeProvider } from './src/theme';
+import { ensureWebBrandFont } from './src/theme/webFont';
+
+// Load the DM Sans brand font on web so the app matches the AATOS web app.
+ensureWebBrandFont();
 
 const MainApp = lazy(() => import('./src/MainApp'));
 

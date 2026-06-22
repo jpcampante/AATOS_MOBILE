@@ -1,10 +1,14 @@
 import { Platform, TextStyle } from 'react-native';
 
-/** Auria typography lives here so every Auria surface uses one explicit font contract. */
+/**
+ * Auria typography lives here so every Auria surface uses one explicit font
+ * contract. On web this is DM Sans — the same brand font the AATOS web app
+ * serves — loaded by `ensureWebBrandFont()`.
+ */
 export const AURIA_FONT_FAMILY = Platform.select({
   ios: 'System',
   android: 'sans-serif',
-  web: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  web: '"DM Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
   default: 'System',
 });
 

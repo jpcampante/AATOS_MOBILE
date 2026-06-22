@@ -107,9 +107,10 @@ export function AuriaNewProjectModal({ visible, onClose, onCreate }: AuriaNewPro
   const [description, setDescription] = useState('');
   const [visibility, setVisibility] = useState<AuriaProjectVisibility>('Team');
   const [sourceIds, setSourceIds] = useState<string[]>([]);
-  // Per-group search text + sources the user adds on the fly.
+  // Per-group search text + sources the user adds on the fly + ids removed.
   const [sourceQueries, setSourceQueries] = useState<Record<string, string>>({});
   const [customSources, setCustomSources] = useState<Record<string, SourceOption[]>>({});
+  const [removedIds, setRemovedIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (!visible) {
@@ -120,6 +121,7 @@ export function AuriaNewProjectModal({ visible, onClose, onCreate }: AuriaNewPro
       setSourceIds([]);
       setSourceQueries({});
       setCustomSources({});
+      setRemovedIds([]);
     }
   }, [visible]);
 
@@ -140,6 +142,12 @@ export function AuriaNewProjectModal({ visible, onClose, onCreate }: AuriaNewPro
     }));
     setSourceIds((current) => [...current, id]);
     setQuery(group.key, '');
+  };
+
+  /** Remove a source from this project's picker (existing or added) + deselect. */
+  const removeSource = (id: string) => {
+    setRemovedIds((current) => (current.includes(id) ? current : [...current, id]));
+    setSourceIds((current) => current.filter((s) => s !== id));
   };
 
   const toggleSource = (id: string) =>
@@ -244,7 +252,9 @@ export function AuriaNewProjectModal({ visible, onClose, onCreate }: AuriaNewPro
       {SOURCE_GROUPS.map((group) => {
         const query = sourceQueries[group.key] ?? '';
         const q = query.trim().toLowerCase();
-        const all = [...(customSources[group.key] ?? []), ...group.items];
+        const all = [...(customSources[group.key] ?? []), ...group.items].filter(
+          (i) => !removedIds.includes(i.id),
+        );
         const filtered = q ? all.filter((i) => i.name.toLowerCase().includes(q)) : all;
         const hasExact = all.some((i) => i.name.trim().toLowerCase() === q);
         const canAdd = q.length > 0 && !hasExact;
@@ -298,36 +308,49 @@ export function AuriaNewProjectModal({ visible, onClose, onCreate }: AuriaNewPro
             {filtered.map((item) => {
               const selected = sourceIds.includes(item.id);
               return (
-                <Pressable
+                <View
                   key={item.id}
-                  onPress={() => toggleSource(item.id)}
                   style={[styles.sourceRow, selected && styles.sourceRowActive]}
-                  accessibilityRole="checkbox"
-                  accessibilityState={{ checked: selected }}
-                  accessibilityLabel={item.name}
                 >
-                  <View style={styles.sourceRowIcon}>
-                    <AuriaIcon
-                      name={item.icon}
-                      size={16}
-                      color={selected ? ds.auriaBlue : ds.gray600}
-                      strokeWidth={1.8}
-                    />
-                  </View>
-                  <View style={styles.sourceRowCopy}>
-                    <Text style={styles.sourceRowName} numberOfLines={1}>
-                      {item.name}
-                    </Text>
-                    <Text style={styles.sourceRowMeta} numberOfLines={1}>
-                      {item.meta}
-                    </Text>
-                  </View>
-                  <View style={[styles.sourceCheck, selected && styles.sourceCheckOn]}>
-                    {selected ? (
-                      <AuriaIcon name="checkCircle" size={18} color={ds.auriaBlue} strokeWidth={2} />
-                    ) : null}
-                  </View>
-                </Pressable>
+                  <Pressable
+                    onPress={() => toggleSource(item.id)}
+                    style={styles.sourceSelect}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: selected }}
+                    accessibilityLabel={item.name}
+                  >
+                    <View style={styles.sourceRowIcon}>
+                      <AuriaIcon
+                        name={item.icon}
+                        size={16}
+                        color={selected ? ds.auriaBlue : ds.gray600}
+                        strokeWidth={1.8}
+                      />
+                    </View>
+                    <View style={styles.sourceRowCopy}>
+                      <Text style={styles.sourceRowName} numberOfLines={1}>
+                        {item.name}
+                      </Text>
+                      <Text style={styles.sourceRowMeta} numberOfLines={1}>
+                        {item.meta}
+                      </Text>
+                    </View>
+                    <View style={[styles.sourceCheck, selected && styles.sourceCheckOn]}>
+                      {selected ? (
+                        <AuriaIcon name="checkCircle" size={18} color={ds.auriaBlue} strokeWidth={2} />
+                      ) : null}
+                    </View>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => removeSource(item.id)}
+                    hitSlop={6}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Remove ${item.name}`}
+                    style={({ pressed }) => [styles.sourceDelete, pressed && styles.sourceDeletePressed]}
+                  >
+                    <AuriaIcon name="trash" size={15} color={ds.gray400} strokeWidth={1.8} />
+                  </Pressable>
+                </View>
               );
             })}
           </View>
@@ -679,6 +702,13 @@ function createStyles(
       fontSize: 11,
       color: ds.gray500,
     },
+    sourceSelect: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      minWidth: 0,
+    },
     sourceCheck: {
       width: 20,
       height: 20,
@@ -686,6 +716,16 @@ function createStyles(
       justifyContent: 'center',
     },
     sourceCheckOn: {},
+    sourceDelete: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    sourceDeletePressed: {
+      backgroundColor: theme.mode === 'dark' ? 'rgba(255,107,107,0.16)' : 'rgba(217,45,45,0.10)',
+    },
     companyBox: {
       flexDirection: 'row',
       alignItems: 'flex-start',

@@ -99,8 +99,12 @@ const inputWebFocusReset =
 export function AuriaNewProjectModal({ visible, onClose, onCreate }: AuriaNewProjectModalProps) {
   const { ds, theme } = useTheme();
   const styles = useMemo(() => createStyles(ds, theme), [ds, theme]);
-  const { height } = useWindowDimensions();
+  const { width: windowWidth, height } = useWindowDimensions();
   const isIosSheet = Platform.OS === 'ios';
+  // Explicit pixel width so the centered sheet always fits the viewport. A
+  // percentage width + alignSelf:center misbehaves on react-native-web at
+  // mid widths and let the sheet overflow (cut on both sides).
+  const sheetWidth = Math.min(windowWidth - 32, 540);
 
   const [name, setName] = useState('');
   const [iconId, setIconId] = useState('folder');
@@ -448,7 +452,7 @@ export function AuriaNewProjectModal({ visible, onClose, onCreate }: AuriaNewPro
             elevated
             elevationLevel="modal"
             borderRadius={theme.radius.panel}
-            style={styles.sheet}
+            style={[styles.sheet, { width: sheetWidth }]}
           >
             <ScrollView
               style={{ maxHeight: Math.min(height * 0.86, 760) }}
@@ -489,8 +493,6 @@ function createStyles(
       padding: 0,
       overflow: 'hidden',
       alignSelf: 'center',
-      width: '100%',
-      maxWidth: 540,
     },
     sheetScroll: {
       padding: 20,

@@ -35,11 +35,27 @@ export function TasksScreen() {
   const [reviewOpen, setReviewOpen] = useState(false);
   const [localTasks, setLocalTasks] = useState<TaskItem[]>([]);
 
+  const allLocalTasks = useMemo(() => new Map(localTasks.map((task) => [task.id, task])), [localTasks]);
+  const applyLocalOverrides = (tasks: TaskItem[]) => tasks.map((task) => allLocalTasks.get(task.id) ?? task);
+  const updateLocalTaskStatus = (task: TaskItem, status: TaskItem['status']) => {
+    setLocalTasks((items) => {
+      const next = {
+        ...(items.find((item) => item.id === task.id) ?? task),
+        status,
+        progress: status === 'done' ? 100 : task.progress,
+        lastActivity: 'Just now',
+      };
+      return [...items.filter((item) => item.id !== task.id), next];
+    });
+  };
+
   const matchesWorkspace = (task: TaskItem) => workspace === 'all' || task.workspace === workspace;
-  const today = [...localTasks, ...todayFocusTasks].filter(matchesWorkspace);
-  const overdue = overdueTasks.filter(matchesWorkspace);
-  const ai = aiSuggestionTasks.filter(matchesWorkspace);
-  const waiting = waitingTasks.filter(matchesWorkspace);
+  const today = applyLocalOverrides(todayFocusTasks).filter((task) => task.status !== 'done' && matchesWorkspace(task));
+  const overdue = applyLocalOverrides(overdueTasks).filter((task) => task.daysLeft != null && task.daysLeft < 0 && task.status !== 'done' && matchesWorkspace(task));
+  const ai = applyLocalOverrides(aiSuggestionTasks).filter((task) => task.isAiSuggestion && task.status !== 'done' && matchesWorkspace(task));
+  const waiting = applyLocalOverrides(waitingTasks).filter((task) => task.status === 'waiting' && matchesWorkspace(task));
+  const createdTasks = Array.from(allLocalTasks.values()).filter((task) => !todayFocusTasks.some((base) => base.id === task.id) && !overdueTasks.some((base) => base.id === task.id) && !aiSuggestionTasks.some((base) => base.id === task.id) && !waitingTasks.some((base) => base.id === task.id));
+  today.push(...createdTasks.filter((task) => task.status !== 'done' && matchesWorkspace(task)));
   const reviewSuggestions = [...ai, ...overdue, ...today.filter((task) => task.source !== 'Manual'), ...waiting];
   const showAll = filter === 'all';
   const workspaceLabel = taskWorkspaces.find((item) => item.id === workspace)?.label ?? 'All workspaces';
@@ -154,22 +170,22 @@ export function TasksScreen() {
 
         {(showAll || filter === 'today') && today.length ? (
           <TasksSection title="Today focus" subtitle="Priority work waiting on you." count={today.length}>
-            {today.map((task) => <TaskCard key={task.id} item={task} />)}
+            {today.map((task) => <TaskCard key={task.id} item={task} onStatusChange={(status) => updateLocalTaskStatus(task, status)} />)}
           </TasksSection>
         ) : null}
         {(showAll || filter === 'overdue') && overdue.length ? (
           <TasksSection title="Overdue" subtitle="Pick up where you left off." count={overdue.length}>
-            {overdue.map((task) => <TaskCard key={task.id} item={task} />)}
+            {overdue.map((task) => <TaskCard key={task.id} item={task} onStatusChange={(status) => updateLocalTaskStatus(task, status)} />)}
           </TasksSection>
         ) : null}
         {(showAll || filter === 'ai') && ai.length ? (
           <TasksSection title="AI suggestions" subtitle="Tasks identified by Auria." count={ai.length}>
-            {ai.map((task) => <TaskCard key={task.id} item={task} />)}
+            {ai.map((task) => <TaskCard key={task.id} item={task} onStatusChange={(status) => updateLocalTaskStatus(task, status)} />)}
           </TasksSection>
         ) : null}
         {(showAll || filter === 'waiting') && waiting.length ? (
           <TasksSection title="Waiting on others" count={waiting.length}>
-            {waiting.map((task) => <TaskCard key={task.id} item={task} />)}
+            {waiting.map((task) => <TaskCard key={task.id} item={task} onStatusChange={(status) => updateLocalTaskStatus(task, status)} />)}
           </TasksSection>
         ) : null}
       </ScrollView>

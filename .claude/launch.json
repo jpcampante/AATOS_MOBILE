@@ -6,6 +6,12 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["expo", "start", "--web", "--localhost", "--port", "8084"],
       "port": 8084
+    },
+    {
+      "name": "aatos-phone",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8091", "--bind", "127.0.0.1", "--directory", ".claude/mobile-preview"],
+      "port": 8091
     }
   ]
 }

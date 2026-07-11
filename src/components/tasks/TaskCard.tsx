@@ -89,7 +89,7 @@ function statusChip(status: TaskStatus): { bg: string; fg: string } {
   }
 }
 
-export function TaskCard({ item, onPress }: { item: TaskItem; onPress?: () => void }) {
+export function TaskCard({ item, onPress, onStatusChange }: { item: TaskItem; onPress?: () => void; onStatusChange?: (status: TaskStatus) => void }) {
   const { ds, theme } = useTheme();
   const styles = useMemo(() => createStyles(ds, theme), [ds, theme]);
   const overdue = item.daysLeft != null && item.daysLeft < 0;
@@ -167,6 +167,17 @@ export function TaskCard({ item, onPress }: { item: TaskItem; onPress?: () => vo
             </Text>
           ) : null}
         </View>
+      ) : null}
+      {onStatusChange ? (
+        <Pressable
+          onPress={() => onStatusChange(item.status === 'done' ? 'todo' : 'done')}
+          style={({ pressed }) => [styles.statusAction, pressed && styles.statusActionPressed]}
+          accessibilityRole="button"
+          accessibilityLabel={item.status === 'done' ? 'Reopen task' : 'Complete task'}
+        >
+          <AuriaIcon name={item.status === 'done' ? 'undo' : 'checkCircle'} size={AURIA_ICON_SIZE.xs} color={ds.auriaBlue} strokeWidth={2} />
+          <Text style={styles.statusActionText}>{item.status === 'done' ? 'Reopen' : 'Mark complete'}</Text>
+        </Pressable>
       ) : null}
     </Pressable>
   );
@@ -303,6 +314,25 @@ function createStyles(
     contextReview: {
       fontStyle: 'italic',
       color: '#3730A3',
+    },
+    statusAction: {
+      alignSelf: 'flex-start',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingHorizontal: 10,
+      paddingVertical: 7,
+      backgroundColor: 'rgba(255,255,255,0.72)',
+      ...myceoCornerStyle('chip'),
+    },
+    statusActionPressed: {
+      opacity: 0.72,
+    },
+    statusActionText: {
+      ...auriaTypography.body,
+      color: ds.auriaBlue,
+      fontSize: 11.5,
+      fontWeight: theme.typography.fontWeight.semibold,
     },
   });
 }

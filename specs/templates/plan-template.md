@@ -18,7 +18,7 @@ Duas ou três frases com a abordagem.
 | Princípio | Atende? | Observação |
 | --- | --- | --- |
 | I. Spec primeiro | ☐ | |
-| II. Multiplataforma | ☐ | |
+| II. Android primeiro | ☐ | |
 | III. Design system | ☐ | |
 | IV. Dados por trás de uma camada | ☐ | |
 | V. Acessibilidade | ☐ | |
@@ -32,7 +32,7 @@ Qualquer violação precisa de justificativa na seção 8.
 - Telas / componentes afetados (`src/...`):
 - Estado (hooks, reducers, contexto):
 - Dados (tipos em `src/data` ou `src/features/<area>/types.ts`, serviços):
-- APIs de dispositivo (câmera, microfone, haptics...) e o comportamento no web:
+- APIs de dispositivo (câmera, microfone, haptics...) e o comportamento no Android:
 
 ## 4. Modelo de dados
 
@@ -49,7 +49,7 @@ Qualquer violação precisa de justificativa na seção 8.
 
 - Unitário:
 - Componente:
-- Manual (dispositivo / web):
+- Manual (emulador Android / Expo Go):
 
 ## 7. Riscos e alternativas consideradas
 

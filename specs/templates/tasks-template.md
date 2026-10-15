@@ -31,5 +31,5 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
 ## Fase final — Acabamento
 
 - [ ] T0xx `npm run typecheck` e `npm test` sem erros
-- [ ] T0xx Verificação manual em web + iOS/Android (Expo Go)
+- [ ] T0xx Verificação manual no emulador Android (Expo Go)
 - [ ] T0xx Atualizar status da spec para **Implementada**

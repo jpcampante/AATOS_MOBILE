@@ -63,8 +63,8 @@ Nada é persistido: não há AsyncStorage nem localStorage.
   `typography.ts`, `auriaTypography.ts`, `motion.ts`, `myceoCornerRadius.ts`,
   `auriaIconTokens.ts`. Acesso via `useTheme()` → `theme`, `ds`, `insights`, `isDark`.
 - Liquid Glass: `src/theme/liquidGlass.ts` + `src/components/ui/LiquidGlassSurface.tsx`.
-  Nativo só no iOS 26+ (`expo-glass-effect`); CSS com blur no web; cor sólida no resto.
-- Fonte: sistema no iOS/Android, DM Sans no web (`src/theme/webFont.ts`).
+  Nativo só no iOS 26+ (`expo-glass-effect`, fora do escopo); no Android usa a cor sólida; CSS com blur no web.
+- Fonte: sistema no Android, DM Sans no web (`src/theme/webFont.ts`).
 - Ícones SVG próprios em `src/components/icons/`.
 
 ## 5. Código específico de plataforma
@@ -82,7 +82,7 @@ Nada é persistido: não há AsyncStorage nem localStorage.
 | Princípio | Atende? | Desvio | Tarefa |
 | --- | --- | --- | --- |
 | I. Spec primeiro | — | Código anterior às specs | Esta baseline |
-| II. Multiplataforma | 🟡 | Voz só transcreve no web; `app.json` sem textos de permissão de câmera/fotos | T005, spec futura |
+| II. Android primeiro | 🟡 | Transcrição de voz não funciona no Android (só no web); `app.json` sem textos de permissão de câmera/fotos | T005, spec futura |
 | III. Design system | 🟡 | ~170 cores hexadecimais fora de `src/theme` (TaskCard, Auria camera/voz/imagem, Mail) e Login fora do tema | T013 |
 | IV. Dados atrás de uma camada | ❌ | ~38 arquivos de tela/componente importam `src/data/*` direto | T009–T011 |
 | V. Acessibilidade | 🟡 | Auria revisada; Insights, Tasks e Mail não | T014 |

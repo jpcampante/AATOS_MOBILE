@@ -23,11 +23,11 @@ muda o comportamento visível do app, exceto T012.
 
 ## Fase 2 — Plataforma
 
-- [ ] T005 [P] Declarar plugins e textos de permissão de câmera, fotos e microfone no `app.json` (`expo-camera`, `expo-image-picker`, `expo-audio`) — RNF-01
+- [ ] T005 [P] Declarar plugins e permissões Android de câmera, fotos e microfone no `app.json` (`expo-camera`, `expo-image-picker`, `expo-audio`) — RNF-01
 - [ ] T006 Atualizar Expo SDK 54 → 56 seguindo o guia de upgrade da v56 (`npx expo install expo@^56 --fix`), revisar breaking changes e atualizar o AGENTS.md — RNF-01
 - [ ] T007 [P] `app.json`: `userInterfaceStyle: "automatic"` para o tema "Sistema" funcionar no nativo — RNF-02
 
-**Checkpoint:** app abre no Expo Go (iOS e Android) e no web no SDK 56; câmera, fotos e microfone pedem permissão com texto próprio.
+**Checkpoint:** app abre no Expo Go no emulador Android no SDK 56; câmera, fotos e microfone pedem permissão.
 
 ## Fase 3 — Camada de dados (princípio IV)
 
@@ -44,7 +44,7 @@ muda o comportamento visível do app, exceto T012.
 - [ ] T013 [P] Mover cores soltas para tokens de `src/theme`, começando por `TaskCard.tsx`, `AuriaImageViewer.tsx`, `AuriaCameraView.tsx`, `AuriaVoiceMode.tsx`, `LoginScreen.tsx` — RNF-02
 - [ ] T014 [P] Auditar acessibilidade de Insights, Tasks e Integrations (labels, roles, alvos de 44 pt) — RNF-04
 
-**Checkpoint:** typecheck, lint e testes verdes; verificação manual no web e no Expo Go sem regressão visual.
+**Checkpoint:** typecheck, lint e testes verdes; verificação manual no emulador Android sem regressão visual.
 
 ## Depois da baseline
 

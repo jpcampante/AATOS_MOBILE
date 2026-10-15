@@ -21,7 +21,8 @@ os dados da empresa.
 Público: fundadores, gestores e equipes de operação (persona de referência:
 **Marta**, gestora que acompanha várias áreas da empresa pelo celular).
 
-Plataformas: iOS, Android e web, a partir do mesmo código.
+Plataforma: **Android** (decisão de 2026-10-15). iOS está fora do escopo; o web
+serve só como preview durante o desenvolvimento.
 
 ## 2. Estado atual em uma frase
 
@@ -71,7 +72,7 @@ Legenda de status: ✅ funciona de verdade · 🟡 funciona com dados simulados 
 | RF-AUR-04 | Anexar foto da câmera, fotos da galeria e arquivos. | ✅ captura · 🟡 o anexo não é processado |
 | RF-AUR-05 | Criar documento a partir de 8 modelos (contrato, NDA, proposta…) e editar com formatação. | 🟡 edição só local |
 | RF-AUR-06 | Criar e editar imagem (proporção, remover com pincel). | ❌ sempre a mesma imagem de exemplo |
-| RF-AUR-07 | Modo de voz com visualização do microfone e transcrição ao vivo. | ✅ microfone · ✅ transcrição só no web · 🟡 respostas roteirizadas |
+| RF-AUR-07 | Modo de voz com visualização do microfone e transcrição ao vivo. | ✅ microfone · ❌ transcrição não funciona no Android (só no web) · 🟡 respostas roteirizadas |
 | RF-AUR-08 | Histórico de conversas, busca e conversas fixadas na barra lateral. | 🟡 |
 | RF-AUR-09 | Galeria de arquivos e imagens: enviar, buscar, ordenar, renomear, mover para projeto, apagar. | 🟡 não persiste; links de compartilhamento fictícios |
 | RF-AUR-10 | Projetos: criar (nome, ícone, descrição, visibilidade, fontes), filtrar, compartilhar, apagar. | 🟡 |
@@ -110,9 +111,9 @@ Legenda de status: ✅ funciona de verdade · 🟡 funciona com dados simulados 
 
 | ID | Requisito | Situação hoje |
 | --- | --- | --- |
-| RNF-01 | Funciona em iOS, Android e web, e abre no Expo Go. | ✅ |
+| RNF-01 | Funciona no Android e abre no Expo Go. | ✅ verificado no emulador (Android 17) |
 | RNF-02 | Tema claro e escuro em todas as telas. | 🟡 Login fixo em branco/preto; `app.json` força modo claro no nativo |
-| RNF-03 | Liquid Glass nativo no iOS 26+, com alternativa visual nos demais. | ✅ |
+| RNF-03 | ~~Liquid Glass nativo no iOS 26+~~ — fora do escopo (iOS removido). No Android vale a superfície alternativa. | — |
 | RNF-04 | Controles só com ícone são acessíveis por leitor de tela. | 🟡 revisado na Auria; demais áreas não auditadas |
 | RNF-05 | Preferências do usuário (tema, layout do início, feed) sobrevivem ao reinício do app. | ❌ |
 | RNF-06 | Nenhum dado pessoal real ou segredo no código. | ❌ há e-mail e telefone com aparência real em mocks |
@@ -154,4 +155,4 @@ Estas respostas definem as specs 001–007; a baseline em si não depende delas.
 - [ ] [PRECISA ESCLARECER: autenticação — quais provedores no lançamento (Apple, Google, e-mail)?]
 - [ ] [PRECISA ESCLARECER: a Auria chama o LLM por um backend próprio? Quais modelos ficam de fato disponíveis?]
 - [ ] [PRECISA ESCLARECER: idioma da interface — inglês (atual), português, ou os dois?]
-- [ ] [PRECISA ESCLARECER: o lançamento é nas lojas (App Store / Play Store) ou interno, via web/Expo?]
+- [ ] [PRECISA ESCLARECER: o lançamento é na Play Store ou interno (APK / teste interno)?]

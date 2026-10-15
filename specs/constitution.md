@@ -1,6 +1,11 @@
 # Constituição — AATOS Mobile
 
-Versão 1.0.0 · Ratificada em 2026-10-15
+Versão 2.0.0 · Ratificada em 2026-10-15
+
+| Versão | Mudança |
+| --- | --- |
+| 2.0.0 | Princípio II redefinido: de "multiplataforma" para "Android primeiro"; iOS fora do escopo, web só para desenvolvimento |
+| 1.0.0 | Versão inicial |
 
 Estes princípios valem para todo o código e para toda spec, plano e tarefa.
 Quando um plano precisar violar um deles, a violação é registrada na seção
@@ -13,15 +18,22 @@ O fluxo é sempre **spec → plano → tarefas → implementação**
 (ver [specs/README.md](./README.md)). Correções pequenas de bug e ajustes
 visuais sem mudança de comportamento podem ir direto, com commit descritivo.
 
-## II. Multiplataforma por padrão
+## II. Android primeiro
 
-O app roda em **iOS, Android e web** a partir do mesmo código, e precisa abrir
-no **Expo Go**.
+O produto é **só Android** (decisão de 2026-10-15). O app precisa abrir no
+**Expo Go** e é verificado no emulador Android
+(ver [docs/android-emulator.md](../docs/android-emulator.md)).
 
+- **iOS está fora do escopo.** Não se cria trabalho específico de iOS; o código
+  de iOS que já existe (ex.: Liquid Glass) pode ficar, mas não é requisito nem
+  é testado.
+- **Web é só ferramenta de desenvolvimento** (preview rápido). Não é plataforma
+  do produto: uma feature está pronta quando funciona no Android, mesmo que
+  degrade no web.
+- Toda API de dispositivo (câmera, microfone, voz, haptics, pickers) precisa
+  funcionar no Android.
 - Diferenças de plataforma ficam em arquivos `.native.ts` / `.web.ts` ou em
   checagens `Platform.OS` localizadas, nunca espalhadas pelas telas.
-- Toda API de dispositivo (câmera, microfone, voz, haptics, pickers) tem um
-  comportamento definido no web: alternativa funcional ou degradação explícita.
 - Módulos nativos fora do Expo Go só entram com decisão registrada no plano.
 
 ## III. Design system é a fonte da verdade

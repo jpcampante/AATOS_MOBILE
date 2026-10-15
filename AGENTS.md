@@ -14,6 +14,15 @@ Expo HAS CHANGED. Antes de escrever código que usa Expo, leia a documentação
 - Upgrade para o SDK 56 é a tarefa T006 de `specs/000-baseline/tasks.md`.
   Depois dele, use https://docs.expo.dev/versions/v56.0.0/
 
+## Plataforma: só Android
+
+O produto é **só Android** (decisão de 2026-10-15, princípio II da constituição).
+
+- iOS está fora do escopo: não crie trabalho específico de iOS.
+- O web serve só como preview rápido durante o desenvolvimento.
+- A verificação que vale é no **emulador Android com Expo Go**.
+  Setup da máquina: [docs/android-emulator.md](docs/android-emulator.md).
+
 ## Como trabalhamos: Spec-Driven Development
 
 Todo trabalho de feature segue **spec → plano → tarefas → implementação**.
@@ -38,9 +47,11 @@ Regras para agentes:
 | Comando | O que faz |
 | --- | --- |
 | `npm install` | Instala dependências |
-| `npm run web` | App no navegador em http://localhost:8083 |
-| `npm start` | Metro + QR para Expo Go na mesma rede (LAN) |
+| `emulator -avd Medium_Phone_API_37.0` | Liga o emulador Android |
+| `npm run android` | Metro + abre o app no emulador (instala o Expo Go se faltar) |
+| `npm start` | Metro + QR para Expo Go num celular Android na mesma rede |
 | `npx expo start --tunnel` | Expo Go fora da rede local (4G / hotspot) |
+| `npm run web` | Preview no navegador em http://localhost:8083 (só desenvolvimento) |
 | `npm run typecheck` | TypeScript sem emitir (obrigatório antes de commitar) |
 
 Ainda não há testes automatizados nem lint; eles entram com as tarefas T001–T003
@@ -59,6 +70,7 @@ src/features/<area>/    hooks, estado, serviços e tipos de domínio
 src/data/               dados mock e configuração estática
 src/theme/              tokens de design, tema light/dark, tipografia, movimento
 specs/                  documentação SDD
+docs/                   guias de ambiente (emulador Android)
 ```
 
 ## Convenções
@@ -69,6 +81,9 @@ specs/                  documentação SDD
 - Controles só com ícone têm `accessibilityLabel` e `accessibilityRole`.
 - Commits no estilo Conventional Commits: `feat(auria): …`, `fix(tasks): …`,
   `docs(specs): …`. Com tarefa SDD, termine com o ID: `(T012)`.
+- **Commits e PRs sem autoria de IA.** Nunca adicione `Co-Authored-By: Claude …`,
+  "Generated with Claude Code" ou qualquer outra atribuição a ferramenta de IA
+  em mensagens de commit ou descrições de PR. Isso vale para todos os commits.
 - Código e identificadores em inglês; documentação de specs em português.
 
 ## Branches

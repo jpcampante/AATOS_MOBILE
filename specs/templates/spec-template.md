@@ -43,7 +43,7 @@ Como **<persona>**, quero **<ação>** para **<benefício>**.
 
 - O que acontece sem rede?
 - O que acontece com lista vazia / dados muito longos?
-- E no web vs. iOS vs. Android?
+- E no Android (telas pequenas, teclado, botão voltar, permissões)?
 
 ## 4. Requisitos funcionais
 
@@ -58,7 +58,7 @@ Como **<persona>**, quero **<ação>** para **<benefício>**.
 | --- | --- |
 | RNF-01 | Desempenho: ... |
 | RNF-02 | Acessibilidade: todo controle só com ícone tem `accessibilityLabel`. |
-| RNF-03 | Plataformas: iOS, Android e web. |
+| RNF-03 | Plataforma: Android (verificado no emulador / Expo Go). |
 
 ## 6. Entidades (se houver dados)
 

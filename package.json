@@ -29,7 +29,6 @@
     "start:lan": "expo start --lan",
     "start:local": "expo start --localhost",
     "android": "expo start --lan --android",
-    "ios": "expo start --lan --ios",
     "web": "expo start --web --localhost --port 8083",
     "typecheck": "tsc --noEmit"
   },

@@ -41,7 +41,3 @@ yarn-error.*
 # generated native folders
 /ios
 /android
-
-# Local reference projects and device connection notes
-/web-reference/
-/CONNECT_PHONE.txt

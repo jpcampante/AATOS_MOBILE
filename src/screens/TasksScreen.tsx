@@ -20,15 +20,16 @@ import {
   waitingTasks,
   type TaskItem,
 } from '../data/tasksMockData';
+import { useCurrentUser } from '../features/auth';
 import { auriaTypography, myceoCornerStyle, useTheme } from '../theme';
-
-const MOCK_AVATAR = require('../../assets/mock-avatar.jpg');
+import { greetingFor } from '../utils/greeting';
 
 type FilterId = (typeof taskFilters)[number]['id'];
 
 export function TasksScreen() {
   const { ds, theme } = useTheme();
   const styles = useMemo(() => createStyles(ds, theme), [ds, theme]);
+  const user = useCurrentUser();
   const [filter, setFilter] = useState<FilterId>('all');
   const [workspace, setWorkspace] = useState('all');
   const [newTaskOpen, setNewTaskOpen] = useState(false);
@@ -82,11 +83,15 @@ export function TasksScreen() {
           <View style={styles.topRow}>
             <View style={styles.greetingBlock}>
               <View style={styles.avatar}>
-                <Image source={MOCK_AVATAR} style={styles.avatarImage} resizeMode="cover" accessibilityLabel="Marta" />
+                {user.pictureUrl ? (
+                  <Image source={{ uri: user.pictureUrl }} style={styles.avatarImage} resizeMode="cover" accessibilityLabel={user.name} />
+                ) : (
+                  <Text style={styles.avatarInitials} accessibilityLabel={user.name}>{user.initials}</Text>
+                )}
               </View>
               <View>
-                <Text style={styles.greeting}>Good morning,</Text>
-                <Text style={styles.greetingName}>Marta</Text>
+                <Text style={styles.greeting}>{greetingFor()},</Text>
+                <Text style={styles.greetingName}>{user.firstName}</Text>
               </View>
             </View>
           </View>
@@ -229,6 +234,11 @@ function createStyles(ds: ReturnType<typeof useTheme>['ds'], theme: ReturnType<t
     avatarImage: {
       width: '100%',
       height: '100%',
+    },
+    avatarInitials: {
+      color: ds.white,
+      fontSize: 15,
+      fontWeight: '700',
     },
     greeting: {
       ...auriaTypography.body,

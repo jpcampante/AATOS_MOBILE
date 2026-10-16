@@ -5,16 +5,11 @@ import { AuriaIcon } from '../../icons';
 import { healthScore, pulse } from '../../../data/insights/selectors';
 import { DataSourceBadge } from '../DataSourceBadge';
 import { useCurrentUser } from '../../../features/auth';
+import { greetingFor } from '../../../utils/greeting';
 
 const GOOD = '#1D9E75';
 const BAD = '#E5484D';
 
-function greetingFor(date = new Date()): string {
-  const h = date.getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 18) return 'Good afternoon';
-  return 'Good evening';
-}
 
 /** Auria's narrative: greeting + pulse + health score (components tap-to-expand). No chart. */
 export function ExecutiveBrief() {

@@ -4,7 +4,7 @@ import { useAuth } from '../../features/auth';
 import { authErrorMessage, codeIsDead } from '../../features/auth/messages';
 import { contentColors, dsFromTheme, useTheme, type AatosTheme } from '../../theme';
 import { tapLight, tapSuccess } from '../../utils/haptics';
-import { CodeInput, CODE_LENGTH } from './CodeInput';
+import { CodeInput, CODE_LENGTH, type CodeInputHandle } from './CodeInput';
 import { ON_SHEET_FAINT, ON_SHEET_MUTED, SHEET_ERROR, SHEET_MUTED } from './loginPalette';
 
 type Step =
@@ -31,6 +31,7 @@ export function EmailCodeFlow({ onExit }: EmailCodeFlowProps) {
   const [error, setError] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
   const verifying = useRef(false);
+  const codeRef = useRef<CodeInputHandle>(null);
 
   const goBack = () => {
     setError(null);
@@ -46,6 +47,11 @@ export function EmailCodeFlow({ onExit }: EmailCodeFlowProps) {
     const sub = BackHandler.addEventListener('hardwareBackPress', goBack);
     return () => sub.remove();
   });
+
+  // The field blurs while a request is in flight; give the keyboard back after.
+  useEffect(() => {
+    if (step.name === 'code' && !busy) codeRef.current?.focus();
+  }, [busy, step.name]);
 
   // Ticks the resend countdown while on the code step.
   useEffect(() => {
@@ -161,6 +167,7 @@ export function EmailCodeFlow({ onExit }: EmailCodeFlowProps) {
           <Text style={styles.title}>Check your email</Text>
           <Text style={styles.subtitle}>Enter the 6-digit code we sent to {email.trim()}.</Text>
           <CodeInput
+            ref={codeRef}
             value={code}
             onChange={(v) => {
               setCode(v);

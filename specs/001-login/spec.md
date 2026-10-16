@@ -1,9 +1,9 @@
-# Spec — 001 Login real
+# Spec — 001 Login por código de e-mail
 
 | Campo | Valor |
 | --- | --- |
 | ID | `001-login` |
-| Branch | `feature/001-login` |
+| Branch | `feature/001-login` (app) · `feature/mobile-code-login` (backend) |
 | Status | Em revisão |
 | Data | 2026-10-16 |
 | Substitui | RF-LOG-02, RF-LOG-03 da [baseline](../000-baseline/spec.md) |
@@ -11,138 +11,158 @@
 ## 1. Contexto e problema
 
 Hoje a tela de entrada é só visual: qualquer botão entra no app, sem conta e
-sem sessão. O AATOS já tem um serviço de contas em produção (o
-**MyCEO Authenticator**), usado pelo app web `aatos`, que permite criar conta
-com e-mail e senha e entrar com Google ou Microsoft. O app Android precisa usar
-essas mesmas contas, para que a pessoa entre no celular com a conta que já
-usa na web.
+sem sessão. O AATOS já tem um serviço de contas (o **MyCEO Authenticator**),
+usado pelo app web `aatos`. A pessoa precisa entrar no app Android com a mesma
+conta da web.
+
+Decisão de produto (2026-10-16): **o login acontece inteiro dentro do app**,
+sem abrir navegador. A pessoa informa o e-mail, recebe um código por e-mail e
+digita o código no app. Isso funciona para qualquer e-mail, inclusive Gmail e
+Outlook.
 
 ## 2. Objetivos
 
-- O1 — Entrar no app com uma conta MyCEO existente (e-mail e senha, Google ou Microsoft).
-- O2 — Criar uma conta nova a partir do app.
-- O3 — Manter a pessoa conectada entre aberturas do app, sem pedir login toda vez.
+- O1 — Entrar no app com uma conta MyCEO existente usando um código enviado por e-mail.
+- O2 — Criar uma conta nova pelo app, com o mesmo código.
+- O3 — Continuar conectado entre aberturas do app.
 - O4 — Sair da conta.
-- O5 — Mostrar o nome e o e-mail reais da pessoa no app.
+- O5 — Mostrar nome, e-mail e foto reais da pessoa.
 
 ### Fora de escopo
 
-- Onboarding da empresa (o assistente de 5 passos do web).
-- Escolha de empresa / workspace.
-- Conectar Gmail ou Outlook para ler e-mails (aba Integrations), que é outra feature.
-- Login com Apple (o serviço de contas não oferece).
-- Biometria para destravar o app.
-- Usar os dados reais nas abas (continua com dados simulados).
+- Login com senha no app.
+- Botões nativos "Entrar com Google" / "Entrar com Microsoft" (fase 2).
+- Login de empresas que exigem SSO (fase 2, pelo navegador).
+- Onboarding da empresa, escolha de workspace, conectar Gmail/Outlook para ler e-mails.
+- Login com Apple.
 
 ## 3. Usuários e cenários
 
-### História 1 — Entrar com conta existente (P1)
+### História 1 — Entrar com código (P1)
 
-Como **pessoa que já usa o AATOS na web**, quero **entrar no app com a mesma
-conta** para **ver meus dados no celular**.
+Como **pessoa que já usa o AATOS**, quero **entrar no app com um código que
+chega no meu e-mail** para **não precisar de senha nem sair do app**.
 
 **Critérios de aceite:**
 
-1. **Dado** que estou na tela de entrada, **quando** toco em entrar, **então**
-   abre a página de login do AATOS dentro do app (aba de navegador do sistema).
-2. **Dado** que informei e-mail e senha corretos, **quando** confirmo, **então**
-   volto ao app já conectado e vejo a aba Insights.
-3. **Dado** que meu e-mail é do Gmail ou do Outlook, **quando** informo o
-   e-mail, **então** sou levado ao login do Google ou da Microsoft e, ao
-   concluir, volto ao app conectado.
-4. **Dado** que estou entrando, **quando** fecho a página de login sem
-   concluir, **então** volto à tela de entrada, sem erro e sem travar.
-5. **Dado** que é a primeira vez neste aparelho e o serviço pede aprovação
-   do dispositivo por e-mail, **quando** aprovo pelo e-mail, **então** consigo
-   concluir o login.
+1. **Dado** que estou na tela de entrada, **quando** toco em "Continuar com e-mail",
+   **então** vejo um campo de e-mail dentro do app.
+2. **Dado** que informei um e-mail com conta, **quando** toco em "Enviar código",
+   **então** vejo a tela do código e recebo um e-mail com um código de 6 dígitos.
+3. **Dado** que digitei o código certo dentro da validade, **então** entro no app
+   e vejo a aba Insights.
+4. **Dado** que meu e-mail é Gmail ou Outlook pessoal, **quando** peço o código,
+   **então** recebo o código como qualquer outro e-mail.
+5. **Dado** que errei o código, **então** vejo "Código incorreto" e quantas
+   tentativas restam; depois de 3 erros o código deixa de valer e preciso pedir outro.
+6. **Dado** que o código expirou (5 min), **quando** tento usá-lo, **então** vejo
+   "Código expirado" e um botão para reenviar.
+7. **Dado** que não recebi o e-mail, **quando** passa o tempo de espera,
+   **então** posso tocar em "Reenviar código".
+8. **Dado** que estou na tela do código, **quando** toco em "Trocar e-mail" ou no
+   botão voltar do Android, **então** volto ao campo de e-mail.
 
 ### História 2 — Criar conta (P1)
 
-Como **pessoa nova**, quero **criar uma conta pelo app** para **começar a usar o AATOS**.
+1. **Dado** que informei um e-mail sem conta, **quando** toco em "Enviar código",
+   **então** o app pede meu nome antes de enviar o código.
+2. **Dado** que confirmei o código, **então** minha conta é criada já com o
+   e-mail verificado e entro no app.
+3. **Dado** que o cadastro está restrito a convidados e não tenho convite,
+   **quando** informo meu e-mail, **então** vejo "O cadastro está fechado. Peça
+   um convite a quem administra sua empresa" e nenhuma conta é criada.
 
-1. **Dado** que estou na tela de entrada, **quando** toco em criar conta,
-   **então** abre a página de cadastro do AATOS.
-2. **Dado** que me cadastrei e confirmei o código enviado por e-mail,
-   **quando** concluo, **então** volto ao app conectado.
-3. **Dado** que o cadastro está restrito (só convidados), **quando** tento me
-   cadastrar sem convite, **então** vejo a mensagem do serviço explicando o
-   bloqueio e consigo voltar ao app.
+### História 3 — Bloqueios de política (P1)
 
-### História 3 — Continuar conectado (P1)
+1. **Dado** que meu e-mail é de uma empresa que exige SSO, **quando** peço o
+   código, **então** vejo "Sua empresa exige entrar pela Microsoft/Google. Use o
+   AATOS na web por enquanto" e nenhum código é enviado.
+2. **Dado** que minha conta está desativada ou é gerenciada, **então** vejo uma
+   mensagem genérica de que não é possível entrar com este e-mail.
 
-1. **Dado** que entrei ontem, **quando** abro o app hoje, **então** vou direto
-   para as abas, sem ver a tela de entrada.
-2. **Dado** que minha sessão foi encerrada em outro lugar (ex.: "sair de todos
-   os dispositivos" na web) ou expirou, **quando** uso o app, **então** volto
-   à tela de entrada com o aviso "Sua sessão terminou".
-3. **Dado** que estou sem internet ao abrir o app, **quando** já tinha entrado,
-   **então** entro normalmente e o app tenta revalidar a sessão quando a
-   conexão voltar.
+### História 4 — Continuar conectado (P1)
 
-### História 4 — Sair (P1)
+1. **Dado** que entrei antes, **quando** abro o app, **então** vou direto às abas.
+2. **Dado** que minha sessão foi encerrada (ex.: "sair de todos os dispositivos"
+   na web) ou expirou, **quando** uso o app, **então** volto à tela de entrada
+   com o aviso "Sua sessão terminou".
+3. **Dado** que estou sem internet ao abrir o app e já tinha entrado, **então**
+   entro normalmente e a sessão é revalidada quando a conexão voltar.
+
+### História 5 — Sair (P1)
 
 1. **Dado** que estou conectado, **quando** toco em "Log out" nos Ajustes,
    **então** volto à tela de entrada e a sessão deixa de valer no servidor.
-2. **Dado** que saí, **quando** toco em entrar de novo, **então** posso entrar
-   com **outra** conta, sem ser conectado automaticamente na anterior.
+2. **Dado** que saí, **então** posso entrar com outra conta.
 
-### História 5 — Ver meus dados (P2)
+### História 6 — Ver meus dados (P2)
 
 1. **Dado** que estou conectado, **quando** abro os Ajustes, **então** vejo meu
    nome, e-mail e foto (ou iniciais) reais.
-2. **Dado** que estou conectado, **quando** vejo a saudação em Tasks,
-   **então** ela usa meu primeiro nome.
+2. **Dado** que estou conectado, **então** a saudação em Tasks usa meu primeiro nome.
 
 ### Casos de borda
 
-- Sem internet ao tocar em entrar: mensagem clara e botão para tentar de novo.
-- Serviço de contas fora do ar ou em manutenção: mensagem clara, sem travar.
-- O código do login expira (15 min) enquanto a pessoa confirma o e-mail: o
-  serviço emite outro sozinho; se falhar, o app pede para tentar de novo.
-- O app é fechado no meio do login: ao reabrir, está na tela de entrada.
+- Sem internet ao pedir ou confirmar o código: mensagem clara e "Tentar de novo".
+- Muitos pedidos seguidos: "Muitas tentativas. Tente de novo em alguns minutos."
+- Colar o código copiado do e-mail preenche os 6 campos de uma vez.
+- O app é fechado na tela do código: ao reabrir, volta à tela de entrada e a
+  pessoa pede um código novo.
+- E-mail com espaços ou maiúsculas é normalizado.
 - Dois pedidos de renovação de sessão ao mesmo tempo não podem derrubar a sessão.
-- Botão "voltar" do Android durante o login cancela e volta para a tela de entrada.
 
 ## 4. Requisitos funcionais
 
 | ID | Requisito | História |
 | --- | --- | --- |
-| RF-01 | O app DEVE autenticar exclusivamente pelo MyCEO Authenticator, usando as páginas de login dele num navegador do sistema (não em WebView). | H1, H2 |
-| RF-02 | O app DEVE oferecer "Entrar" e "Criar conta" na tela de entrada. [PRECISA ESCLARECER: manter botões "Google" e "Microsoft" separados?] | H1, H2 |
-| RF-03 | Login por e-mail/senha, Google e Microsoft DEVEM funcionar pelo mesmo fluxo. | H1 |
-| RF-04 | Cancelar o login DEVE voltar à tela de entrada sem erro. | H1 |
-| RF-05 | A sessão DEVE ser guardada de forma segura no aparelho e sobreviver ao fechamento do app. | H3 |
-| RF-06 | O app DEVE renovar a sessão sozinho antes de expirar, sem interromper a pessoa. | H3 |
-| RF-07 | Sessão encerrada no servidor DEVE levar à tela de entrada com aviso. | H3 |
-| RF-08 | "Log out" DEVE encerrar a sessão no servidor, apagar os dados de sessão do aparelho e permitir entrar com outra conta. | H4 |
-| RF-09 | Nome, e-mail e foto da pessoa DEVEM vir da conta, não de valores fixos. | H5 |
-| RF-10 | O botão "Continue with Apple" DEVE ser removido. | — |
+| RF-01 | O app DEVE autenticar pelo MyCEO Authenticator com e-mail + código de 6 dígitos, sem abrir navegador. | H1 |
+| RF-02 | O código DEVE valer 5 minutos, aceitar no máximo 3 tentativas e permitir reenvio após um intervalo. | H1 |
+| RF-03 | E-mails pessoais Gmail/Outlook DEVEM poder usar código. | H1 |
+| RF-04 | E-mail sem conta DEVE levar ao cadastro (nome + código), respeitando a regra de convite do serviço. | H2 |
+| RF-05 | Contas de empresas que exigem SSO, contas gerenciadas e contas desativadas NÃO DEVEM receber código. | H3 |
+| RF-06 | A sessão DEVE ser guardada em armazenamento criptografado e sobreviver ao fechamento do app. | H4 |
+| RF-07 | O app DEVE renovar a sessão sozinho antes de expirar. | H4 |
+| RF-08 | Sessão encerrada no servidor DEVE levar à tela de entrada com aviso. | H4 |
+| RF-09 | "Log out" DEVE encerrar a sessão no servidor e apagar a sessão do aparelho. | H5 |
+| RF-10 | Nome, e-mail e foto DEVEM vir da conta. | H6 |
+| RF-11 | Os botões "Continue with Apple" e "Continue with Google" DEVEM sair da tela de entrada. | — |
+| RF-12 | A sessão do app DEVE aparecer na lista de dispositivos da conta e respeitar "sair de todos os dispositivos". | H4, H5 |
 
 ## 5. Requisitos não funcionais
 
 | ID | Requisito |
 | --- | --- |
-| RNF-01 | Segurança: nenhum segredo de cliente no app; credenciais nunca passam pelo código do app (só pelas páginas do serviço). |
-| RNF-02 | Segurança: sessão guardada em armazenamento criptografado do sistema, nunca em armazenamento comum. |
-| RNF-03 | Plataforma: Android, funcionando no Expo Go (desenvolvimento) e em build próprio (produção). |
-| RNF-04 | Ambientes: o app aponta para o serviço de desenvolvimento ou de produção por configuração, sem mudar código. |
-| RNF-05 | Acessibilidade: botões da tela de entrada com rótulos para leitor de tela. |
-| RNF-06 | Desempenho: com sessão válida, o app abre direto nas abas em até 1 s após a abertura animada. |
+| RNF-01 | Segurança: código guardado só como hash; comparação em tempo constante; limite de pedidos por e-mail e por IP. |
+| RNF-02 | Segurança: nenhum segredo no app (cliente público). |
+| RNF-03 | **Compatibilidade: nenhuma mudança no comportamento do login web.** Toda a suíte de testes do Authenticator continua passando. |
+| RNF-04 | Plataforma: Android, funcionando no Expo Go. |
+| RNF-05 | Ambientes: dev ou produção por configuração, sem mudar código. |
+| RNF-06 | Acessibilidade: campos com rótulos; o código aceita preenchimento automático. |
+| RNF-07 | O e-mail do código segue a identidade visual dos e-mails atuais do AATOS. |
 
 ## 6. Entidades
 
-- **Sessão**: credencial de acesso (vale horas), credencial de renovação
-  (vale 14 dias e é trocada a cada renovação), data de expiração.
+- **Desafio de código**: e-mail, hash do código, validade, tentativas usadas,
+  momento do último envio, se é cadastro (com nome), app cliente, usado ou não.
+- **Sessão**: credencial de acesso (horas), credencial de renovação (14 dias,
+  trocada a cada renovação), expiração.
 - **Usuário**: identificador público, nome, e-mail, foto.
 
 ## 7. Critérios de sucesso
 
-- CS-01 — Uma conta criada na web entra no app Android sem passo extra.
-- CS-02 — Depois de entrar, a pessoa não vê a tela de entrada de novo por 14 dias de uso normal.
-- CS-03 — Nenhum nome ou e-mail fixo ("Marta") aparece para quem está conectado.
+- CS-01 — Uma conta criada na web entra no app Android só com o código.
+- CS-02 — Entrar leva menos de 1 minuto, contando a chegada do e-mail.
+- CS-03 — Depois de entrar, a pessoa não vê a tela de entrada por 14 dias de uso normal.
+- CS-04 — Nenhum teste existente do Authenticator quebra.
 
-## 8. Dúvidas em aberto
+## 8. Decisões tomadas
 
-- [ ] [PRECISA ESCLARECER: tela de entrada — (a) um botão "Entrar" + "Criar conta", deixando o serviço decidir Google/Microsoft pelo e-mail (como no web), ou (b) campo de e-mail no próprio app e depois a página do serviço já no passo certo? Botões "Google"/"Microsoft" diretos não são possíveis: o serviço só aceita entrar por eles depois de saber o e-mail.]
-- [ ] [PRECISA ESCLARECER: quem registra o app Android como cliente no Authenticator (acesso de admin) e em qual ambiente começamos — dev (`authenticator-dev.mydailyceo.com`)?]
-- [ ] [PRECISA ESCLARECER: o retorno do login para o app exige uma de duas mudanças fora deste repositório — ver plano, decisão D1.]
+- D-01 — Login por código de e-mail, dentro do app (2026-10-16).
+- D-02 — Gmail/Outlook pessoais recebem código também (2026-10-16).
+- D-03 — Empresas com SSO obrigatório continuam bloqueadas para código (2026-10-16).
+- D-04 — Cadastro pelo app respeita a regra de convite do serviço (2026-10-16).
+- D-05 — Endpoints novos no Authenticator implementados neste trabalho, sem mudar o fluxo web (2026-10-16).
+
+## 9. Dúvidas em aberto
+
+- [ ] [PRECISA ESCLARECER: quem tem acesso de admin para registrar o cliente "AATOS Android" no Authenticator de dev?]

@@ -1,196 +1,240 @@
-# Plan — 001 Login real
+# Plan — 001 Login por código de e-mail
 
 | Campo | Valor |
 | --- | --- |
 | Spec | [spec.md](./spec.md) |
-| Status | Rascunho — aguardando decisões D1–D4 |
+| Status | Rascunho — para revisão |
 | Data | 2026-10-16 |
 
 ## 1. Resumo técnico
 
-O app vira um **cliente OAuth 2.0 público com PKCE** do MyCEO Authenticator,
-igual ao app web `aatos`. O login acontece nas páginas do próprio Authenticator,
-abertas numa **Custom Tab do Chrome** (`expo-web-browser`). O Authenticator
-devolve um `code` para o app, que troca por tokens JWT. Os tokens ficam no
-`expo-secure-store` e são renovados com o `refresh_token`. Nenhuma senha passa
-pelo código do app.
+Dois lados:
 
-## 2. Como o login funciona hoje (levantamento)
+1. **Backend (`myceo-authenticator`)**: dois endpoints JSON novos,
+   `POST /auth/mobile/code/request/` e `POST /auth/mobile/code/verify/`, que
+   enviam um código de 6 dígitos por e-mail e trocam o código por tokens. Eles
+   reaproveitam, sem alterar, a regra de rota (`choose_provider`), a regra de
+   cadastro (`signup_is_allowed`), o emissor de tokens
+   (`generate_tokens_for_user_and_app`) e o registro de sessões por dispositivo
+   (`sync_user_session`). Renovação e logout usam os endpoints que já existem.
+2. **App**: telas nativas de e-mail → (nome) → código, sessão guardada no
+   `expo-secure-store` e renovada com o `refresh_token`.
 
-### Backend — `D:\REPOS\Backend\myceo-authenticator` (Django + allauth)
+## 2. Garantia: o login web não muda
 
-| Ponto | Como é | Arquivo |
-| --- | --- | --- |
-| Hosts | dev `https://authenticator-dev.mydailyceo.com` · prod `https://authenticator.mydailyceo.com` | `myceo/settings.py` |
-| Login/cadastro | **Só por páginas HTML** do servidor. Não há API JSON de login ou cadastro | `authentication/urls.py` (TokenLoginView comentada) |
-| Fluxo de entrada | E-mail primeiro: o servidor escolhe senha, código por e-mail, Google ou Microsoft (gmail.com → Google, outlook/hotmail/live → Microsoft, SSO de domínio etc.) | `views/discovery.py`, `services/auth_discovery.py` |
-| Google/Microsoft | Feitos pelo servidor. Entrar direto em `/accounts/google/login/` dá 403 sem o passo do e-mail. Login por token do Google está fechado (403) | `views/discovery.py` |
-| Cadastro | `/accounts/signup/`; verificação de e-mail obrigatória (código, 10 min); pode estar restrito a convidados (`/auth/signup-blocked/`) | `services/signup_access.py` |
-| Início do OAuth | `GET /auth/authorize/?client_id&code_challenge&scope&state&requester_url` → `{redirect_url}` (caminho relativo se não logado) | `views/oauth.py` |
-| Retorno | `/auth/redirect_app/` faz 302 para `<callback>?code&state`. `requester_url` tem de ser a **origem** de uma `CallbackURL` registrada no `ClientApp` | `views/views.py:85`, `utils.py:28` |
-| Troca do code | `POST /auth/token/` `{grant_type:"authorization_code", client_id, code, code_verifier, state}` → `{access_token, refresh_token, token_type, expires_in, scope}` | `views/oauth.py` |
-| Renovação | `POST /auth/token/` `{grant_type:"refresh_token", refresh_token}`. Refresh **rotativo** (o antigo morre). Erro 401 `invalid_refresh_token` + `reason` | `views/oauth.py` |
-| Tokens | JWT RS256. Access ~4 h (código) · refresh 14 dias. Claims: `user_id`, `public_uid`, `email`, `name`, `given_name`, `family_name`, `picture`, `client_id`, `scope` | `services/tokens.py` |
-| Sessão viva? | `GET /auth/session/check/` com Bearer → 200 ou 401 (respeita "sair de todos os dispositivos") | `views/session_epoch.py` |
-| Logout | `POST /auth/account/sessions/current/logout/` (Bearer + `{refresh_token}`) | `views/account.py` |
-| Segurança extra | Aprovação de **novo dispositivo** por e-mail antes de entregar o code | middleware / `session-pending` |
-| Cliente | Cada app é um `ClientApp` com `CallbackURL`s. Cliente público não precisa de `client_secret` | `models/app.py` |
-| Origin/CORS | Chamadas com Bearer e `/auth/token/` funcionam sem header `Origin` (bom para app nativo) | `middleware.py` |
+| O que existe hoje | Mexemos? |
+| --- | --- |
+| Páginas `/accounts/*` (login, cadastro, códigos, Google, Microsoft) | Não |
+| `/auth/authorize/`, `/auth/redirect_app/`, `/auth/token/` | Não |
+| `choose_provider`, `_email_code_is_allowed`, `signup_is_allowed` | Não (só chamados) |
+| `ACCOUNT_LOGIN_BY_CODE_*` e demais settings do allauth | Não |
+| Tabelas existentes | Não (uma tabela **nova**) |
+| Limites de tentativa do web | Não (chaves de cache **próprias** do mobile) |
 
-### Front web — `D:\REPOS\aatos`
+Prova: rodar a suíte completa do Authenticator antes e depois (T-B01 e T-B10).
 
-- `src/auth/MyCeoAuth.ts`: PKCE S256, `authorize` → redireciona → `/callback`
-  recebe `code` → `/auth/token/` → tokens no `localStorage`.
-- Renovação com fila única (evita corrida da rotação) e tolerância a erro
-  de rede: só derruba a sessão com 400/401 + `invalid_refresh_token`,
-  `invalid_grant` ou `invalid_request`.
-- Usuário lido das claims do JWT; perfil completo em
-  `GET {settings}/profile/@me`.
-- Tratamento de erros em `src/auth/authRecovery.ts` (code expirado, aprovação
-  de dispositivo, etc.).
+## 3. Backend — desenho
 
-Vamos reproduzir essa mesma lógica no app, trocando o que é de navegador
-(`window.location`, `localStorage`, `crypto.subtle`, `BroadcastChannel`).
+### 3.1 Onde fica
 
-## 3. O problema central: como o login volta para o app
+| Arquivo novo | Papel |
+| --- | --- |
+| `authentication/models/mobile_code.py` | modelo `MobileLoginChallenge` |
+| `authentication/migrations/00xx_mobilelogin_challenge.py` | cria a tabela |
+| `authentication/services/mobile_code_login.py` | regras: política, gerar/enviar/verificar código, limites |
+| `authentication/views/mobile_code.py` | as duas views DRF |
+| `authentication/urls.py` | **acrescenta** 2 rotas |
+| `templates/account/email/mobile_login_code*` | e-mail do código (mesma marca dos atuais) |
+| `authentication/tests_mobile_code_login.py` | testes |
 
-O Authenticator só redireciona para URLs **http/https**
-(`CallbackURL.url` é `URLField` e o `redirect()` do Django recusa outros
-esquemas). Um app nativo recebe o retorno por um **deep link**
-(`aatos://auth/callback`, ou `exp://127.0.0.1:8081/--/auth/callback` no Expo Go).
-
-### D1 — Opções para o retorno
-
-| | A) Aceitar esquema do app no Authenticator **(recomendada)** | B) Página-ponte https no `aatos` web | C) Android App Links (https verificado) |
-| --- | --- | --- | --- |
-| Como | Mudar a validação de `CallbackURL` e o redirect para aceitar `aatos://` e `exp://` | Página estática (ex. `https://aatos.mydailyceo.com/mobile/callback.html`) recebe `code&state` e abre o deep link | `https://…/mobile/callback` abre o app direto, verificado por `assetlinks.json` |
-| Mudança no backend | Pequena (validador + redirect + testes) | Nenhuma | Nenhuma |
-| Outras mudanças | — | Deploy de página no web; o `state` carrega o destino (com allowlist) | `assetlinks.json` no domínio + build próprio do app |
-| Funciona no Expo Go | Sim (`exp://127.0.0.1:8081` com `adb reverse`) | Sim | **Não** |
-| Padrão do mercado | Sim (RFC 8252, esquema privado + PKCE) | Contorno | Sim, o mais seguro |
-| Risco | Baixo | Chrome pode exigir toque para abrir o app → precisa botão "Abrir o AATOS" de reserva | Só serve para produção |
-
-**Recomendação:** A agora; C quando houver build de produção.
-
-### D2 — Tela de entrada (spec, dúvida 1)
-
-O Authenticator não permite um botão que vá direto ao Google ou à Microsoft:
-ele sempre pede o e-mail primeiro e decide o provedor.
-
-- **(a) recomendada:** "Entrar" e "Criar conta". Simples, idêntico ao web.
-- (b) Campo de e-mail nativo + "Continuar": abre a página já no passo certo
-  (`login_hint`). Mais nativo, mais código.
-
-Em ambos: remover "Continue with Apple".
-
-### D3 — Registro do cliente
-
-Criar um `ClientApp` **público** (sem segredo) "AATOS Android" no ambiente
-dev, com as `CallbackURL`s da opção D1. Precisa de alguém com acesso de admin
-(`/auth/admin/client-apps/` ou Django admin). O `client_id` vai para a
-configuração do app (não é segredo).
-
-### D4 — Perfil do usuário
-
-`/auth/@me/` responde 403 sem a permissão `identity:profile:read` concedida
-por admin. **Recomendação:** ler nome/e-mail/foto das claims do JWT
-(sem depender de permissão) e, numa feature futura, usar
-`GET {settings}/profile/@me` como o web.
-
-## 4. Fluxo no app
+### 3.2 Modelo `MobileLoginChallenge`
 
 ```text
-Tela de entrada ──"Entrar"──▶ AuthService.signIn()
-  1. gera code_verifier (32 bytes) + code_challenge S256 + state   (expo-crypto)
-  2. GET /auth/authorize/?client_id&code_challenge&scope&state&requester_url
-  3. abre {AUTH_URL}{redirect_url} em Custom Tab                     (expo-web-browser)
-        ↳ pessoa entra (senha / código / Google / Microsoft / aprova dispositivo)
-        ↳ Authenticator 302 → aatos://auth/callback?code&state
-  4. Custom Tab fecha; confere state
-  5. POST /auth/token/ (authorization_code + code_verifier)
-  6. salva tokens no SecureStore; lê usuário das claims
-  7. App vai para a fase 'main'
-
-Abertura do app ─▶ lê SecureStore ─▶ sem sessão: tela de entrada
-                                   └▶ com sessão: abas + renova se perto de expirar
-                                                 + /auth/session/check/ ao voltar ao primeiro plano
+id (uuid, público)        email (normalizado)       client_app (FK ClientApp)
+code_hash (sha256+salt)   expires_at (+5 min)       attempts (0..3)
+purpose: login | signup   full_name (só signup)     last_sent_at
+used_at (nullable)        created_ip
 ```
 
-## 5. Arquitetura (arquivos)
+### 3.3 Política (a única regra nova)
+
+```python
+def mobile_code_route(email) -> Allowed | Blocked(reason):
+    # reaproveita a regra do web para o caminho "e-mail explícito":
+    # - SSO obrigatório do domínio -> LocalEmailAuthenticationBlocked -> Blocked("sso_required")
+    # - não troca Gmail/Outlook por Google/Microsoft (é o que requested_method="email" já faz)
+    choose_provider(email, requested_method="email")
+    conta gerenciada ou desativada -> Blocked("not_allowed")
+    conta ativa -> Allowed(login)
+    sem conta  -> signup_is_allowed(email) ? Allowed(signup) : Blocked("signup_closed")
+```
+
+### 3.4 Contratos
+
+**`POST /auth/mobile/code/request/`** (sem autenticação)
+
+```json
+// entrada
+{ "client_id": "myceo_app_…", "email": "ana@empresa.com", "full_name": "Ana Lima" }
+// 200 — código enviado
+{ "challenge_id": "uuid", "purpose": "login", "expires_in": 300, "resend_after": 30 }
+// 200 — precisa do nome (e-mail sem conta, cadastro permitido, full_name ausente)
+{ "next": "need_name" }
+// 403
+{ "error": "sso_required", "provider": "microsoft" }   // ou "google" / "oidc"
+{ "error": "signup_closed" }
+{ "error": "not_allowed" }
+// 400 invalid_request · 401 invalid_client · 429 rate_limited (com retry_after)
+```
+
+Reenvio: chamar de novo com o mesmo e-mail; se ainda dentro de `resend_after`,
+responde 429 com `retry_after`. Um reenvio invalida o código anterior.
+
+**`POST /auth/mobile/code/verify/`** (sem autenticação)
+
+```json
+// entrada
+{ "client_id": "myceo_app_…", "challenge_id": "uuid", "code": "482913" }
+// 200 — mesmo formato do /auth/token/
+{ "access_token": "…", "refresh_token": "…", "token_type": "Bearer", "expires_in": 14400, "scope": [] }
+// 400
+{ "error": "invalid_code", "attempts_left": 2 }
+{ "error": "code_expired" }
+{ "error": "too_many_attempts" }
+{ "error": "challenge_used" }
+```
+
+Ao verificar com sucesso:
+
+1. Revalida a política (a conta ou o domínio podem ter mudado nos 5 min).
+2. `purpose=signup`: cria o usuário com e-mail **verificado** (o código prova a
+   caixa de e-mail), sem senha utilizável, e consome o convite como o cadastro
+   web faz (`reserve_signup_authorization`).
+3. Emite tokens com `generate_tokens_for_user_and_app(user, client_app)`.
+4. Registra a sessão do aparelho com `sync_user_session(user, request, refresh_jti)`
+   já **verificada** (o código vale como aprovação do dispositivo), para que a
+   renovação não falhe com `unverified_device` e a sessão apareça na lista de
+   dispositivos.
+5. Marca o desafio como usado (uso único, dentro de transação com `select_for_update`).
+
+### 3.5 Segurança
+
+- Código de 6 dígitos com `secrets`, guardado só como hash; comparação com
+  `hmac.compare_digest`.
+- 5 min de validade, 3 tentativas, reenvio após 30 s, no máximo 5 envios por
+  e-mail por hora.
+- Limite por IP e por e-mail com chaves de cache próprias
+  (`mobile_code:ip:…`, `mobile_code:email:…`).
+- `client_id` precisa ser de um `ClientApp` ativo, público e não em manutenção.
+- Respostas de erro sem detalhes internos; nunca loga o código.
+- Endpoints isentos de CSRF (sem cookie) e aceitos sem header `Origin`, como o `/auth/token/`.
+
+### 3.6 Dados do usuário
+
+O token já traz `name`, `given_name`, `family_name`, `email`, `picture`,
+`public_uid`. O app lê dali; não depende do `/auth/@me/` (que exige permissão
+de admin).
+
+## 4. App — desenho
+
+### 4.1 Telas (dentro da folha preta atual)
+
+```text
+[Entrada]  logo + título rotativo
+           ┌ Continuar com e-mail ┐
+[E-mail]   campo e-mail · Enviar código
+[Nome]     (só conta nova) campo nome · Enviar código
+[Código]   6 caixas · "Enviamos para ana@…" · Reenviar (contador) · Trocar e-mail
+```
+
+Saem os botões Apple, Google, "Sign up" e "Log in" atuais.
+
+### 4.2 Arquivos
 
 | Arquivo | Papel |
 | --- | --- |
-| `src/features/auth/config.ts` | `AUTH_URL`, `CLIENT_ID`, `SCOPE`, `REDIRECT_URI` a partir de `EXPO_PUBLIC_*` |
-| `src/features/auth/pkce.ts` | verifier, challenge S256, state |
-| `src/features/auth/authApi.ts` | chamadas HTTP: authorize, token (code e refresh), session check, logout |
-| `src/features/auth/tokenStore.ts` | leitura/gravação no `expo-secure-store` |
-| `src/features/auth/jwt.ts` | decodificar claims → `AuthUser` |
-| `src/features/auth/session.ts` | estado da sessão (store com `useSyncExternalStore`), renovação com fila única, expiração |
-| `src/features/auth/AuthProvider.tsx` + `useAuth()` | `status` (`loading`/`signedOut`/`signedIn`), `user`, `signIn`, `signUp`, `signOut` |
+| `src/features/auth/config.ts` | `EXPO_PUBLIC_MYCEO_AUTH_URL`, `EXPO_PUBLIC_MYCEO_CLIENT_ID` |
 | `src/features/auth/types.ts` | `AuthTokens`, `AuthUser`, `AuthError` |
-| `src/features/auth/authFetch.ts` | `fetch` com Bearer e renovação automática (para as próximas features) |
-| `App.tsx` | fase `login`/`main` passa a vir de `useAuth().status` |
-| `src/screens/LoginScreen.tsx` | botões novos, estados de carregando/erro, remove Apple |
-| `src/components/auria/AuriaSettingsModal.tsx` | dados reais + "Log out" chama `signOut` |
-| `app.json` | `"scheme": "aatos"` |
-| `.env.example` | variáveis `EXPO_PUBLIC_MYCEO_*` (sem valores secretos) |
+| `src/features/auth/authApi.ts` | `requestCode`, `verifyCode`, `refresh`, `checkSession`, `logout` |
+| `src/features/auth/tokenStore.ts` | `expo-secure-store` |
+| `src/features/auth/jwt.ts` | claims → `AuthUser` |
+| `src/features/auth/session.ts` | estado da sessão, renovação com fila única, regra de quando derrubar |
+| `src/features/auth/AuthProvider.tsx` + `useAuth()` | `status`, `user`, `requestCode`, `verifyCode`, `signOut` |
+| `src/features/auth/authFetch.ts` | `fetch` com Bearer + renovação (para features futuras) |
+| `src/components/auth/CodeInput.tsx` | 6 caixas, colar, `textContentType="oneTimeCode"` / `autoComplete="one-time-code"` |
+| `src/screens/LoginScreen.tsx` | passos e-mail → nome → código |
+| `App.tsx` | fase `login`/`main` vem de `useAuth().status` |
+| `src/components/auria/AuriaSettingsModal.tsx` | dados reais + "Log out" |
+| `.env.example` | variáveis `EXPO_PUBLIC_MYCEO_*` |
 
-Dependências novas (todas incluídas no Expo Go, instaladas com `npx expo install`):
-`expo-web-browser`, `expo-crypto`, `expo-secure-store`, `expo-linking`.
+Dependência nova: `expo-secure-store` (vem no Expo Go). Nada de navegador,
+PKCE ou deep link.
 
-## 6. Contratos
+### 4.3 Sessão
 
-| Operação | Entrada | Saída | Erros tratados |
-| --- | --- | --- | --- |
-| `GET /auth/authorize/` | `client_id, code_challenge, scope, state, requester_url` | `{redirect_url}` | rede, 5xx, manutenção |
-| `POST /auth/token/` (code) | `grant_type, client_id, code, code_verifier, state` | tokens | `invalid_grant`, `code_expired`, `invalid_code_verifier`, `invalid_client` |
-| `POST /auth/token/` (refresh) | `grant_type, refresh_token` | tokens (refresh novo) | 401 `invalid_refresh_token` (`rotated`, `expired…`, `session_epoch`…) → sair; rede/5xx/429 → tentar de novo |
-| `GET /auth/session/check/` | Bearer | 200 / 401 | 401 → sessão terminou |
-| `POST /auth/account/sessions/current/logout/` | Bearer + `{refresh_token}` | 200 | falha não impede o logout local |
+- Ao abrir: lê o SecureStore. Sem tokens → Entrada. Com tokens → abas; se o
+  access expira em menos de 5 min, renova.
+- Renovação: `POST /auth/token/ {grant_type:"refresh_token", refresh_token}`.
+  Uma renovação por vez (fila única), porque o refresh é rotativo.
+- Só derruba a sessão com 400/401 + `invalid_refresh_token`/`invalid_grant`
+  (mesma regra do web). Rede, 5xx e 429 → tenta de novo depois.
+- Ao voltar ao primeiro plano: `GET /auth/session/check/`; 401 → "Sua sessão terminou".
+- Logout: `POST /auth/account/sessions/current/logout/` com o refresh; apaga o
+  SecureStore mesmo se a chamada falhar.
 
-## 7. Verificação da constituição
+## 5. Verificação da constituição
 
 | Princípio | Atende? | Observação |
 | --- | --- | --- |
-| I. Spec primeiro | ✅ | Esta spec + plano |
-| II. Android primeiro | ✅ | Custom Tabs; funciona no Expo Go com D1-A |
-| III. Design system | ✅ | Tela de entrada mantém a identidade atual |
-| IV. Dados atrás de uma camada | ✅ | Tudo em `src/features/auth`; telas usam `useAuth()` |
-| V. Acessibilidade | ✅ | Rótulos nos botões novos |
-| VI. Qualidade verificável | ⚠️ | Depende de T001 (Jest) da baseline; testes de `pkce`, `jwt`, `session` |
-| VII. Simplicidade | ✅ | Sem biblioteca de OAuth extra; reaproveita a lógica do web |
+| I. Spec primeiro | ✅ | |
+| II. Android primeiro | ✅ | Tudo nativo, funciona no Expo Go |
+| III. Design system | ✅ | Mantém a folha preta da entrada; novos elementos com tokens |
+| IV. Dados atrás de uma camada | ✅ | `src/features/auth`; telas só usam `useAuth()` |
+| V. Acessibilidade | ✅ | Rótulos e autofill do código |
+| VI. Qualidade verificável | ⚠️ | App depende de T001 (Jest) da baseline; backend já tem suíte |
+| VII. Simplicidade | ✅ | Sem bibliotecas de OAuth; uma dependência nova |
 
-## 8. Estratégia de testes
+## 6. Testes
 
-- **Unitários:** PKCE (vetor conhecido da RFC 7636), decodificação do JWT,
-  regra "quando derrubar a sessão" do refresh, fila única de renovação.
-- **Manual no emulador:** cada critério de aceite da spec — senha, Gmail,
-  Outlook, cadastro, cancelar, fechar o app no meio, reabrir conectado,
-  logout e entrar com outra conta, sessão encerrada pela web.
+**Backend** (`tests_mobile_code_login.py`):
+- pedido para conta existente envia e-mail e cria desafio
+- Gmail pessoal recebe código; domínio com SSO obrigatório → 403 `sso_required`
+- conta gerenciada/desativada → 403; sem conta + cadastro fechado → 403 `signup_closed`
+- sem conta + nome → cria usuário verificado só após o código certo
+- código errado decrementa tentativas; 3 erros bloqueiam; expirado; uso único
+- reenvio respeita o intervalo e invalida o código anterior
+- tokens emitidos renovam em `/auth/token/` (sessão verificada, sem `unverified_device`)
+- logout global (época) derruba a sessão do app
+- `client_id` inválido/inativo → 401; limites → 429
+- **suíte completa existente continua verde**
 
-## 9. Riscos
+**App** (Jest, após T001): decodificação do JWT, regra de derrubar sessão,
+fila única de renovação, máquina de estados da tela de entrada.
 
-- **Aprovação de dispositivo e confirmação da Microsoft por e-mail:** se o
-  link do e-mail abrir em outro navegador, a Custom Tab não vê a aprovação.
-  Mitigar com texto de ajuda; validar cedo.
-- **Logout x cookies da Custom Tab:** o Chrome guarda a sessão do
-  Authenticator; sem tratar, "entrar de novo" reentra na mesma conta.
-  Solução: no logout, abrir `/auth/sso-logout/` (exige destino https na
-  allowlist) ou forçar a tela de login com `prompt`/`login_hint` — validar na
-  implementação.
-- **Documentação do backend desatualizada** (host `auth.` vs `authenticator.`,
-  validade do access 60 min vs 4 h): o app usa `expires_in` da resposta,
-  não um valor fixo.
-- **Segurança (fora deste app):** `Frontend_Myceo_Example_Authenticator/config.json`
-  tem uma `internalServiceKey` commitada. Recomenda-se trocar a chave e
-  removê-la do repositório.
+**Manual no emulador:** cada critério de aceite da spec.
 
-## 10. Ordem de implementação (prévia do `tasks.md`)
+## 7. Pré-requisitos e riscos
 
-1. Decisões D1–D4 + registro do `ClientApp` dev.
-2. (Se D1-A) PR no `myceo-authenticator` aceitando os esquemas do app.
-3. T001 da baseline (Jest) para poder testar a lógica de auth.
-4. `src/features/auth` (config, pkce, api, store, jwt, session, provider) com testes.
-5. Tela de entrada + `App.tsx` usando a sessão real.
-6. Logout e dados do usuário nos Ajustes/Tasks.
-7. Verificação manual de todos os critérios no emulador.
+- **Repositório do backend tem mudanças locais não commitadas** em
+  `account_serializers.py`, `signup_serializers.py`, `login.py` e um teste, e
+  está 9 commits atrás de `origin/dev`. O trabalho será feito numa **worktree
+  separada** a partir de `origin/dev`, sem tocar nessas mudanças.
+- Registro do `ClientApp` "AATOS Android" (público) no dev — precisa de admin.
+- Deploy do backend em dev (`deploy_dev.yml`) para testar no emulador; antes
+  disso, dá para rodar o Authenticator localmente.
+- Entrega de e-mail: confirmar que o provedor de e-mail do dev envia de fato.
+- Fase 2: botões nativos Google/Microsoft e SSO empresarial pelo navegador.
+
+## 8. Ordem de implementação
+
+| # | Onde | O quê |
+| --- | --- | --- |
+| 1 | backend | worktree a partir de `origin/dev`; rodar a suíte atual (linha de base) |
+| 2 | backend | modelo + migração + serviço de política e código, com testes |
+| 3 | backend | views, rotas, template de e-mail, testes de ponta a ponta |
+| 4 | backend | suíte completa verde; PR para `dev` |
+| 5 | app | T001 da baseline (Jest) |
+| 6 | app | `src/features/auth` com testes |
+| 7 | app | tela de entrada (e-mail → nome → código) + `App.tsx` |
+| 8 | app | logout e dados reais nos Ajustes/Tasks |
+| 9 | ambos | teste ponta a ponta no emulador contra o backend (local ou dev) |

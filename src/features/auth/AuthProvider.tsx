@@ -3,7 +3,7 @@ import { AppState } from 'react-native';
 import * as authApi from './authApi';
 import { SessionManager } from './session';
 import { getInstallId, secureTokenStore } from './tokenStore';
-import type { AuthState, CodeRequestResult } from './types';
+import type { AuthState, AuthUser, CodeRequestResult } from './types';
 
 /** One session per app process, shared by the provider and `authFetch`. */
 export const sessionManager = new SessionManager(secureTokenStore, authApi);
@@ -63,4 +63,11 @@ export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used inside <AuthProvider>');
   return ctx;
+}
+
+const NO_USER: AuthUser = { id: '', email: '', name: '', firstName: '', lastName: '', initials: '' };
+
+/** The signed-in person. Screens behind the login can rely on it being set. */
+export function useCurrentUser(): AuthUser {
+  return useAuth().user ?? NO_USER;
 }

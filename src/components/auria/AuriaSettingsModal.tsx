@@ -14,7 +14,7 @@ import {
   myceoCornerStyle,
   useTheme,
 } from '../../theme';
-import { auriaProfileInitials, auriaWelcomeName } from '../../data/auriaMockData';
+import { useAuth } from '../../features/auth';
 import { AuriaIcon, AuriaIconName, AURIA_ICON_SIZE } from '../icons';
 import { AURIA_SCRIM } from './auriaLayout';
 import { AuriaTopicChips } from './AuriaTopicChips';
@@ -25,13 +25,11 @@ type AuriaSettingsModalProps = {
   onClose: () => void;
 };
 
-const HANDLE = 'mcampante';
-const EMAIL = 'martinscampante@gmail.com';
-const PHONE = '+358 46 891 5660';
 const PLAN = 'AATOS Pro';
 
 export function AuriaSettingsModal({ visible, onClose }: AuriaSettingsModalProps) {
   const { ds, theme } = useTheme();
+  const { user, signOut } = useAuth();
   const safeArea = useSafeAreaInsets();
   const styles = useMemo(
     () => createStyles(ds, theme, safeArea.top, safeArea.bottom),
@@ -70,15 +68,15 @@ export function AuriaSettingsModal({ visible, onClose }: AuriaSettingsModalProps
           >
             <View style={styles.profile}>
               <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{auriaProfileInitials}</Text>
+                <Text style={styles.avatarText}>{user?.initials}</Text>
                 <View style={styles.editBadge}>
                   <AuriaIcon name="squarePen" size={14} color={ds.gray700} />
                 </View>
               </View>
-              <Text style={styles.handle}>{HANDLE}</Text>
+              <Text style={styles.handle}>{user?.name}</Text>
             </View>
 
-            <Section title={`Customize ${auriaWelcomeName ? 'Auria' : 'Auria'}`}>
+            <Section title="Customize Auria">
               <NavRow icon="squarePen" title="Personalization" />
               <NavRow icon="clock" title="Memory" />
               <NavRow icon="grid" title="Apps" last />
@@ -87,8 +85,7 @@ export function AuriaSettingsModal({ visible, onClose }: AuriaSettingsModalProps
             <DiscoverInterests />
 
             <Section title="Account">
-              <ValueRow icon="mail" title="Email" value={EMAIL} />
-              <ValueRow icon="idCard" title="Phone number" value={PHONE} />
+              <ValueRow icon="mail" title="Email" value={user?.email ?? ''} />
               <ValueRow icon="star" title="Subscription" value={PLAN} />
               <NavRow icon="arrowPath" title="Restore purchases" chevron={false} />
               <AccentRow icon="sparkles" title="Upgrade to AATOS Ultra" last />
@@ -131,7 +128,12 @@ export function AuriaSettingsModal({ visible, onClose }: AuriaSettingsModalProps
               <NavRow icon="exclaimCircle" title="About" last />
             </Section>
 
-            <LogoutCard />
+            <LogoutCard
+              onLogout={() => {
+                onClose();
+                void signOut();
+              }}
+            />
           </ScrollView>
         </View>
       </View>
@@ -248,13 +250,14 @@ function AccentRow({ icon, title, last }: RowBaseProps) {
   );
 }
 
-function LogoutCard() {
+function LogoutCard({ onLogout }: { onLogout: () => void }) {
   const { ds, theme } = useTheme();
   const styles = useMemo(() => createStyles(ds, theme, 0, 0), [ds, theme]);
   return (
     <View style={styles.logoutWrap}>
       <Pressable
         style={({ pressed }) => [styles.logoutCard, pressed && styles.rowPressed]}
+        onPress={onLogout}
         accessibilityRole="button"
         accessibilityLabel="Log out"
       >

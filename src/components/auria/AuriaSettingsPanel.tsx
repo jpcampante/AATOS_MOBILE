@@ -9,9 +9,11 @@ import {
   resetDiscoverPrefs,
   useDiscoverPrefs,
 } from '../../features/auria/discoverPrefsStore';
+import { useCurrentUser } from '../../features/auth';
 
 export function AuriaSettingsPanel() {
   const { theme, preference, setPreference } = useTheme();
+  const user = useCurrentUser();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const [notifications, setNotifications] = useState(true);
   const [memory, setMemory] = useState(true);
@@ -35,9 +37,9 @@ export function AuriaSettingsPanel() {
 
       <SettingsSection title="Account">
         <View style={styles.profileRow}>
-          <View style={styles.avatar}><Text style={styles.avatarText}>MA</Text></View>
+          <View style={styles.avatar}><Text style={styles.avatarText}>{user.initials}</Text></View>
           <View style={styles.copy}>
-            <Text style={styles.rowTitle}>Marta</Text>
+            <Text style={styles.rowTitle}>{user.name}</Text>
             <Text style={styles.rowDescription}>Workspace administrator</Text>
           </View>
           <AuriaIcon name="moreHorizontal" size={AURIA_ICON_SIZE.sm} tertiary />

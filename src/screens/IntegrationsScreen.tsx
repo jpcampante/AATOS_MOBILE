@@ -18,7 +18,7 @@ import { ActionFab } from '../components/ui/ActionFab';
 import { Snackbar } from '../components/ui/Snackbar';
 import { AuriaIcon, AURIA_ICON_SIZE, AURIA_ICON_STROKE } from '../components/icons';
 import { FOLDER_LABELS } from '../data/integrationsMockData';
-import { auriaProfileInitials } from '../data/auriaMockData';
+import { useCurrentUser } from '../features/auth';
 import { useMailbox } from '../features/integrations/useMailbox';
 import { auriaTypography, myceoCornerStyle, useTheme } from '../theme';
 
@@ -28,6 +28,7 @@ type IntegrationsScreenProps = {
 
 export function IntegrationsScreen({ onOpenSettings }: IntegrationsScreenProps) {
   const { ds, theme } = useTheme();
+  const user = useCurrentUser();
   const styles = useMemo(() => createStyles(ds, theme), [ds, theme]);
   const mb = useMailbox();
 
@@ -91,7 +92,7 @@ export function IntegrationsScreen({ onOpenSettings }: IntegrationsScreenProps) 
                 hitSlop={6}
               >
                 <View style={styles.accountAvatar}>
-                  <Text style={styles.accountAvatarText}>{auriaProfileInitials}</Text>
+                  <Text style={styles.accountAvatarText}>{user.initials}</Text>
                 </View>
               </Pressable>
             )}

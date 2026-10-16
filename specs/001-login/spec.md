@@ -3,7 +3,7 @@
 | Campo | Valor |
 | --- | --- |
 | ID | `001-login` |
-| Branch | `feature/001-login` (app) · `feature/mobile-code-login` (backend) |
+| Branch | `feature/001-login` (app) · `dev` (backend; vai para `main` depois de testado) |
 | Status | Em revisão |
 | Data | 2026-10-16 |
 | Substitui | RF-LOG-02, RF-LOG-03 da [baseline](../000-baseline/spec.md) |

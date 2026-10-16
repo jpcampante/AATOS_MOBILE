@@ -215,10 +215,15 @@ fila única de renovação, máquina de estados da tela de entrada.
 
 ## 7. Pré-requisitos e riscos
 
+- **Fluxo de branches do backend:** no `myceo-authenticator` trabalha-se
+  direto na branch **`dev`**; depois de testado em dev, vai para **`main`**.
+  Os commits deste trabalho vão para `origin/dev` (o push dispara o
+  `deploy_dev.yml`).
 - **Repositório do backend tem mudanças locais não commitadas** em
   `account_serializers.py`, `signup_serializers.py`, `login.py` e um teste, e
-  está 9 commits atrás de `origin/dev`. O trabalho será feito numa **worktree
-  separada** a partir de `origin/dev`, sem tocar nessas mudanças.
+  está 9 commits atrás de `origin/dev`. Para não misturar com elas, o trabalho
+  é feito numa **worktree separada** sobre o `origin/dev` atualizado e enviado
+  para `dev`, sem tocar nessas mudanças.
 - Registro do `ClientApp` "AATOS Android" (público) no dev — precisa de admin.
 - Deploy do backend em dev (`deploy_dev.yml`) para testar no emulador; antes
   disso, dá para rodar o Authenticator localmente.
@@ -229,12 +234,13 @@ fila única de renovação, máquina de estados da tela de entrada.
 
 | # | Onde | O quê |
 | --- | --- | --- |
-| 1 | backend | worktree a partir de `origin/dev`; rodar a suíte atual (linha de base) |
+| 1 | backend | worktree sobre `origin/dev`; rodar a suíte atual (linha de base) |
 | 2 | backend | modelo + migração + serviço de política e código, com testes |
 | 3 | backend | views, rotas, template de e-mail, testes de ponta a ponta |
-| 4 | backend | suíte completa verde; PR para `dev` |
+| 4 | backend | suíte completa verde; push para `dev` (deploy em dev) |
 | 5 | app | T001 da baseline (Jest) |
 | 6 | app | `src/features/auth` com testes |
 | 7 | app | tela de entrada (e-mail → nome → código) + `App.tsx` |
 | 8 | app | logout e dados reais nos Ajustes/Tasks |
-| 9 | ambos | teste ponta a ponta no emulador contra o backend (local ou dev) |
+| 9 | ambos | teste ponta a ponta no emulador contra o backend em dev |
+| 10 | backend | depois de aprovado em dev: levar para `main` |

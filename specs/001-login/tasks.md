@@ -12,7 +12,7 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
 
 ## Fase 1 — Backend: preparação
 
-- [~] B001 Worktree sobre `origin/dev` atualizado; ambiente Python; rodar a suíte atual e registrar a linha de base — RNF-03
+- [x] B001 Worktree sobre `origin/dev` atualizado; ambiente Python; rodar a suíte atual e registrar a linha de base — RNF-03
 
 ## Fase 2 — Backend: núcleo
 
@@ -32,8 +32,8 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
 
 ## Fase 4 — Backend: entrega em dev
 
-- [ ] B008 Push para `origin/dev` (deploy dev) — com aprovação do usuário
-- [ ] B009 Registrar o `ClientApp` público "AATOS Android" no dev — precisa de admin
+- [x] B008 Push para `origin/dev` e merge para `main` (aprovado). Desde 10/10 o DEV usa o Authenticator de produção, então o deploy efetivo é o da `main`. Suíte: 957 → 982 testes verdes, no Django 6.1 e no 5.2.18 (versão de produção)
+- [x] B009 `ClientApp` público "AATOS Android" (`myceo_app_aatos_android`) adicionado ao `deploy/client_apps.json`; o deploy cria a app sozinho
 
 ## Fase 5 — App: fundação
 

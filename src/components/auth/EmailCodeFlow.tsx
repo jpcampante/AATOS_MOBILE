@@ -49,8 +49,12 @@ export function EmailCodeFlow({ onExit }: EmailCodeFlowProps) {
   });
 
   // The field blurs while a request is in flight; give the keyboard back after.
+  // Deferred: on Android the native field only accepts focus once `editable`
+  // is back on, which lands a frame after this render.
   useEffect(() => {
-    if (step.name === 'code' && !busy) codeRef.current?.focus();
+    if (step.name !== 'code' || busy) return;
+    const timer = setTimeout(() => codeRef.current?.focus(), 80);
+    return () => clearTimeout(timer);
   }, [busy, step.name]);
 
   // Ticks the resend countdown while on the code step.

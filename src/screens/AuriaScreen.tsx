@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
+  AppState,
   GestureResponderEvent,
   Keyboard,
   LayoutChangeEvent,
@@ -44,6 +45,9 @@ import { useAuriaConversation } from '../features/auria/useAuriaConversation';
 import { useAuriaChats } from '../features/auria/useAuriaChats';
 import type { AuriaConversation } from '../features/auria/types';
 import { AuriaConversationMenu } from '../components/auria/AuriaConversationMenu';
+import { AuriaReadOnlyNotice } from '../components/auria/AuriaReadOnlyNotice';
+import { providerLabel } from '../features/auria/chatList';
+import { loadLastChatId, saveLastChatId } from '../features/auria/prefs';
 import { describeAuriaError } from '../features/auria/api/errors';
 import { useAuriaToast } from '../features/auria/useAuriaToast';
 import { AuriaActionToast } from '../components/auria/AuriaActionToast';
@@ -76,6 +80,42 @@ export function AuriaScreen({
   const conversation = useAuriaConversation();
   const chats = useAuriaChats();
   const [menuChat, setMenuChat] = useState<AuriaConversation | null>(null);
+
+  // Reopen the last chat once the list has loaded (it tells the chat's origin).
+  const restored = useRef(false);
+  useEffect(() => {
+    if (restored.current || !chats.loaded) return;
+    restored.current = true;
+    void loadLastChatId().then((chatId) => {
+      if (!chatId || conversation.chatId || conversation.isBusy) return;
+      const chat = chats.chats.find((c) => c.id === chatId);
+      void conversation.openChat(chatId, chat?.provider ?? null);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chats.loaded]);
+
+  // Remember the open chat; a new chat clears it.
+  useEffect(() => {
+    if (restored.current) void saveLastChatId(conversation.chatId);
+  }, [conversation.chatId]);
+
+  // The remembered chat is gone (deleted, or access lost): start fresh.
+  useEffect(() => {
+    const status = conversation.history.error?.status;
+    if (conversation.messages.length === 0 && (status === 404 || status === 403)) {
+      void saveLastChatId(null);
+      conversation.newChat();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversation.history.error]);
+
+  // Back from the background: re-read the open chat (an answer may have finished meanwhile).
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (next) => {
+      if (next === 'active') conversation.reload();
+    });
+    return () => sub.remove();
+  }, [conversation.reload]);
 
   // A rename, pin or delete the server refused was rolled back; say why.
   useEffect(() => {
@@ -524,6 +564,13 @@ export function AuriaScreen({
                 {isWelcomeHome ? (
                   <AuriaPromptSuggestions onSelect={handleSuggestion} />
                 ) : null}
+                {!conversation.canContinue ? (
+                  <AuriaReadOnlyNotice
+                    origin={providerLabel(conversation.provider) ?? 'another app'}
+                    onNewChat={handleNewChat}
+                    bottomInset={keyboardInset}
+                  />
+                ) : (
                 <AuriaComposer
                   ref={composerRef}
                   value={workspace.composerText}
@@ -548,6 +595,7 @@ export function AuriaScreen({
                   onSelectRatio={setImageRatio}
                   onExitImageMode={() => setImageMode(false)}
                 />
+                )}
               </View>
             ) : null}
 

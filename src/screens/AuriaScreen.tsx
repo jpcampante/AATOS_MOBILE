@@ -52,7 +52,7 @@ import { SUPPORTS_NATIVE_DRIVER, motionDuration, motionEasing, useTheme } from '
 type AuriaScreenProps = {
   onSidebarOpenChange?: (open: boolean) => void;
   onOpenSettings?: () => void;
-  /** When set (deep-link from Insights), pre-fills the composer once. */
+  /** When set (deep link from another screen), pre-fills the composer once. */
   initialPrompt?: string | null;
   onPromptConsumed?: () => void;
 };
@@ -73,7 +73,7 @@ export function AuriaScreen({
   const activeModel = getModelById(workspace.selectedModel);
   const { toast, showToast } = useAuriaToast();
 
-  // Deep-link from Insights "Ask Auria": seed the composer once, then clear it.
+  // Deep link with a prompt: seed the composer once, then clear it.
   useEffect(() => {
     if (initialPrompt) {
       workspace.setComposerText(initialPrompt);

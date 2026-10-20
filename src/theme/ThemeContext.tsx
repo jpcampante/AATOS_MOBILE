@@ -4,7 +4,6 @@ import {
   AatosTheme,
   darkTheme,
   dsFromTheme,
-  insightsFromTheme,
   lightTheme,
   type ThemeMode,
 } from './aatosTheme';
@@ -13,7 +12,6 @@ export type ThemePreference = ThemeMode | 'system';
 
 type ThemeContextValue = {
   theme: AatosTheme;
-  insights: ReturnType<typeof insightsFromTheme>;
   ds: ReturnType<typeof dsFromTheme>;
   isDark: boolean;
   preference: ThemePreference;
@@ -38,7 +36,6 @@ export function ThemeProvider({ children, initialPreference = 'light' }: ThemePr
     const theme = resolvedMode === 'dark' ? darkTheme : lightTheme;
     return {
       theme,
-      insights: insightsFromTheme(theme),
       ds: dsFromTheme(theme),
       isDark: resolvedMode === 'dark',
       preference,

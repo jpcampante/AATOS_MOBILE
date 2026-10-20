@@ -2,7 +2,6 @@ export {
   darkTheme,
   contentColors,
   dsFromTheme,
-  insightsFromTheme,
   lightTheme,
   type AatosTheme,
   type ThemeColors,

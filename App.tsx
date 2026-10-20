@@ -1,5 +1,5 @@
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, BackHandler, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ScreenTransition } from './src/components/ui/transitions';
 import { ProductTabId } from './src/data/productNavigation';
@@ -27,35 +27,25 @@ export default function App() {
 
 function AppContent() {
   const { status } = useAuth();
-  const [activeTab, setActiveTab] = useState<ProductTabId>('insights');
-  const [tabHistory, setTabHistory] = useState<ProductTabId[]>([]);
-  const activeTabRef = useRef(activeTab);
-  activeTabRef.current = activeTab;
-  const tabHistoryRef = useRef(tabHistory);
-  tabHistoryRef.current = tabHistory;
+  const [activeTab, setActiveTab] = useState<ProductTabId>('auria');
+  const canGoBack = activeTab !== 'auria';
 
-  // Remember where the user came from so an edge swipe-back can return there.
-  const navigateTab = useCallback((tab: ProductTabId) => {
-    if (tab !== activeTabRef.current) {
-      setTabHistory((h) => [...h, activeTabRef.current]);
-    }
-    setActiveTab(tab);
-  }, []);
-
-  // A new session always starts on Insights, with no back history.
+  // A new session always starts on Auria.
   useEffect(() => {
-    if (status === 'signedOut') {
-      setActiveTab('insights');
-      setTabHistory([]);
-    }
+    if (status === 'signedOut') setActiveTab('auria');
   }, [status]);
 
-  const goBack = useCallback(() => {
-    const h = tabHistoryRef.current;
-    if (h.length === 0) return;
-    setActiveTab(h[h.length - 1]);
-    setTabHistory(h.slice(0, -1));
-  }, []);
+  // Auria is home: the edge swipe-back and the Android back button return there.
+  const goBack = useCallback(() => setActiveTab('auria'), []);
+
+  useEffect(() => {
+    if (status !== 'signedIn' || !canGoBack) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      goBack();
+      return true;
+    });
+    return () => sub.remove();
+  }, [status, canGoBack, goBack]);
 
   // Reading the stored session takes a few ms; stay on the login's blank white
   // canvas so a signed-in start never flashes the login sheet.
@@ -69,9 +59,9 @@ function AppContent() {
     <Suspense fallback={<BootFallback />}>
       <MainApp
         activeTab={activeTab}
-        onTabChange={navigateTab}
+        onTabChange={setActiveTab}
         onBack={goBack}
-        canGoBack={tabHistory.length > 0}
+        canGoBack={canGoBack}
       />
     </Suspense>
   );

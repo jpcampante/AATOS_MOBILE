@@ -22,11 +22,8 @@ type FooterItem = {
 };
 
 const FOOTER_ITEMS: FooterItem[] = [
-  { id: 'insights', label: 'Insights', icon: 'grid' },
   { id: 'auria', label: 'Auria', icon: 'messageSquare' },
-  { id: 'tasks', label: 'Tasks', icon: 'document' },
-  { id: 'integrations', label: 'Integrations', icon: 'mail' },
-  { id: 'settings', label: 'Settings', icon: 'userCircle' },
+  { id: 'profile', label: 'Profile', icon: 'userCircle' },
 ];
 
 export const PRODUCT_NAV_BAR_HEIGHT = 68;

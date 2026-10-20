@@ -254,25 +254,6 @@ export const darkTheme: AatosTheme = {
   shadow: darkShadow,
 };
 
-export function insightsFromTheme(theme: AatosTheme) {
-  return {
-    surface: theme.colors.surface,
-    page: theme.colors.page,
-    hover: theme.colors.hover,
-    text: theme.colors.text,
-    textMuted: theme.colors.textSecondary,
-    textHint: theme.colors.textHint,
-    border: theme.colors.border,
-    divider: theme.colors.divider,
-    accent: theme.colors.accent,
-    accentBg: theme.colors.accentBg,
-    heroShell: theme.colors.heroShell,
-    heroSearchBg: theme.colors.heroSearchBg,
-    filterBarBg: theme.colors.filterBarBg,
-    positive: theme.colors.success,
-  } as const;
-}
-
 export function dsFromTheme(theme: AatosTheme) {
   const c = theme.colors;
   return {

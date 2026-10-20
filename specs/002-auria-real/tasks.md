@@ -150,7 +150,7 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
 
 ## Fase 6 — História 5: Erros, créditos e permissões (P1)
 
-- [ ] A027 `AuriaErrorNotice` acima do composer:
+- [x] A027 `AuriaErrorNotice` acima do composer:
   - mensagem e ação por código: tentar de novo, nova conversa, ver planos na web, pedir ao responsável;
   - composer desabilitado em conversa só leitura e sem rede.
 

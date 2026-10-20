@@ -5,6 +5,7 @@ import {
   GestureResponderEvent,
   Keyboard,
   LayoutChangeEvent,
+  Linking,
   PanResponder,
   StyleSheet,
   useWindowDimensions,
@@ -46,6 +47,10 @@ import { useAuriaChats } from '../features/auria/useAuriaChats';
 import type { AuriaConversation } from '../features/auria/types';
 import { AuriaConversationMenu } from '../components/auria/AuriaConversationMenu';
 import { AuriaReadOnlyNotice } from '../components/auria/AuriaReadOnlyNotice';
+import { AuriaErrorNotice } from '../components/auria/AuriaErrorNotice';
+
+/** The AATOS web app, where plans and credits are managed. */
+const AATOS_WEB_URL = 'https://aatos.mydailyceo.com';
 import { providerLabel } from '../features/auria/chatList';
 import { loadLastChatId, saveLastChatId } from '../features/auria/prefs';
 import { describeAuriaError } from '../features/auria/api/errors';
@@ -140,11 +145,42 @@ export function AuriaScreen({
   const isWelcomeHome = workspace.panel === 'chat' && conversation.messages.length === 0;
   const { toast, showToast } = useAuriaToast();
 
-  // Until the notice above the composer lands (A027), a failed answer shows a toast.
-  useEffect(() => {
-    if (conversation.error) showToast(describeAuriaError(conversation.error).message);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversation.error]);
+  /** Why the last answer failed, shown above the composer with what to do next. */
+  const renderErrorNotice = () => {
+    const error = conversation.error;
+    if (!error) return null;
+    const copy = describeAuriaError(error, { canManageBilling: false });
+    const lastQuestion = [...conversation.messages].reverse().find((m) => m.role === 'user')?.text ?? '';
+    const actions: Partial<Record<typeof copy.action, { label: string; run: () => void }>> = {
+      // Puts the question back in the composer: resending never duplicates a saved message.
+      retry: {
+        label: 'Try again',
+        run: () => {
+          workspace.setComposerText(lastQuestion);
+          conversation.clearError();
+          composerRef.current?.focus();
+        },
+      },
+      new_chat: { label: 'New chat', run: handleNewChat },
+      reload: {
+        label: 'Reload chat',
+        run: () => {
+          conversation.clearError();
+          conversation.reload();
+        },
+      },
+      see_plans: { label: 'See plans on the web', run: () => void Linking.openURL(AATOS_WEB_URL) },
+    };
+    const action = actions[copy.action];
+    return (
+      <AuriaErrorNotice
+        message={copy.message}
+        actionLabel={action?.label}
+        onAction={action?.run}
+        onDismiss={conversation.clearError}
+      />
+    );
+  };
 
   /** Sends to the real Auria from any entry point (composer, suggestion, article…). */
   const sendToAuria = (text: string) => {
@@ -564,6 +600,7 @@ export function AuriaScreen({
                 {isWelcomeHome ? (
                   <AuriaPromptSuggestions onSelect={handleSuggestion} />
                 ) : null}
+                {renderErrorNotice()}
                 {!conversation.canContinue ? (
                   <AuriaReadOnlyNotice
                     origin={providerLabel(conversation.provider) ?? 'another app'}

@@ -42,6 +42,8 @@ import { AuriaPanel } from '../data/auriaMockData';
 import { useAuriaWorkspace } from '../features/auria/useAuriaWorkspace';
 import { useAuriaConversation } from '../features/auria/useAuriaConversation';
 import { useAuriaChats } from '../features/auria/useAuriaChats';
+import type { AuriaConversation } from '../features/auria/types';
+import { AuriaConversationMenu } from '../components/auria/AuriaConversationMenu';
 import { describeAuriaError } from '../features/auria/api/errors';
 import { useAuriaToast } from '../features/auria/useAuriaToast';
 import { AuriaActionToast } from '../components/auria/AuriaActionToast';
@@ -73,6 +75,16 @@ export function AuriaScreen({
   const workspace = useAuriaWorkspace();
   const conversation = useAuriaConversation();
   const chats = useAuriaChats();
+  const [menuChat, setMenuChat] = useState<AuriaConversation | null>(null);
+
+  // A rename, pin or delete the server refused was rolled back; say why.
+  useEffect(() => {
+    if (chats.error && chats.loaded) {
+      showToast(describeAuriaError(chats.error).message);
+      chats.clearError();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chats.error]);
 
   // When a turn ends, put its chat on top of the sidebar (a new chat appears
   // with its first message as the title, like the web).
@@ -442,6 +454,18 @@ export function AuriaScreen({
         conversationsLoading={chats.loading}
         hasMoreConversations={chats.hasMore}
         onLoadMoreConversations={chats.loadMore}
+        onConversationMenu={setMenuChat}
+      />
+
+      <AuriaConversationMenu
+        conversation={menuChat}
+        onClose={() => setMenuChat(null)}
+        onRename={(id, title) => void chats.rename(id, title)}
+        onSetPinned={(id, pinned) => void chats.setPinned(id, pinned)}
+        onDelete={(id) => {
+          void chats.remove(id);
+          if (conversation.chatId === id) handleNewChat();
+        }}
       />
 
       <Animated.View

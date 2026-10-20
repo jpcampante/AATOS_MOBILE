@@ -125,7 +125,7 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
   - abrir por id salvo.
 
   Endpoints E10, E16 — RF-07
-- [ ] A021 [P] Renomear, fixar/desafixar e apagar (com confirmação), de forma otimista com rollback — `useAuriaChats.ts`, menu da conversa na barra lateral. Endpoints E11, E12, E13 — RF-08
+- [x] A021 [P] Renomear, fixar/desafixar e apagar (com confirmação), de forma otimista com rollback — `useAuriaChats.ts`, menu da conversa na barra lateral. Endpoints E11, E12, E13 — RF-08
 - [ ] A022 Lembrar a última conversa (`prefs`). Recarregar a conversa ao voltar do segundo plano. Conversa importada (ChatGPT/Claude) abre só para leitura, com selo de origem — RF-09, casos de borda
 
 **Checkpoint (emulador):** H3.1–H3.6, conferindo renomear, fixar e apagar também na web.

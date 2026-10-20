@@ -399,7 +399,9 @@ export function AuriaSidebar({
           </>
         ) : null}
 
-        <SidebarSection title="Recents" styles={styles} />
+        {recentChats.length > 0 || (conversationsLoaded && conversations.length === 0) ? (
+          <SidebarSection title="Recents" styles={styles} />
+        ) : null}
         {recentChats.map((chat) => renderConversation(chat, false))}
         {conversationsLoaded && conversations.length === 0 ? (
           <Text style={styles.emptyNote}>No conversations yet. Ask Auria anything to start one.</Text>

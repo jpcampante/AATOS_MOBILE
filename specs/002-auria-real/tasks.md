@@ -111,7 +111,7 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
 
 ## Fase 4 — História 3: Histórico de conversas (P1)
 
-- [ ] A018 `useAuriaChats`:
+- [x] A018 `useAuriaChats`:
   - paginação de 30;
   - 404 vira lista vazia;
   - fixadas primeiro;

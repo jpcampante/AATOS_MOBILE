@@ -3,7 +3,7 @@
 | Campo | Valor |
 | --- | --- |
 | Spec | [spec.md](./spec.md) |
-| Status | Rascunho (dúvidas 1–4 respondidas em 2026-10-20; falta a 5) |
+| Status | Aprovado (2026-10-20) — v1 = P1 + P2; v2 = P3 |
 | Data | 2026-10-20 |
 
 > Fontes deste plano, lidas em 2026-10-20:
@@ -306,5 +306,6 @@ Sem módulo nativo fora do Expo Go.
 | 1 | Fundação (A001–A009) | Cliente HTTP, SSE, erros, tipos, reducer, com testes |
 | 2 | P1: H1, H2, H3, H4, H5 com bloqueio por créditos (A010–A028, A044) | Auria real conversando, histórico e anexos → V001 |
 | 3 | P2: H6, H7, H8, H9 (A029–A043, sem A042) | Paridade de conteúdo com a web |
-| 4 | P3: H10, H11, H12 (A045–A055) | Organização e contexto |
-| 5 | Acabamento (A056, V002–V004) | Mocks removidos, spec Implementada |
+| 4 | Fechamento da v1 (A056, V002–V004) | Mocks removidos; painéis da v2 ocultos; spec **Implementada (v1)**; merge na `main` |
+| 5 | **v2** — P3: H10, H11, H12 (A045–A055) | Organização e contexto (D-09: só depois da v1 entregue) |
+| 6 | Fechamento da v2 (A057, V005, V006) | Painéis reexibidos; spec Implementada |

@@ -235,7 +235,18 @@ Spec, plano e tarefas: [specs/001-login/](../specs/001-login/spec.md).
   - documentos **só leitura** por enquanto;
   - quando os créditos acabam, o app **bloqueia o envio antes** e avisa em inglês (sobe para a P1).
   Detalhes: D-05 a D-08 da [spec 002](../specs/002-auria-real/spec.md).
-- **Ainda em aberto:** a ordem de entrega P1 → P2 → P3.
+
+### D-26 · Spec 002 aprovada, entrega em duas versões
+- **Decisão:** a ordem P1 → P2 → P3 foi aprovada. A **v1** (P1 + P2: conversa
+  real, trabalho da Auria, histórico, anexos, erros e créditos, tentar de
+  novo/editar, busca na web, imagens e documentos só leitura) vai para a
+  `main` e para as pessoas. A **v2** (P3: projetos, compartilhar conversas,
+  menções, fontes, escopos e biblioteca) vem depois.
+- **Consequência:** na v1, os painéis que ainda não têm dados reais
+  (Projetos, Galeria, busca simulada) ficam ocultos, para não mostrar dados
+  falsos.
+- **Onde:** D-09 da [spec 002](../specs/002-auria-real/spec.md) e as fases do
+  [tasks.md](../specs/002-auria-real/tasks.md).
 
 ---
 
@@ -243,7 +254,7 @@ Spec, plano e tarefas: [specs/001-login/](../specs/001-login/spec.md).
 
 | Item | Onde |
 | --- | --- |
-| Responder as 5 dúvidas da spec 002 e começar pela fase 0 (P002–P004) | [spec 002 §9](../specs/002-auria-real/spec.md) |
+| Spec 002: começar pela fase 0 (P002–P004) | [tasks 002](../specs/002-auria-real/tasks.md) |
 | Trocar a `internalServiceKey` commitada em `Frontend_Myceo_Example_Authenticator/config.json` | backend |
 | Se a chave RSA do `.env.test` local do backend for usada em algum ambiente real, trocá-la (ela foi exibida por engano numa sessão) | backend |
 | Apagar as worktrees `_wt/mobile-code-login` e `_wt/main-mobile-code` e o SQLite de teste delas | máquina local |

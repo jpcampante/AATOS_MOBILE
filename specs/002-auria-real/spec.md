@@ -4,7 +4,7 @@
 | --- | --- |
 | ID | `002-auria-real` |
 | Branch | `develop` (sem branch de feature; depois `develop` → `main`) |
-| Status | Rascunho (aguardando as respostas da seção 9) |
+| Status | Aprovada (2026-10-20) — entrega em duas versões: v1 = P1 + P2, v2 = P3 |
 | Data | 2026-10-20 |
 | Substitui | RF-AUR-01, RF-AUR-02, RF-AUR-03, RF-AUR-04, RF-AUR-05, RF-AUR-06, RF-AUR-08, RF-AUR-09, RF-AUR-10 da [baseline](../000-baseline/spec.md) (item 004 do roadmap) |
 | Depende de | [001-login](../001-login/spec.md) (sessão real) mergeada na `develop` |
@@ -145,6 +145,9 @@ fazer** para **não ficar sem saída**.
 4. **Dado** uma conversa, **então** vejo a lista dos documentos criados nela.
 5. **Dado** um documento aberto, **então** ele é só leitura: não há edição manual nem "pedir mudança" no leitor (para mudar, peço à Auria na conversa).
 
+> **Histórias 10 a 12 são da segunda versão (v2)** — D-09. Na v1, os painéis
+> correspondentes ficam ocultos.
+
 ### História 10 — Projetos (P3)
 
 1. **Dado** que abro Projetos, **então** vejo os projetos da web com suas conversas.
@@ -235,6 +238,7 @@ fazer** para **não ficar sem saída**.
 - CS-03 — Uma foto enviada pelo celular é descrita corretamente pela Auria.
 - CS-04 — Os 13 códigos de erro do servidor têm mensagem própria no app.
 - CS-05 — Todas as histórias P1 aprovadas no emulador Android antes de começar as P2.
+- CS-06 — A v1 (P1 + P2) vai para a `main` antes de qualquer história P3 começar.
 
 ## 8. Decisões tomadas
 
@@ -246,6 +250,7 @@ fazer** para **não ficar sem saída**.
 - D-06 (2026-10-20, dúvida 2) — O seletor de modelo (Claude/GPT/Gemini) vira o seletor **Rápido/Profundo**; modo de voz e editor de imagem com pincel ficam **ocultos** até terem spec própria; os modelos de documento deixam de montar texto local e viram pedidos à Auria; o painel de busca passa a buscar nas conversas e projetos reais.
 - D-07 (2026-10-20, dúvida 3) — Documentos **só leitura** por enquanto. Sem edição manual e sem "pedir mudança" no leitor. Aplicar/Rejeitar uma proposta que a Auria fez na conversa continua, porque é a confirmação que a própria Auria pede para concluir o pedido.
 - D-08 (2026-10-20, dúvida 4) — O app **bloqueia o envio antes** quando os créditos acabaram e mostra o aviso em **inglês** (sobe para P1).
+- D-09 (2026-10-20, dúvida 5) — A ordem P1 → P2 → P3 está aprovada. A entrega é em **duas versões**: a **v1** (P1 + P2) vai para a `main` e para as pessoas; a **v2** (P3: Projetos, Compartilhar, Contexto) vem depois. Na v1, os painéis que só ganham dados reais na v2 (Projetos, Galeria, busca simulada) ficam ocultos, para não mostrar dados falsos.
 
 ## 9. Dúvidas em aberto
 
@@ -255,4 +260,4 @@ A spec só passa para **Aprovada** quando esta lista estiver vazia.
 - [x] 2. Recursos sem backend → como proposto (D-06).
 - [x] 3. Documentos → só leitura por enquanto (D-07).
 - [x] 4. Créditos → bloquear antes e avisar, em inglês (D-08).
-- [ ] 5. [PRECISA ESCLARECER: a ordem de entrega P1 → P2 → P3 da seção 3 está boa? Em especial: Projetos, Compartilhar e Contexto (H10–H12) podem ficar para uma segunda versão?]
+- [x] 5. Ordem P1 → P2 → P3 aprovada; P3 fica para a v2 (D-09).

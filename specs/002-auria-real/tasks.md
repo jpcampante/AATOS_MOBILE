@@ -15,8 +15,8 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
 - Antes de marcar `[x]`: `npm run typecheck` e `npm test` verdes; mudança
   visual conferida no emulador.
 
-> **Status:** rascunho. As dúvidas 1–4 foram respondidas em 2026-10-20
-> (D-05 a D-08 da spec). Falta a 5: a ordem P1 → P2 → P3.
+> **Status:** aprovado em 2026-10-20 (D-05 a D-09 da spec).
+> **v1** = P1 + P2 (Fases 0–10 e o fechamento da v1). **v2** = P3 (Fases 12–14).
 
 ## Fase 0 — Pré-requisitos e spikes (bloqueia tudo)
 
@@ -226,7 +226,21 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
 
 A044 (bloqueio por créditos) subiu para a Fase 6, na P1 (D-08).
 
-## Fase 12 — História 10: Projetos (P3)
+## Fechamento da v1 (P1 + P2)
+
+- [ ] A056 Remover os mocks mortos da Auria (`auriaMockData` de conversas, galeria e busca; `auriaModels`, D-06). **Ocultar na v1** o que só ganha backend na v2 (D-09, RF-22): painel de Projetos e a seção de projetos da barra lateral, Galeria e painel de busca simulado. Conferir que `grep "data/auria" src/screens src/components` só acha configuração estática ou código oculto da v2 — RNF-05, CS-02
+- [ ] V002 `npm run typecheck` e `npm test` sem erros
+- [ ] V003 Regressão completa da v1 no emulador Android (Expo Go), claro e escuro, com conferência cruzada na web. Registrar a versão do backend testada
+- [ ] V004 Spec → **Implementada (v1)**; decisões novas no fim de `docs/DECISOES.md`; merge `develop` → `main` quando aprovado
+
+---
+
+# Segunda versão (v2) — P3
+
+> Decisão D-09: H10–H12 ficam para depois de a v1 estar nas mãos das
+> pessoas. Começam só depois da V004.
+
+## Fase 12 — História 10: Projetos (P3 · v2)
 
 - [ ] A045 `useAuriaProjects`: lista e detalhe reais (404 vira lista vazia); `AuriaProjectsPanel`/`AuriaProjectDetail` sem mocks — E39, E41 — RF-18, RNF-05
 - [ ] A046 Criar, editar (nome, visibilidade) e apagar projeto; 409 de projeto privado com conversas pergunta se apaga as conversas — E40, E41 — RF-18
@@ -235,7 +249,7 @@ A044 (bloqueio por créditos) subiu para a Fase 6, na P1 (D-08).
 
 **Checkpoint (emulador):** H10.1–H10.4, conferidas na web.
 
-## Fase 13 — História 11: Compartilhar conversas (P3)
+## Fase 13 — História 11: Compartilhar conversas (P3 · v2)
 
 - [ ] A049 [P] Visibilidade privada/empresa (só o dono) — E11 — RF-19
 - [ ] A050 Folha de compartilhamento: pessoas da empresa; adicionar como leitor/editor; remover — `AuriaShareSheet.tsx`. Endpoints E14, E15, E44 — RF-19
@@ -248,7 +262,7 @@ A044 (bloqueio por créditos) subiu para a Fase 6, na P1 (D-08).
 
 **Checkpoint (emulador):** H11.1–H11.3, com uma segunda conta na web.
 
-## Fase 14 — História 12: Contexto da conversa (P3)
+## Fase 14 — História 12: Contexto da conversa (P3 · v2)
 
 - [ ] A052 Menções com `@`: seletor de pessoas da empresa → `mentions` + `subject_user_public_uid`; chips na mensagem — `AuriaMentionPicker.tsx`. Endpoint E44 — RF-21
 - [ ] A053 Fontes da conversa: catálogo de documentos indexados, vincular e desvincular (fila antes de a conversa existir); departamento ("Buscar em…") → `department_id` — E45, E46, E52 — RF-21
@@ -263,12 +277,11 @@ A044 (bloqueio por créditos) subiu para a Fase 6, na P1 (D-08).
 
 **Checkpoint (emulador):** H12.1–H12.4.
 
-## Fase final — Acabamento
+## Fechamento da v2
 
-- [ ] A056 Remover mocks mortos da Auria (`auriaMockData` de conversas, projetos, galeria e busca; `auriaModels`, D-06) e conferir que `grep "data/auria" src/screens src/components` só acha configuração estática — RNF-05, CS-02
-- [ ] V002 `npm run typecheck` e `npm test` sem erros
-- [ ] V003 Regressão completa no emulador Android (Expo Go), claro e escuro, com conferência cruzada na web. Registrar a versão do backend testada
-- [ ] V004 Spec → **Implementada**; decisões novas no fim de `docs/DECISOES.md`; merge `develop` → `main` quando aprovado
+- [ ] A057 Reexibir os painéis ocultos na v1 (Projetos, Biblioteca, busca), já ligados aos dados reais; remover o que restar de `auriaMockData` — RNF-05
+- [ ] V005 `npm run typecheck` e `npm test` sem erros; regressão de H10–H12 no emulador com conferência na web
+- [ ] V006 Spec → **Implementada**; decisões novas no fim de `docs/DECISOES.md`; merge `develop` → `main` quando aprovado
 
 ## Cobertura dos requisitos
 
@@ -290,11 +303,11 @@ A044 (bloqueio por créditos) subiu para a Fase 6, na P1 (D-08).
 | RF-15 | A033–A036 |
 | RF-16 | A037, A038 |
 | RF-17 | A039, A040, A041, A043 |
-| RF-18 | A045–A048 |
-| RF-19, RF-20 | A049–A051 |
-| RF-21 | A052–A055 |
-| RF-22 | A013, A014, A038, A043, A056 |
-| RNF-01..08 | A004, A005, A008, A012, A016, A019, A026, A045, A056, V001, V003 |
+| RF-18 (v2) | A045–A048 |
+| RF-19, RF-20 (v2) | A049–A051 |
+| RF-21 (v2) | A052–A055 |
+| RF-22 | A013, A014, A038, A043, A056, A057 |
+| RNF-01..08 | A004, A005, A008, A012, A016, A019, A026, A045, A056, V001, V003, V005 |
 
 Todos os requisitos da spec estão cobertos. Os endpoints marcados **Fora** ou
 **Não usar** no [plano §3](./plan.md) ficam conscientemente de fora.

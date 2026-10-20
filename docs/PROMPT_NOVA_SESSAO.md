@@ -48,6 +48,6 @@ acrescente as decisões novas no fim de docs/DECISOES.md.
 
 | Opção | Tarefa | Por que agora |
 | --- | --- | --- |
-| A | Responder as dúvidas da spec 002 e implementar a fase 0 (P002–P004) | Destrava a Auria real, que é o motivo do app |
+| A | Spec 002 (aprovada): implementar a fase 0 (P002–P004) e seguir a v1 | Destrava a Auria real, que é o motivo do app |
 | B | Baseline T002 + T003: ESLint e CI no GitHub Actions | Garante qualidade automática em todo push |
 | C | Baseline T006: upgrade do Expo SDK 54 → 56 | Quanto antes, menos código para migrar |

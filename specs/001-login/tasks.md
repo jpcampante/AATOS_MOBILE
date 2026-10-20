@@ -55,6 +55,6 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
 
 ## Fase 7 — Verificação
 
-- [~] V001 Emulador: verificado contra o Authenticator **local** (login, código errado, persistência, Ajustes, logout, cadastro). Falta repetir contra o dev depois do deploy (H1–H6)
-- [ ] V002 `npm run typecheck` e `npm test` verdes; spec → **Implementada**
-- [ ] V003 Backend: levar `dev` → `main` depois do seu ok
+- [x] V001 Emulador: verificado contra o Authenticator local (login, código errado, persistência, Ajustes, logout, cadastro) e contra o real em produção, com e-mail de verdade (2026-10-20)
+- [x] V002 `npm run typecheck` e `npm test` verdes (23 testes); spec → **Implementada**
+- [x] V003 Backend: `dev` → `main` aprovado e em produção (commit `1597879`)

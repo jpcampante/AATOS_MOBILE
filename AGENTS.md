@@ -53,9 +53,9 @@ Regras para agentes:
 | `npx expo start --tunnel` | Expo Go fora da rede local (4G / hotspot) |
 | `npm run web` | Preview no navegador em http://localhost:8083 (só desenvolvimento) |
 | `npm run typecheck` | TypeScript sem emitir (obrigatório antes de commitar) |
+| `npm test` | Testes (Jest + jest-expo) |
 
-Ainda não há testes automatizados nem lint; eles entram com as tarefas T001–T003
-da baseline.
+Ainda não há lint nem CI; entram com as tarefas T002–T003 da baseline.
 
 ## Estrutura do código
 

@@ -3,7 +3,7 @@
 | Campo | Valor |
 | --- | --- |
 | Spec | [spec.md](./spec.md) |
-| Status | Rascunho — para revisão |
+| Status | Aprovado e implementado |
 | Data | 2026-10-16 |
 
 ## 1. Resumo técnico

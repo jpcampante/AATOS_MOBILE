@@ -4,7 +4,7 @@
 | --- | --- |
 | ID | `001-login` |
 | Branch | `feature/001-login` (app) · `dev` (backend; vai para `main` depois de testado) |
-| Status | Em revisão |
+| Status | Implementada (2026-10-20) |
 | Data | 2026-10-16 |
 | Substitui | RF-LOG-02, RF-LOG-03 da [baseline](../000-baseline/spec.md) |
 
@@ -165,4 +165,4 @@ chega no meu e-mail** para **não precisar de senha nem sair do app**.
 
 ## 9. Dúvidas em aberto
 
-- [ ] [PRECISA ESCLARECER: quem tem acesso de admin para registrar o cliente "AATOS Android" no Authenticator de dev?]
+- [x] Registro do cliente "AATOS Android": resolvido pelo `deploy/client_apps.json` do Authenticator (`myceo_app_aatos_android`).

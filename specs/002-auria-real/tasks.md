@@ -160,7 +160,7 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
   - depois do erro, a conversa é relida do servidor para pegar o aviso que ele salvou.
 
   Requisito: RF-04, RF-12
-- [ ] A044 Bloqueio por créditos (D-08), movido para a P1:
+- [x] A044 Bloqueio por créditos (D-08), movido para a P1:
   - testes da regra, depois `billing.ts` + `useAuriaCredits`: restante = `(spendable_units ?? available_units) × tokens_per_unit`; bloqueia se ≤ 0, abaixo de `turn_estimates.auria`, plano inativo ou erro na consulta;
   - consulta ao abrir a Auria e depois de cada resposta;
   - composer bloqueado com aviso em inglês ("You're out of credits…") e a ação conforme `can_manage_billing`: "Buy credits on the web" ou "Ask your workspace owner"; mostra a data de renovação (`next_reset_at`) quando houver;

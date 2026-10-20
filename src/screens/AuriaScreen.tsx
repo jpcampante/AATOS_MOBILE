@@ -44,6 +44,8 @@ import { AuriaPanel } from '../data/auriaMockData';
 import { useAuriaWorkspace } from '../features/auria/useAuriaWorkspace';
 import { useAuriaConversation } from '../features/auria/useAuriaConversation';
 import { useAuriaChats } from '../features/auria/useAuriaChats';
+import { useAuriaCredits } from '../features/auria/useAuriaCredits';
+import { creditsMessage, resetHint } from '../features/auria/credits';
 import type { AuriaConversation } from '../features/auria/types';
 import { AuriaConversationMenu } from '../components/auria/AuriaConversationMenu';
 import { AuriaReadOnlyNotice } from '../components/auria/AuriaReadOnlyNotice';
@@ -84,6 +86,7 @@ export function AuriaScreen({
   const workspace = useAuriaWorkspace();
   const conversation = useAuriaConversation();
   const chats = useAuriaChats();
+  const credits = useAuriaCredits();
   const [menuChat, setMenuChat] = useState<AuriaConversation | null>(null);
 
   // Reopen the last chat once the list has loaded (it tells the chat's origin).
@@ -135,9 +138,13 @@ export function AuriaScreen({
   // with its first message as the title, like the web).
   const wasBusy = useRef(false);
   useEffect(() => {
-    if (wasBusy.current && !conversation.isBusy && conversation.chatId) {
-      const firstUser = conversation.messages.find((m) => m.role === 'user');
-      chats.touch(conversation.chatId, firstUser?.text.slice(0, 40) ?? '');
+    if (wasBusy.current && !conversation.isBusy) {
+      if (conversation.chatId) {
+        const firstUser = conversation.messages.find((m) => m.role === 'user');
+        chats.touch(conversation.chatId, firstUser?.text.slice(0, 40) ?? '');
+      }
+      // Each answer spends credits: re-check before the next one.
+      void credits.check();
     }
     wasBusy.current = conversation.isBusy;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -145,8 +152,38 @@ export function AuriaScreen({
   const isWelcomeHome = workspace.panel === 'chat' && conversation.messages.length === 0;
   const { toast, showToast } = useAuriaToast();
 
-  /** Why the last answer failed, shown above the composer with what to do next. */
+  // Auria refused for credits (402): show it as the credits notice, which also blocks sending.
+  useEffect(() => {
+    if (conversation.error?.code === 'insufficient_units') {
+      credits.markRefused(conversation.error.reasonCode);
+      conversation.clearError();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversation.error]);
+
+  /** Why Auria can't answer, shown above the composer with what to do next. */
   const renderErrorNotice = () => {
+    if (credits.state.status === 'blocked') {
+      const blocked = credits.state;
+      const action =
+        blocked.reason === 'check_failed'
+          ? { label: 'Try again', run: () => void credits.check() }
+          : blocked.canManageBilling
+            ? { label: 'See plans on the web', run: () => void Linking.openURL(AATOS_WEB_URL) }
+            : null;
+      return (
+        <AuriaErrorNotice
+          message={creditsMessage(blocked)}
+          detail={
+            blocked.reason === 'check_failed'
+              ? null
+              : resetHint(blocked.nextResetAt) ?? (blocked.canManageBilling ? null : 'Ask your workspace owner for credits.')
+          }
+          actionLabel={action?.label}
+          onAction={action?.run}
+        />
+      );
+    }
     const error = conversation.error;
     if (!error) return null;
     const copy = describeAuriaError(error, { canManageBilling: false });
@@ -185,6 +222,11 @@ export function AuriaScreen({
   /** Sends to the real Auria from any entry point (composer, suggestion, article…). */
   const sendToAuria = (text: string) => {
     if (workspace.panel !== 'chat') workspace.openPanel('chat');
+    // Out of credits (or the check failed): block before calling Auria (D-08). The notice says why.
+    if (credits.blocked) {
+      void credits.check();
+      return false;
+    }
     return conversation.send(text);
   };
 

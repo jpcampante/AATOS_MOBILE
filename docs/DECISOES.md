@@ -272,13 +272,42 @@ Spec, plano e tarefas: [specs/001-login/](../specs/001-login/spec.md).
   só com a Auria; tarefa A015 da 002 removida.
 - **Onde:** [specs/003-app-so-auria/](../specs/003-app-so-auria/spec.md).
 
+### D-29 · 002 Fase 2: conversa real no app (A010–A014)
+- **O chat fala com a Auria real** (`useAuriaConversation`); as respostas
+  prontas e o roteador por palavra-chave saíram do caminho de execução. As
+  conversas de exemplo ficaram em `src/data/auriaConversationMocks.ts`, usadas
+  só pelo painel de Projetos (v2, oculto na v1).
+- **Markdown** com `react-native-marked` 8.3.2, revelado em ritmo de 40–200
+  caracteres/s como o web; só o último bloco é re-renderizado.
+- **Balão da resposta com largura fixa (88%)**: com largura pelo conteúdo, o
+  Android mede errado a altura de blocos de código e tabelas (que rolam na
+  horizontal) e o chat não rolava até o fim da resposta.
+- **Seletor Rápido/Profundo** no lugar do seletor de modelo; a escolha fica
+  salva no aparelho (`@react-native-async-storage/async-storage`, confirmado no
+  Expo Go). `src/data/auriaModels.ts` saiu.
+- **Sem backend, oculto** (D-06): microfone/modo de voz, "Talk to teammate AI",
+  "Web search" e "Deep research" do menu "+", e o menu "•••" da resposta
+  (Retry, Branch… voltam com H6/H7). Copiar, ouvir e compartilhar usam o texto
+  sem a marcação Markdown.
+- **Correção (bug que já existia):** as listas da tela da Auria não rolavam no
+  Android. Causa: um `PanResponder` (deslizar para abrir a barra lateral) e um
+  `Pressable` cobrindo todo o conteúdo. Agora o deslize de abrir fica numa
+  faixa na borda esquerda e o toque no conteúdo é detectado sem tomar o gesto.
+  Observação: com a navegação por gestos do Android, deslizar da borda esquerda
+  é o "voltar" do sistema; a barra lateral abre pelo botão ☰.
+- **Verificado no emulador:** envio real → "Auria is thinking" → 402 da conta
+  sem plano com a mensagem certa; Markdown (títulos, listas, tabela, código,
+  citação, acentos e emoji) com uma resposta de exemplo; seletor e preferência.
+  **Falta** ver uma resposta real em streaming (P003), que precisa de uma
+  conta com plano ativo.
+
 ---
 
 ## Pendências em aberto
 
 | Item | Onde |
 | --- | --- |
-| Spec 002: provar o streaming (P003) com uma conta que tenha plano; depois seguir a fundação (A001…) | [tasks 002](../specs/002-auria-real/tasks.md) |
+| Spec 002: provar o streaming (P003) com uma conta que tenha plano; seguir pela Fase 3 (A016) | [tasks 002](../specs/002-auria-real/tasks.md) |
 | Trocar a `internalServiceKey` commitada em `Frontend_Myceo_Example_Authenticator/config.json` | backend |
 | Se a chave RSA do `.env.test` local do backend for usada em algum ambiente real, trocá-la (ela foi exibida por engano numa sessão) | backend |
 | Apagar as worktrees `_wt/mobile-code-login` e `_wt/main-mobile-code` e o SQLite de teste delas | máquina local |

@@ -41,6 +41,7 @@ import { APP_SHELL_BOTTOM_INSET } from '../components/navigation/AppShell';
 import { AuriaPanel } from '../data/auriaMockData';
 import { useAuriaWorkspace } from '../features/auria/useAuriaWorkspace';
 import { useAuriaConversation } from '../features/auria/useAuriaConversation';
+import { useAuriaChats } from '../features/auria/useAuriaChats';
 import { describeAuriaError } from '../features/auria/api/errors';
 import { useAuriaToast } from '../features/auria/useAuriaToast';
 import { AuriaActionToast } from '../components/auria/AuriaActionToast';
@@ -71,6 +72,19 @@ export function AuriaScreen({
   const composerRef = useRef<AuriaComposerHandle>(null);
   const workspace = useAuriaWorkspace();
   const conversation = useAuriaConversation();
+  const chats = useAuriaChats();
+
+  // When a turn ends, put its chat on top of the sidebar (a new chat appears
+  // with its first message as the title, like the web).
+  const wasBusy = useRef(false);
+  useEffect(() => {
+    if (wasBusy.current && !conversation.isBusy && conversation.chatId) {
+      const firstUser = conversation.messages.find((m) => m.role === 'user');
+      chats.touch(conversation.chatId, firstUser?.text.slice(0, 40) ?? '');
+    }
+    wasBusy.current = conversation.isBusy;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversation.isBusy, conversation.chatId]);
   const isWelcomeHome = workspace.panel === 'chat' && conversation.messages.length === 0;
   const { toast, showToast } = useAuriaToast();
 
@@ -340,9 +354,14 @@ export function AuriaScreen({
   const handleConversation = (id: string) => {
     dismissKeyboard();
     closeSidebar();
-    // Saved chats load from the server in A020 (the sidebar list is wired in A019).
-    void id;
-    showToast('Opening saved chats is coming in the next update.');
+    setAttachments([]);
+    setImageMode(false);
+    workspace.setComposerText('');
+    if (workspace.panel !== 'chat') workspace.openPanel('chat');
+    setPanelKey((key) => key + 1);
+    panelAnim.setValue(1);
+    const chat = chats.chats.find((c) => c.id === id);
+    void conversation.openChat(id, chat?.provider ?? null);
   };
 
   const panelTranslateX = panelAnim.interpolate({
@@ -393,6 +412,13 @@ export function AuriaScreen({
         onOpenFiles={() => transitionPanel('gallery')}
         modelLabel={`Auria · ${auriaModeLabel(conversation.mode)}`}
         onActionFeedback={showToast}
+        history={{
+          loading: conversation.history.loading,
+          hasEarlier: conversation.history.hasEarlier,
+          failed: conversation.history.error !== null,
+        }}
+        onLoadEarlier={() => void conversation.loadEarlier()}
+        onRetryHistory={conversation.reload}
       />
     );
   };
@@ -411,6 +437,11 @@ export function AuriaScreen({
         onSelectPanel={handleSelectSidebarPanel}
         onCreateProject={openNewProjectModal}
         onSelectConversation={handleConversation}
+        conversations={chats.chats}
+        conversationsLoaded={chats.loaded}
+        conversationsLoading={chats.loading}
+        hasMoreConversations={chats.hasMore}
+        onLoadMoreConversations={chats.loadMore}
       />
 
       <Animated.View

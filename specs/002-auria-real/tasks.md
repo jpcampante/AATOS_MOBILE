@@ -66,7 +66,7 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
   - erro com texto parcial.
 
   Arquivo: `src/features/auria/runReducer.ts` — RF-06, RNF-06
-- [ ] A009 Adicionar `@react-native-async-storage/async-storage`; `prefs.ts` (modo Rápido/Profundo, última conversa) — `src/features/auria/prefs.ts` — RF-05, RF-09
+- [x] A009 Adicionar `@react-native-async-storage/async-storage`; `prefs.ts` (modo Rápido/Profundo, última conversa) — `src/features/auria/prefs.ts` — RF-05, RF-09
 
 **Checkpoint:** `npm test` cobre `sse`, `runReducer`, `mappers` e `errors`; nenhuma tela mudou ainda.
 

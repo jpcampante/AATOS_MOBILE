@@ -16,7 +16,7 @@ import {
   auriaConversations,
   auriaGalleryItems,
 } from '../../data/auriaMockData';
-import { AURIA_CONVERSATION_MOCKS } from '../../features/auria/useAuriaWorkspace';
+import { AURIA_CONVERSATION_MOCKS } from '../../data/auriaConversationMocks';
 import { getProjectIcon } from '../../features/auria/projectIcons';
 import { auriaTypography, myceoCornerStyle, useTheme } from '../../theme';
 import { AuriaIcon } from '../icons';

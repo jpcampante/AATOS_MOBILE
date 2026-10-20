@@ -40,7 +40,8 @@ Regras para agentes:
   `[~]`/`[x]` e faça um commit por tarefa.
 - Spec ou plano errados → pare, proponha a correção no documento, depois siga.
 - Correção de bug pequena ou ajuste visual sem mudança de comportamento pode ir
-  direto, em branch `fix/…`.
+  direto na `develop`, com commit `fix(…)`.
+- Nunca crie branch nova (nem `feature/…` nem `fix/…`): ver [Branches](#branches).
 
 ## Comandos
 
@@ -88,5 +89,9 @@ docs/                   guias de ambiente (emulador Android)
 
 ## Branches
 
-`main` (estável) ← `develop` (integração) ← `feature/NNN-slug` / `fix/…`.
-Nunca commite direto em `main`.
+Só existem duas branches: `main` (estável) ← `develop` (trabalho).
+
+- Todo trabalho (features, correções, docs) é feito e commitado na `develop`.
+- A `main` só recebe merge da `develop`, quando o que está nela foi verificado.
+- Nunca commite direto em `main` e não crie branches de feature ou de correção
+  (decisão de 2026-10-20).

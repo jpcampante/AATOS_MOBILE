@@ -3,7 +3,7 @@
 | Campo | Valor |
 | --- | --- |
 | ID | `<NNN>-<slug>` |
-| Branch | `feature/<NNN>-<slug>` |
+| Branch | `develop` |
 | Status | Rascunho · Em revisão · Aprovada · Implementada |
 | Autor | <nome> |
 | Data | <AAAA-MM-DD> |

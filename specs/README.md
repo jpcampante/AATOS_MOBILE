@@ -30,22 +30,25 @@ está hoje** e serve de referência para todas as features seguintes.
 | 1. Especificar | `spec.md` sem `[PRECISA ESCLARECER]` | Produto | `/sdd-specify <descrição>` |
 | 2. Planejar | `plan.md` passando na verificação da constituição | Tech lead | `/sdd-plan <NNN>` |
 | 3. Quebrar em tarefas | `tasks.md` com fases e checkpoints | Tech lead | `/sdd-tasks <NNN>` |
-| 4. Implementar | Código + testes, uma tarefa por commit | Revisão de PR | `/sdd-implement <NNN>` |
+| 4. Implementar | Código + testes, uma tarefa por commit | Revisão antes do merge `develop` → `main` | `/sdd-implement <NNN>` |
 
 Regras do fluxo:
 
 1. Não pule etapas. Se a implementação mostrar que a spec estava errada,
    volte e corrija a spec primeiro.
 2. Numeração sequencial com três dígitos: `001-login-real`, `002-...`.
-3. Branch por feature: `feature/NNN-slug`, criada a partir de `develop`.
-4. PR de `feature/*` → `develop`. Release: `develop` → `main`.
+3. Sem branch por feature: a spec, o plano, as tarefas e o código são
+   commitados direto na `develop`, uma tarefa por commit.
+4. Release: merge `develop` → `main`.
 5. Ao terminar, mude o status da spec para **Implementada**.
 
 ## Branches
 
+Só existem duas (decisão de 2026-10-20):
+
 | Branch | Uso |
 | --- | --- |
 | `main` | Versão estável, só recebe merge de `develop` |
-| `develop` | Integração das features |
-| `feature/NNN-slug` | Uma feature (uma pasta em `specs/`) |
-| `fix/<descrição>` | Correção pontual, sem spec |
+| `develop` | Todo o trabalho: features (uma pasta em `specs/`), correções e docs |
+
+Não se criam branches `feature/…` nem `fix/…`.

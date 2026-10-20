@@ -6,7 +6,7 @@
 
 | Comando | Etapa |
 | --- | --- |
-| `/sdd-specify <descrição>` | Cria `specs/NNN-slug/spec.md` e a branch `feature/NNN-slug` |
+| `/sdd-specify <descrição>` | Cria `specs/NNN-slug/spec.md` (na `develop`, sem branch nova) |
 | `/sdd-plan <NNN>` | Gera `plan.md` a partir da spec aprovada |
 | `/sdd-tasks <NNN>` | Gera `tasks.md` a partir do plano |
 | `/sdd-implement <NNN> [T00x]` | Implementa as tarefas, um commit por tarefa |

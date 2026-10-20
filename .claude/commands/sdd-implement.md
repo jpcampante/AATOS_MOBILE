@@ -8,7 +8,7 @@ Implemente a feature `$ARGUMENTS` seguindo o `tasks.md`.
 Passos:
 
 1. Leia `spec.md`, `plan.md` e `tasks.md` da feature e `specs/constitution.md`.
-2. Confirme que está na branch `feature/NNN-slug`.
+2. Confirme que está na `develop` (não há branches de feature).
 3. Para cada tarefa pendente, na ordem (ou só a tarefa indicada nos argumentos):
    1. Marque `[~]` no `tasks.md`.
    2. Implemente, seguindo o padrão do código ao redor e os tokens de `src/theme`.

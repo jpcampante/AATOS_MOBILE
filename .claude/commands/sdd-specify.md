@@ -11,7 +11,7 @@ Passos:
 
 1. Leia `specs/README.md`, `specs/constitution.md` e `specs/000-baseline/spec.md`.
 2. Descubra o próximo número livre em `specs/` (três dígitos) e crie um slug curto em kebab-case.
-3. Crie a branch `feature/NNN-slug` a partir de `develop` (se houver mudanças não commitadas, pare e pergunte).
+3. Confirme que está na `develop` (não crie branch; se houver mudanças não commitadas de outro trabalho, pare e pergunte).
 4. Copie `specs/templates/spec-template.md` para `specs/NNN-slug/spec.md` e preencha.
    - Fale de **o quê** e **porquê**; nada de componentes, bibliotecas ou arquivos.
    - Critérios de aceite no formato Dado / Quando / Então, testáveis.

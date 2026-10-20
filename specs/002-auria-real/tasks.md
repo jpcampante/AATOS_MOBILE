@@ -88,7 +88,7 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
 
   Arquivo: `src/components/auria/AuriaMarkdown.tsx` — RF-03, RNF-01, RNF-07
 - [x] A013 Seletor **Rápido/Profundo** no composer, enviado como `mode` e salvo em `prefs` — `AuriaComposer.tsx`, `AuriaModelSheet.tsx` (sai a lista Claude/GPT/Gemini, D-06) — RF-05, RF-22
-- [ ] A014 Ações da mensagem:
+- [x] A014 Ações da mensagem:
   - copiar, ouvir e compartilhar usam o texto sem markdown;
   - "Branch", "Search the web" e "Use Thinking" ficam ocultos até H6/H7;
   - modo de voz e "Talk to teammate AI" ocultos no menu "+" (D-06).

@@ -59,14 +59,12 @@ const PRIMARY_ACTIONS: CreateAction[] = [
   { id: 'camera', label: 'Camera', icon: 'camera' },
   { id: 'photos', label: 'Photos', icon: 'photo' },
   { id: 'files', label: 'Files', icon: 'paperclip' },
-  { id: 'teammate', label: 'Talk to teammate AI', icon: 'users' },
   { id: 'tools', label: 'Tools', icon: 'wrench' },
 ];
 
-// Shown inside the "Tools" sub-view.
+// Shown inside the "Tools" sub-view. Teammate AI, web search and deep research
+// stay hidden until they are real (spec 002, D-06; web search comes with H7).
 const TOOL_ACTIONS: CreateAction[] = [
-  { id: 'websearch', label: 'Web search', icon: 'globe' },
-  { id: 'research', label: 'Deep research', icon: 'bookOpen' },
   { id: 'image', label: 'Create image', icon: 'frame' },
   { id: 'document', label: 'Create document', icon: 'document' },
 ];

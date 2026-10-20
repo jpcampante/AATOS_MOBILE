@@ -279,20 +279,23 @@ export const AuriaComposer = forwardRef<AuriaComposerHandle, AuriaComposerProps>
 
           <View style={styles.spacer} />
 
-          <Pressable
-            onPress={onVoice}
-            accessibilityRole="button"
-            accessibilityLabel="Voice"
-            hitSlop={8}
-            style={({ pressed }) => [styles.circleButton, pressed && styles.circleButtonPressed]}
-          >
-            <AuriaIcon
-              name="mic"
-              size={AURIA_ICON_SIZE.md}
-              color={ds.gray600}
-              strokeWidth={AURIA_ICON_STROKE_STRONG}
-            />
-          </Pressable>
+          {/* Voice mode has no backend yet (spec 002, D-06): no button without a handler. */}
+          {onVoice ? (
+            <Pressable
+              onPress={onVoice}
+              accessibilityRole="button"
+              accessibilityLabel="Voice"
+              hitSlop={8}
+              style={({ pressed }) => [styles.circleButton, pressed && styles.circleButtonPressed]}
+            >
+              <AuriaIcon
+                name="mic"
+                size={AURIA_ICON_SIZE.md}
+                color={ds.gray600}
+                strokeWidth={AURIA_ICON_STROKE_STRONG}
+              />
+            </Pressable>
+          ) : null}
 
           <Pressable
             style={({ pressed }) => [

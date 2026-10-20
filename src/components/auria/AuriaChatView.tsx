@@ -220,9 +220,9 @@ function AssistantBubbleContent({
           text={message.text}
           modelLabel={modelLabel}
           onBranch={onBranch}
-          onRetry={() => onRegenerate?.(message.id, 'retry')}
-          onUseThinking={() => onRegenerate?.(message.id, 'thinking')}
-          onSearchWeb={() => onRegenerate?.(message.id, 'search')}
+          onRetry={onRegenerate ? () => onRegenerate(message.id, 'retry') : undefined}
+          onUseThinking={onRegenerate ? () => onRegenerate(message.id, 'thinking') : undefined}
+          onSearchWeb={onRegenerate ? () => onRegenerate(message.id, 'search') : undefined}
           onFeedback={onActionFeedback}
         />
       ) : null}

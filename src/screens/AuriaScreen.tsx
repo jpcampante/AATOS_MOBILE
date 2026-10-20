@@ -32,7 +32,6 @@ import {
   getWelcomeContentTopPadding,
 } from '../components/auria/auriaLayout';
 import { AuriaChatView } from '../components/auria/AuriaChatView';
-import { AuriaVoiceMode } from '../components/auria/AuriaVoiceMode';
 import { AuriaCameraView } from '../components/auria/AuriaCameraView';
 import { AuriaNewProjectInput, AuriaNewProjectModal } from '../components/auria/AuriaNewProjectModal';
 import { AuriaSidebar } from '../components/auria/AuriaSidebar';
@@ -99,7 +98,6 @@ export function AuriaScreen({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
-  const [voiceOpen, setVoiceOpen] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [attachments, setAttachments] = useState<string[]>([]);
   const [imageMode, setImageMode] = useState(false);
@@ -478,10 +476,6 @@ export function AuriaScreen({
                   onSend={handleSend}
                   onStop={conversation.stop}
                   onAttach={openCreateMenu}
-                  onVoice={() => {
-                    dismissKeyboard();
-                    setVoiceOpen(true);
-                  }}
                   bottomInset={keyboardInset}
                   isResponding={conversation.isBusy}
                   selectedModelName={auriaModeLabel(conversation.mode)}
@@ -544,7 +538,6 @@ export function AuriaScreen({
         onCreate={handleCreateProject}
       />
 
-      <AuriaVoiceMode visible={voiceOpen} onClose={() => setVoiceOpen(false)} />
 
       <AuriaCameraView
         visible={cameraOpen}

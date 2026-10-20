@@ -135,3 +135,69 @@ describe('conversationReducer', () => {
     expect(state).toEqual(initialConversation);
   });
 });
+
+describe('conversationReducer — saved chats', () => {
+  const m = (id: string, role: 'user' | 'assistant' = 'user') => ({ id, serverId: id, role, text: id });
+
+  it('opens a chat, loads its latest pages and then earlier ones', () => {
+    const opened = conversationReducer(initialConversation, { type: 'open', chatId: 'c-1', provider: 'auria_system' });
+    expect(opened).toMatchObject({ chatId: 'c-1', provider: 'auria_system', messages: [], history: { loading: true } });
+
+    const loaded = conversationReducer(opened, {
+      type: 'history-loaded',
+      chatId: 'c-1',
+      messages: [m('m3'), m('m4', 'assistant')],
+      oldestPage: 2,
+    });
+    expect(loaded.history).toEqual({ loading: false, oldestPage: 2, hasEarlier: true, error: null });
+
+    const earlier = apply(
+      [
+        { type: 'earlier-loading', chatId: 'c-1' },
+        { type: 'earlier-loaded', chatId: 'c-1', messages: [m('m1'), m('m2'), m('m3')], page: 1 },
+      ],
+      loaded,
+    );
+    expect(earlier.messages.map((x) => x.id)).toEqual(['m1', 'm2', 'm3', 'm4']);
+    expect(earlier.history.hasEarlier).toBe(false);
+  });
+
+  it('ignores history that arrives for a chat no longer open', () => {
+    const state = apply([
+      { type: 'open', chatId: 'c-1', provider: null },
+      { type: 'open', chatId: 'c-2', provider: null },
+      { type: 'history-loaded', chatId: 'c-1', messages: [m('old')], oldestPage: 1 },
+    ]);
+    expect(state.chatId).toBe('c-2');
+    expect(state.messages).toEqual([]);
+  });
+
+  it('keeps a message sent while the history was loading after it', () => {
+    const state = apply([
+      { type: 'open', chatId: 'c-1', provider: 'auria_system' },
+      { type: 'send', localId: 't1', text: 'New question', now: 0 },
+      { type: 'history-loaded', chatId: 'c-1', messages: [m('m1'), m('m2', 'assistant')], oldestPage: 1 },
+    ]);
+    expect(state.messages.map((x) => x.id)).toEqual(['m1', 'm2', 't1-u']);
+    expect(state.live?.run.chatId).toBe('c-1');
+  });
+
+  it('records a history failure without losing what is on screen', () => {
+    const error = new AuriaApiError({ code: 'network' });
+    const state = apply([
+      { type: 'open', chatId: 'c-1', provider: null },
+      { type: 'history-failed', chatId: 'c-1', error },
+    ]);
+    expect(state.history).toMatchObject({ loading: false, error });
+  });
+
+  it('marks a chat created by the first message as an Auria chat', () => {
+    const state = apply([
+      { type: 'send', localId: 't1', text: 'Hi', now: 0 },
+      ev('t1', { type: 'chat', chatId: 'c-9', userMessageUuid: null }),
+      ev('t1', done('Hello')),
+      { type: 'settle', localId: 't1' },
+    ]);
+    expect(state.provider).toBe('auria_system');
+  });
+});

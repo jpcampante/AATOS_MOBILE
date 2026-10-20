@@ -119,7 +119,7 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
 
   Arquivo: `src/features/auria/useAuriaChats.ts`. Endpoint E07 — RF-07
 - [ ] A019 Barra lateral com conversas reais, rolagem infinita e estado vazio; sem import de `src/data/auriaMockData` — `AuriaSidebar.tsx` — RF-07, RNF-05
-- [ ] A020 Abrir conversa:
+- [x] A020 Abrir conversa:
   - página 1 para saber o `count`, depois as duas últimas;
   - "Carregar anteriores";
   - abrir por id salvo.

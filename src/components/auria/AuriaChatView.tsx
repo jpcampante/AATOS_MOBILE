@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AURIA_CHAT_SCROLL_END_PADDING, AURIA_CONTENT_HORIZONTAL_INSET } from './auriaLayout';
 import { auriaTypography, liquidGlassBorder, liquidGlassTokens, useTheme } from '../../theme';
 import type { AuriaChatMessage } from '../../features/auria/types';
@@ -24,6 +24,10 @@ type AuriaChatViewProps = {
   onRegenerate?: (messageId: string, mode: 'retry' | 'thinking' | 'search') => void;
   /** Transient feedback from a message action (copied, reading aloud, …). */
   onActionFeedback?: (message: string) => void;
+  /** Loading state of a saved chat's history. */
+  history?: { loading: boolean; hasEarlier: boolean; failed: boolean };
+  onLoadEarlier?: () => void;
+  onRetryHistory?: () => void;
 };
 
 const ATTACHMENT_MAX_W = 230;
@@ -80,10 +84,26 @@ export function AuriaChatView({
   onBranch,
   onRegenerate,
   onActionFeedback,
+  history,
+  onLoadEarlier,
+  onRetryHistory,
 }: AuriaChatViewProps) {
   const { ds, theme } = useTheme();
   const styles = useMemo(() => createStyles(ds, theme), [ds, theme]);
   const scrollRef = useRef<ScrollView>(null);
+
+  // Follow the end of the chat when a message arrives or the live answer grows,
+  // but not when earlier messages are added on top (that would jump away).
+  const last = messages[messages.length - 1];
+  const endKey = last ? `${last.id}:${last.text.length}` : '';
+  const followedKey = useRef('');
+  const followEnd = () => {
+    if (endKey === followedKey.current) return;
+    followedKey.current = endKey;
+    scrollRef.current?.scrollToEnd({ animated: true });
+  };
+
+  const loadingFirst = !!history?.loading && messages.length === 0;
 
   return (
     <ScrollView
@@ -93,8 +113,42 @@ export function AuriaChatView({
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="interactive"
-      onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
+      maintainVisibleContentPosition={{ minIndexForVisible: 1 }}
+      onContentSizeChange={followEnd}
     >
+      {history?.hasEarlier && messages.length > 0 ? (
+        <Pressable
+          onPress={onLoadEarlier}
+          disabled={history.loading}
+          style={({ pressed }) => [styles.historyButton, pressed && styles.historyButtonPressed]}
+          accessibilityRole="button"
+          accessibilityLabel="Load earlier messages"
+        >
+          {history.loading ? <ActivityIndicator size="small" color={ds.gray500} /> : null}
+          <Text style={styles.historyText}>{history.loading ? 'Loading…' : 'Load earlier messages'}</Text>
+        </Pressable>
+      ) : null}
+      {loadingFirst ? (
+        <View style={styles.historyState}>
+          <ActivityIndicator size="small" color={ds.gray500} />
+          <Text style={styles.historyText}>Loading messages…</Text>
+        </View>
+      ) : null}
+      {history?.failed && !history.loading ? (
+        <View style={styles.historyState}>
+          <Text style={styles.historyText}>
+            {messages.length === 0 ? "Couldn't open this conversation." : "Couldn't load earlier messages."}
+          </Text>
+          <Pressable
+            onPress={messages.length === 0 ? onRetryHistory : onLoadEarlier}
+            style={({ pressed }) => [styles.historyButton, pressed && styles.historyButtonPressed]}
+            accessibilityRole="button"
+            accessibilityLabel="Try again"
+          >
+            <Text style={[styles.historyText, styles.historyAction]}>Try again</Text>
+          </Pressable>
+        </View>
+      ) : null}
       {messages.map((message) => {
         const isUser = message.role === 'user';
         const attachments = message.attachments ?? [];
@@ -317,6 +371,32 @@ function createStyles(
       alignItems: 'center',
       gap: 8,
       paddingVertical: 10,
+    },
+    historyButton: {
+      alignSelf: 'center',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      minHeight: 44,
+      paddingHorizontal: 16,
+      borderRadius: 22,
+    },
+    historyButtonPressed: {
+      backgroundColor: ds.gray100,
+    },
+    historyState: {
+      alignItems: 'center',
+      gap: 8,
+      paddingVertical: 24,
+    },
+    historyText: {
+      ...auriaTypography.body,
+      color: ds.gray500,
+      fontSize: 13,
+    },
+    historyAction: {
+      color: ds.auriaBlue,
+      fontWeight: theme.typography.fontWeight.semibold,
     },
     statusNote: {
       ...auriaTypography.body,

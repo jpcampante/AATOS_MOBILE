@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'r
 import { isAuriaApiError, networkError } from './api/errors';
 import { auriaHttp, streamChat } from './api/http';
 import { auriaRoutes } from './api/routes';
+import { listMessages, MESSAGE_PAGE_SIZE } from './api/chats';
+import { canContinueChat, latestPages } from './chatList';
 import { newClientOperationId, type AuriaMode, type StreamChatRequest } from './api/streamChat';
 import { conversationReducer, initialConversation, visibleMessages } from './conversationReducer';
 import { DEFAULT_MODE, loadMode, saveMode } from './prefs';
@@ -50,7 +52,7 @@ export function useAuriaConversation() {
   const send = useCallback((text: string, options: SendOptions = {}): boolean => {
     const message = text.trim();
     const current = stateRef.current;
-    if (!message || current.live) return false;
+    if (!message || current.live || !canContinueChat(current.provider)) return false;
 
     const localId = nextTurnId();
     const isNewChat = !current.chatId;
@@ -107,10 +109,57 @@ export function useAuriaConversation() {
 
   const clearError = useCallback(() => dispatch({ type: 'clear-error' }), []);
 
+  /** Fetches the latest messages of a chat (the last two server pages), oldest first. */
+  const fetchLatest = useCallback(async (chatId: string) => {
+    const first = await listMessages(chatId, 1);
+    const pages = latestPages(first.count, MESSAGE_PAGE_SIZE);
+    const results = await Promise.all(pages.map((page) => (page === 1 ? first : listMessages(chatId, page))));
+    return { messages: results.flatMap((r) => r.items), oldestPage: pages[0] };
+  }, []);
+
+  /** Open a saved chat. A running answer in another chat is stopped (the server keeps it). */
+  const openChat = useCallback(
+    async (chatId: string, provider: string | null) => {
+      abortRef.current?.abort();
+      abortRef.current = null;
+      dispatch({ type: 'open', chatId, provider });
+      try {
+        const { messages, oldestPage } = await fetchLatest(chatId);
+        dispatch({ type: 'history-loaded', chatId, messages, oldestPage });
+      } catch (err) {
+        dispatch({ type: 'history-failed', chatId, error: isAuriaApiError(err) ? err : networkError(err) });
+      }
+    },
+    [fetchLatest],
+  );
+
+  const loadEarlier = useCallback(async () => {
+    const { chatId, history } = stateRef.current;
+    if (!chatId || history.loading || !history.hasEarlier) return;
+    const page = history.oldestPage - 1;
+    dispatch({ type: 'earlier-loading', chatId });
+    try {
+      const result = await listMessages(chatId, page);
+      dispatch({ type: 'earlier-loaded', chatId, messages: result.items, page });
+    } catch (err) {
+      dispatch({ type: 'history-failed', chatId, error: isAuriaApiError(err) ? err : networkError(err) });
+    }
+  }, []);
+
+  /** Re-reads the open chat from the server (back from background, after an error). */
+  const reload = useCallback(() => {
+    const { chatId, provider, live } = stateRef.current;
+    if (chatId && !live) void openChat(chatId, provider);
+  }, [openChat]);
+
   const messages = useMemo(() => visibleMessages(state), [state]);
 
   return {
     chatId: state.chatId,
+    provider: state.provider,
+    /** Imported chats (ChatGPT, Claude…) open read-only: the Auria engine can't continue them. */
+    canContinue: canContinueChat(state.provider),
+    history: state.history,
     messages,
     /** The answer being written, with its status, tools and reasoning. */
     run: state.live?.run ?? null,
@@ -121,6 +170,9 @@ export function useAuriaConversation() {
     send,
     stop,
     newChat,
+    openChat,
+    loadEarlier,
+    reload,
     clearError,
   };
 }

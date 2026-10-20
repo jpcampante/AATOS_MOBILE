@@ -32,6 +32,7 @@ Leia antes de começar:
 2. [specs/README.md](specs/README.md) — o fluxo, estrutura de pastas e branches.
 3. [specs/000-baseline/spec.md](specs/000-baseline/spec.md) — o que o app faz hoje.
 4. [specs/000-baseline/plan.md](specs/000-baseline/plan.md) — mapa da arquitetura e do código.
+5. [docs/DECISOES.md](docs/DECISOES.md) — registro de todas as decisões tomadas (acrescente as novas no fim).
 
 Regras para agentes:
 
@@ -54,9 +55,9 @@ Regras para agentes:
 | `npx expo start --tunnel` | Expo Go fora da rede local (4G / hotspot) |
 | `npm run web` | Preview no navegador em http://localhost:8083 (só desenvolvimento) |
 | `npm run typecheck` | TypeScript sem emitir (obrigatório antes de commitar) |
+| `npm test` | Testes (Jest + jest-expo) |
 
-Ainda não há testes automatizados nem lint; eles entram com as tarefas T001–T003
-da baseline.
+Ainda não há lint nem CI; entram com as tarefas T002–T003 da baseline.
 
 ## Estrutura do código
 

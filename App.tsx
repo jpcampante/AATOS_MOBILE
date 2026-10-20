@@ -1,8 +1,9 @@
-import { lazy, Suspense, useCallback, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ScreenTransition } from './src/components/ui/transitions';
 import { ProductTabId } from './src/data/productNavigation';
+import { AuthProvider, useAuth } from './src/features/auth';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { ThemeProvider } from './src/theme';
 import { ensureWebBrandFont } from './src/theme/webFont';
@@ -12,10 +13,20 @@ ensureWebBrandFont();
 
 const MainApp = lazy(() => import('./src/MainApp'));
 
-type AppPhase = 'login' | 'main';
-
 export default function App() {
-  const [phase, setPhase] = useState<AppPhase>('login');
+  return (
+    <SafeAreaProvider>
+      <ThemeProvider initialPreference="light">
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
+      </ThemeProvider>
+    </SafeAreaProvider>
+  );
+}
+
+function AppContent() {
+  const { status } = useAuth();
   const [activeTab, setActiveTab] = useState<ProductTabId>('insights');
   const [tabHistory, setTabHistory] = useState<ProductTabId[]>([]);
   const activeTabRef = useRef(activeTab);
@@ -31,6 +42,14 @@ export default function App() {
     setActiveTab(tab);
   }, []);
 
+  // A new session always starts on Insights, with no back history.
+  useEffect(() => {
+    if (status === 'signedOut') {
+      setActiveTab('insights');
+      setTabHistory([]);
+    }
+  }, [status]);
+
   const goBack = useCallback(() => {
     const h = tabHistoryRef.current;
     if (h.length === 0) return;
@@ -38,25 +57,23 @@ export default function App() {
     setTabHistory(h.slice(0, -1));
   }, []);
 
-  return (
-    <SafeAreaProvider>
-      <ThemeProvider initialPreference="light">
-        {phase === 'login' ? (
-          <ScreenTransition key="login">
-            <LoginScreen onContinue={() => setPhase('main')} />
-          </ScreenTransition>
-        ) : (
-          <Suspense fallback={<BootFallback />}>
-            <MainApp
-              activeTab={activeTab}
-              onTabChange={navigateTab}
-              onBack={goBack}
-              canGoBack={tabHistory.length > 0}
-            />
-          </Suspense>
-        )}
-      </ThemeProvider>
-    </SafeAreaProvider>
+  // Reading the stored session takes a few ms; stay on the login's blank white
+  // canvas so a signed-in start never flashes the login sheet.
+  if (status === 'loading') return <View style={styles.blank} />;
+
+  return status === 'signedOut' ? (
+    <ScreenTransition key="login">
+      <LoginScreen />
+    </ScreenTransition>
+  ) : (
+    <Suspense fallback={<BootFallback />}>
+      <MainApp
+        activeTab={activeTab}
+        onTabChange={navigateTab}
+        onBack={goBack}
+        canGoBack={tabHistory.length > 0}
+      />
+    </Suspense>
   );
 }
 
@@ -69,6 +86,10 @@ function BootFallback() {
 }
 
 const styles = StyleSheet.create({
+  blank: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
   boot: {
     flex: 1,
     alignItems: 'center',

@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   Animated,
   Image,
   KeyboardAvoidingView,
@@ -9,34 +8,19 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { welcomeContent } from '../data/welcomeContent';
-import { AppleLogo, GoogleLogo } from '../components/ui/SocialLogos';
+import { EmailCodeFlow } from '../components/auth/EmailCodeFlow';
+import { ON_SHEET_MUTED } from '../components/auth/loginPalette';
 import { RollingHeadline } from '../components/ui/RollingHeadline';
+import { useAuth } from '../features/auth';
 import { SUPPORTS_NATIVE_DRIVER, contentColors, dsFromTheme, useTheme, type AatosTheme } from '../theme';
-import { tapLight, tapMedium, tapSuccess } from '../utils/haptics';
-
-type EmailMode = 'login' | 'register' | null;
-
-type LoginScreenProps = {
-  onContinue: () => void;
-};
+import { tapLight, tapMedium } from '../utils/haptics';
 
 const AATOS_IMAGOTYPE = require('../../assets/aatos-imagotype.png');
-
-/**
- * Fixed brand palette for the pre-auth login: a white hero over a pure-black
- * sheet, always light. These are deliberate white-on-black brand values, not
- * theme-driven — only the semantic whites/blacks/radii come from the theme.
- */
-const SHEET_MUTED = '#2B2B2B';
-const ON_SHEET_MUTED = 'rgba(255, 255, 255, 0.70)';
-const ON_SHEET_FAINT = 'rgba(255, 255, 255, 0.45)';
-const SHEET_BORDER = 'rgba(255, 255, 255, 0.35)';
 
 /** Staged boot reveal: blank white → logo → the ball → black login sheet. */
 const STAGE = { WHITE: 0, LOGO: 1, BLOOM: 2, SHEET: 3 } as const;
@@ -45,18 +29,15 @@ type Stage = (typeof STAGE)[keyof typeof STAGE];
 /** Beat timings (ms from mount) — each beat lands after the previous settles. */
 const BOOT = { logo: 240, bloom: 820, sheet: 1320 } as const;
 
-export function LoginScreen({ onContinue }: LoginScreenProps) {
+export function LoginScreen() {
   const { ds, theme } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = useMemo(
     () => createStyles(ds, theme, insets.bottom),
     [ds, theme, insets.bottom],
   );
-  const [emailMode, setEmailMode] = useState<EmailMode>(null);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [loading, setLoading] = useState(false);
+  const { reason, clearReason } = useAuth();
+  const [emailFlow, setEmailFlow] = useState(false);
 
   // Boot stages decide what is visible; the animated values decide how it moves.
   const [stage, setStage] = useState<Stage>(STAGE.WHITE);
@@ -131,17 +112,10 @@ export function LoginScreen({ onContinue }: LoginScreenProps) {
     if (h > 0 && h !== sheetHeight) setSheetHeight(h);
   };
 
-  const handleSocial = () => {
-    tapMedium();
-    tapSuccess();
-    onContinue();
-  };
-
-  const handleEmailSubmit = async () => {
-    setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    setLoading(false);
-    onContinue();
+  const startEmailFlow = () => {
+    tapLight();
+    clearReason();
+    setEmailFlow(true);
   };
 
   return (
@@ -195,116 +169,33 @@ export function LoginScreen({ onContinue }: LoginScreenProps) {
             { opacity: stage >= STAGE.SHEET ? 1 : 0, transform: [{ translateY: sheetTranslate }] },
           ]}
         >
-          {emailMode ? (
-            <View style={styles.emailPanel}>
-              <Pressable
-                onPress={() => setEmailMode(null)}
-                style={styles.emailBack}
-                accessibilityRole="button"
-              >
-                <Text style={styles.emailBackText}>← Back</Text>
-              </Pressable>
-
-              {emailMode === 'register' ? (
-                <View style={styles.field}>
-                  <TextInput
-                    value={fullName}
-                    onChangeText={setFullName}
-                    placeholder="Full name"
-                    placeholderTextColor={ON_SHEET_FAINT}
-                    style={styles.input}
-                  />
-                </View>
-              ) : null}
-
-              <View style={styles.field}>
-                <TextInput
-                  value={email}
-                  onChangeText={setEmail}
-                  placeholder="Email"
-                  placeholderTextColor={ON_SHEET_FAINT}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  style={styles.input}
-                />
-              </View>
-
-              <View style={styles.field}>
-                <TextInput
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder="Password"
-                  placeholderTextColor={ON_SHEET_FAINT}
-                  secureTextEntry
-                  style={styles.input}
-                />
-              </View>
-
-              <Pressable
-                style={[styles.sheetButtonMuted, loading && styles.buttonDisabled]}
-                onPress={handleEmailSubmit}
-                disabled={loading}
-                accessibilityRole="button"
-              >
-                {loading ? (
-                  <ActivityIndicator color={ds.white} />
-                ) : (
-                  <Text style={styles.sheetButtonMutedText}>
-                    {emailMode === 'login' ? 'Log in' : 'Sign up'}
-                  </Text>
-                )}
-              </Pressable>
-            </View>
+          {emailFlow ? (
+            <EmailCodeFlow onExit={() => setEmailFlow(false)} />
           ) : (
             <View style={styles.socialPanel}>
+              {reason === 'session_ended' ? (
+                <Animated.View style={cascade(0)}>
+                  <Text style={styles.notice} accessibilityLiveRegion="polite">
+                    Your session ended. Sign in again to continue.
+                  </Text>
+                </Animated.View>
+              ) : null}
+
               <Animated.View style={cascade(0)}>
                 <Pressable
-                  style={({ pressed }) => [styles.appleButton, pressed && styles.pressed]}
-                  onPress={handleSocial}
+                  style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}
+                  onPress={startEmailFlow}
                   accessibilityRole="button"
-                  accessibilityLabel="Continue with Apple"
+                  accessibilityLabel="Continue with email"
                 >
-                  <AppleLogo size={18} color={contentColors.black} />
-                  <Text style={styles.appleButtonText}>Continue with Apple</Text>
+                  <Text style={styles.primaryButtonText}>Continue with email</Text>
                 </Pressable>
               </Animated.View>
 
               <Animated.View style={cascade(0.12)}>
-                <Pressable
-                  style={({ pressed }) => [styles.sheetButtonMuted, pressed && styles.pressed]}
-                  onPress={handleSocial}
-                  accessibilityRole="button"
-                  accessibilityLabel="Continue with Google"
-                >
-                  <GoogleLogo size={18} />
-                  <Text style={styles.sheetButtonMutedText}>Continue with Google</Text>
-                </Pressable>
-              </Animated.View>
-
-              <Animated.View style={cascade(0.24)}>
-                <Pressable
-                  style={({ pressed }) => [styles.sheetButtonMuted, pressed && styles.pressed]}
-                  onPress={() => {
-                    tapLight();
-                    setEmailMode('register');
-                  }}
-                  accessibilityRole="button"
-                >
-                  <Text style={styles.sheetButtonMutedText}>Sign up</Text>
-                </Pressable>
-              </Animated.View>
-
-              <Animated.View style={cascade(0.36)}>
-                <Pressable
-                  style={({ pressed }) => [styles.outlineButton, pressed && styles.pressed]}
-                  onPress={() => {
-                    tapLight();
-                    setEmailMode('login');
-                  }}
-                  accessibilityRole="button"
-                >
-                  <Text style={styles.outlineButtonText}>Log in</Text>
-                </Pressable>
+                <Text style={styles.footnote}>
+                  New to AATOS? Use your work email and we’ll create your account.
+                </Text>
               </Animated.View>
             </View>
           )}
@@ -372,20 +263,13 @@ function createStyles(ds: ReturnType<typeof dsFromTheme>, theme: AatosTheme, saf
     socialPanel: {
       gap: 12,
     },
-    emailPanel: {
-      gap: 12,
-    },
-    emailBack: {
-      alignSelf: 'flex-start',
-      paddingVertical: 4,
-      marginBottom: 4,
-    },
-    emailBackText: {
+    notice: {
       color: ON_SHEET_MUTED,
-      fontSize: 15,
-      fontWeight: '600',
+      fontSize: 14,
+      lineHeight: 20,
+      textAlign: 'center',
     },
-    appleButton: {
+    primaryButton: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
@@ -395,58 +279,21 @@ function createStyles(ds: ReturnType<typeof dsFromTheme>, theme: AatosTheme, saf
       minHeight: 52,
       paddingHorizontal: 20,
     },
-    appleButtonText: {
+    primaryButtonText: {
       color: contentColors.black,
       fontSize: 16,
       fontWeight: '600',
     },
-    sheetButtonMuted: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 10,
-      backgroundColor: SHEET_MUTED,
-      borderRadius: theme.radius.panel,
-      minHeight: 52,
-      paddingHorizontal: 20,
-    },
-    sheetButtonMutedText: {
-      color: ds.white,
-      fontSize: 16,
-      fontWeight: '600',
-    },
-    outlineButton: {
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderRadius: theme.radius.panel,
-      minHeight: 52,
-      paddingHorizontal: 20,
-      borderWidth: 1,
-      borderColor: SHEET_BORDER,
-      backgroundColor: 'transparent',
-    },
-    outlineButtonText: {
-      color: ds.white,
-      fontSize: 16,
-      fontWeight: '600',
-    },
-    field: {
-      width: '100%',
-    },
-    input: {
-      backgroundColor: SHEET_MUTED,
-      borderRadius: theme.radius.md,
-      paddingHorizontal: 16,
-      paddingVertical: 14,
-      color: ds.white,
-      fontSize: 16,
+    footnote: {
+      color: ON_SHEET_MUTED,
+      fontSize: 13,
+      lineHeight: 18,
+      textAlign: 'center',
+      paddingHorizontal: 12,
     },
     pressed: {
       opacity: 0.92,
       transform: [{ scale: 0.97 }],
-    },
-    buttonDisabled: {
-      opacity: 0.7,
     },
   });
 }

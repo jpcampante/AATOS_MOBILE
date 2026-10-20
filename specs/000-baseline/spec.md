@@ -39,8 +39,8 @@ Legenda de status: ✅ funciona de verdade · 🟡 funciona com dados simulados 
 | ID | Comportamento | Status |
 | --- | --- | --- |
 | RF-LOG-01 | Abertura animada: logo, título rotativo ("Move faster"…) e painel inferior. | ✅ |
-| RF-LOG-02 | Entrar com Apple, Google, ou e-mail e senha (cadastro pede nome). | ❌ qualquer ação entra no app, sem validação |
-| RF-LOG-03 | Sair da conta pelos Ajustes. | ❌ botão sem ação |
+| RF-LOG-02 | Entrar com e-mail + código (cadastro pede nome). | ✅ desde a [001-login](../001-login/spec.md) |
+| RF-LOG-03 | Sair da conta pelos Ajustes. | ✅ desde a 001-login |
 
 ### 3.2 Navegação
 

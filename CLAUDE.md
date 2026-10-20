@@ -30,7 +30,7 @@ Definidos em `.claude/commands/`.
 
 ### Antes de dizer que terminou
 
-1. `npm run typecheck` sem erros.
+1. `npm run typecheck` e `npm test` sem erros.
 2. Mudança visual verificada no emulador Android (o preview web serve para
    iterar rápido, mas não substitui o Android).
 3. Tarefa marcada `[x]` no `tasks.md` da feature, se for trabalho SDD.

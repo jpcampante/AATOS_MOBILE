@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AuriaIcon, AuriaIconName, AURIA_ICON_SIZE } from '../icons';
 import { CalendarView } from './CalendarView';
 import { ContactsView } from './ContactsView';
-import { auriaProfileInitials } from '../../data/auriaMockData';
+import { useCurrentUser } from '../../features/auth';
 import {
   auriaTypography,
   motionDuration,
@@ -80,6 +80,7 @@ export function MailSidebar({
   onOpenSettings,
 }: MailSidebarProps) {
   const { ds, theme } = useTheme();
+  const user = useCurrentUser();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const drawerWidth = Math.min(width - 36, 384);
@@ -169,7 +170,7 @@ export function MailSidebar({
                 accessibilityLabel="Account"
               >
                 <View style={styles.profileAvatar}>
-                  <Text style={styles.profileText}>{auriaProfileInitials}</Text>
+                  <Text style={styles.profileText}>{user.initials}</Text>
                 </View>
                 <View style={styles.statusDotRail} />
               </Pressable>

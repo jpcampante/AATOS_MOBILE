@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { auriaWelcomeName } from '../../data/auriaMockData';
+import { useCurrentUser } from '../../features/auth';
 import { AURIA_CONTENT_HORIZONTAL_INSET } from './auriaLayout';
 import { AnimatedScreenBlock } from '../navigation/AnimatedScreenBlock';
 import { auriaTypography, useTheme } from '../../theme';
@@ -16,6 +16,7 @@ export function AuriaWelcomeView({
   contentTopPadding = 56,
 }: AuriaWelcomeViewProps) {
   const { ds, theme } = useTheme();
+  const user = useCurrentUser();
   const styles = useMemo(
     () => createStyles(ds, theme, contentMaxWidth, contentTopPadding),
     [contentMaxWidth, contentTopPadding, ds, theme],
@@ -31,7 +32,7 @@ export function AuriaWelcomeView({
                 <View style={styles.greetLogo}>
                   <AuriaBloomMark size="md" />
                 </View>
-                <Text style={styles.greetHi}>Hi {auriaWelcomeName}</Text>
+                <Text style={styles.greetHi}>{user.firstName ? `Hi ${user.firstName}` : 'Hi'}</Text>
               </View>
               <Text style={styles.greetTitle}>Where should we start?</Text>
             </View>

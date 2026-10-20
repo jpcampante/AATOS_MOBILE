@@ -4,21 +4,17 @@ import { auriaTypography, myceoCornerStyle, useTheme } from '../../../theme';
 import { AuriaIcon } from '../../icons';
 import { healthScore, pulse } from '../../../data/insights/selectors';
 import { DataSourceBadge } from '../DataSourceBadge';
+import { useCurrentUser } from '../../../features/auth';
+import { greetingFor } from '../../../utils/greeting';
 
-const USER_NAME = 'Marta';
 const GOOD = '#1D9E75';
 const BAD = '#E5484D';
 
-function greetingFor(date = new Date()): string {
-  const h = date.getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 18) return 'Good afternoon';
-  return 'Good evening';
-}
 
 /** Auria's narrative: greeting + pulse + health score (components tap-to-expand). No chart. */
 export function ExecutiveBrief() {
   const { insights, theme } = useTheme();
+  const user = useCurrentUser();
   const styles = useMemo(() => createStyles(insights, theme), [insights, theme]);
   const [expanded, setExpanded] = useState(false);
 
@@ -28,7 +24,7 @@ export function ExecutiveBrief() {
 
   return (
     <View style={styles.card}>
-      <Text style={styles.greeting}>{`${greetingFor()}, ${USER_NAME}`}</Text>
+      <Text style={styles.greeting}>{user.firstName ? `${greetingFor()}, ${user.firstName}` : greetingFor()}</Text>
       <Text style={styles.headline}>
         {attentionCount} {attentionCount === 1 ? 'thing needs' : 'things need'} attention today
       </Text>

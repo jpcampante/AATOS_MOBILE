@@ -48,7 +48,7 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
   - evento desconhecido ignorado.
 
   Arquivos: `src/features/auria/api/sse.ts`, `__tests__/sse.test.ts` — RNF-06
-- [ ] A006 `streamChat.ts`:
+- [x] A006 `streamChat.ts`:
   - `expo/fetch` (ou o plano B da P003) + `sse.ts`;
   - eventos tipados (plano §4), `AbortSignal` e `connection_lost`;
   - token fresco antes de abrir.

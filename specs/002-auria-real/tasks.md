@@ -59,7 +59,7 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
   - versões e curtida.
 
   Arquivos: `src/features/auria/types.ts`, `mappers.ts`, `__fixtures__/`. Endpoints E07, E16 — RF-07, RF-11
-- [ ] A008 [P] Testes, depois `runReducer.ts`: eventos → estado da execução. Casos:
+- [x] A008 [P] Testes, depois `runReducer.ts`: eventos → estado da execução. Casos:
   - `delta` e `delta_reset` (code points → UTF-16, com emoji);
   - `reasoning`, `tool`, `status`, `canvas`, `web_status`;
   - `done`/`saved`;

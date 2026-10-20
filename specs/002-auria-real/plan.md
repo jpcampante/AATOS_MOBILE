@@ -49,9 +49,9 @@ para uma spec futura com backend (seção 7).
 - Cada ação exige uma permissão: `auria.read` para ler e `auria.write` para escrever. A permissão vem do papel na empresa.
 - O app manda sempre o Bearer e nunca cookie. Assim, a checagem de `Origin` e o CSRF não se aplicam.
 
-**A conferir na P002:**
-- (a) O host escolhido aceita o token do Authenticator que o app usa (D-15: o `authenticator-dev` é o servidor de produção).
-- (b) Se o `POST /auth/callback/`, que o web chama no primeiro login, é necessário para quem só usa o app.
+**Conferido na P002 (2026-10-20):**
+- (a) Produção aceita o token do app: `GET /auth/whoami/` → 200; o billing também.
+- (b) O `POST /auth/callback/` não é necessário: o acesso já funciona sem ele.
 
 ## 3. Inventário de endpoints, um a um
 
@@ -163,7 +163,11 @@ Legenda da coluna **Fase**:
 
 ## 4. Contrato do streaming (E01)
 
-O formato de cada evento é `event: <nome>\ndata: <json>\n\n`. Não há keep-alive, e a resposta HTTP é sempre 200, mesmo quando há erro.
+O formato de cada evento é `event: <nome>\ndata: <json>\n\n`. Não há keep-alive. Depois que o stream começa, a resposta HTTP é 200 mesmo quando há erro (ele vem no evento `error`).
+
+> **Não mandar `Accept: text/event-stream`** (descoberto na P003): o backend só
+> tem o renderizador JSON e responde **406**. Os erros que acontecem antes do
+> stream começar (ex.: 402 sem plano) vêm como JSON comum, com o status HTTP do erro.
 
 | Evento | Dados | O que o app faz |
 | --- | --- | --- |

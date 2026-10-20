@@ -21,22 +21,23 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
 ## Fase 0 — Pré-requisitos e spikes (bloqueia tudo)
 
 - [x] P001 Mergear a `feature/001-login` na `develop`. O cliente da Auria usa o token e a renovação de `src/features/auth`. Feito em 2026-10-20 (D-24 do registro), com typecheck e 23 testes verdes.
-- [ ] P002 Conferir host de produção e token (D-05):
+- [x] P002 Conferir host de produção e token (D-05):
   - com o token do app logado no emulador, chamar `GET https://pilarone.mydailyceo.com/auth/whoami/` (E54) e `GET /auria/chat_importer/chats/visualizer` (E07); o esperado é 200, ou 404 se a conta nunca conversou, nunca 401 nem 403;
   - chamar `GET https://settings.mydailyceo.com/billing/subscription/?app=aatos` (E51) com o mesmo token;
   - descobrir se `POST /auth/callback/` é necessário no primeiro login;
   - registrar o resultado no plano §2.
+  - **Resultado (2026-10-20):** `whoami` 200; conversas 404 (conta nova, vira lista vazia); billing 200 com o mesmo token. O `/auth/callback/` não é necessário: sem ele, o acesso já funciona.
 - [ ] P003 Spike de streaming no emulador (Expo Go):
   - `expo/fetch` com `POST /auria/system_llm/chat?stream=1` (E01): os eventos chegam aos poucos (sem buffer) e o `abort()` corta a conexão;
   - se falhar, provar o plano B (`XMLHttpRequest` com `onprogress`);
   - gravar um stream real, sem dados pessoais, como fixture.
-- [ ] P004 Spike de Markdown: renderizar uma resposta real com tabela, lista, código e link nos dois candidatos (plano §6.3), em tema claro e escuro; escolher e registrar no plano.
+- [x] P004 Spike de Markdown: renderizar uma resposta real com tabela, lista, código e link nos dois candidatos (plano §6.3), em tema claro e escuro; escolher e registrar no plano. **Resultado (2026-10-20):** `react-native-marked` (escolhida pela pessoa usuária: mantida, JS puro, tabelas GFM, peer `react-native-svg` já instalado). A renderização é conferida no emulador na A012.
 
 **Checkpoint:** token aceito, stream incremental provado e biblioteca de Markdown escolhida.
 
 ## Fase 1 — Fundação (bloqueia as histórias)
 
-- [ ] A001 `EXPO_PUBLIC_AURIA_API_URL` (padrão `https://pilarone.mydailyceo.com`) e `EXPO_PUBLIC_SETTINGS_URL` (padrão `https://settings.mydailyceo.com`) no `.env.example`; `config.ts` com os padrões — `src/features/auria/api/config.ts` — RF-01, RF-12a
+- [x] A001 `EXPO_PUBLIC_AURIA_API_URL` (padrão `https://pilarone.mydailyceo.com`) e `EXPO_PUBLIC_SETTINGS_URL` (padrão `https://settings.mydailyceo.com`) no `.env.example`; `config.ts` com os padrões — `src/features/auria/api/config.ts` — RF-01, RF-12a
 - [ ] A002 [P] `routes.ts` com todos os caminhos usados (E01–E53), incluindo a barra final de `add_chat/`/`remove_chat/` — `src/features/auria/api/routes.ts`
 - [ ] A003 [P] Testes, depois `errors.ts`: lê os 3 formatos de corpo de erro e mapeia cada código/status para mensagem e ação (plano §5) — `src/features/auria/api/errors.ts`, `__tests__/errors.test.ts` — RF-12
 - [ ] A004 `http.ts`: JSON (`get`/`post`/`patch`/`del`) com Bearer, uma renovação em 401 e timeout; `upload` multipart via XHR com progresso — `src/features/auria/api/http.ts` — RNF-04

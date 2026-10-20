@@ -17,7 +17,7 @@ muda o comportamento visível do app, exceto T012.
 - [x] T001 Configurar Jest com `jest-expo` e `@testing-library/react-native`; script `npm test` — `package.json`, `jest.config.js` — RNF-07
 - [ ] T002 [P] Configurar ESLint com `eslint-config-expo`; script `npm run lint`; corrigir ou silenciar com justificativa os erros iniciais — `eslint.config.js` — RNF-07
 - [ ] T003 Pipeline de CI (GitHub Actions) rodando `typecheck`, `lint` e `test` em PR para `develop` e `main` — `.github/workflows/ci.yml` — RNF-07
-- [ ] T004 Primeiros testes unitários da lógica pura: `src/data/insights/selectors.ts`, `src/features/auria/galleryLogic.ts`, `newsFormat.ts`, `richText.ts`, `formatDueLabel` em `tasksMockData.ts`, reducer de `useAuriaWorkspace.ts` — RNF-07
+- [ ] T004 Primeiros testes unitários da lógica pura: `src/features/auria/galleryLogic.ts`, `newsFormat.ts`, `richText.ts`, reducer de `useAuriaWorkspace.ts` — RNF-07
 
 **Checkpoint:** `npm run typecheck && npm run lint && npm test` passa local e no CI.
 
@@ -32,8 +32,8 @@ muda o comportamento visível do app, exceto T012.
 ## Fase 3 — Camada de dados (princípio IV)
 
 - [x] T008 Fonte única do usuário atual: `useCurrentUser()` em `src/features/auth`, usada em Insights, Tasks, Auria, Mail e Ajustes (feito na 001-login)
-- [ ] T009 Expor dados de cada área por hooks/serviços (`src/features/<area>/`) e remover imports diretos de `src/data/*` em telas e componentes, começando por Tasks e Insights — princípio IV
-- [ ] T010 [P] Derivar o resumo de tarefas (`TasksSummary`) das tarefas atuais em vez de números fixos — RF-TSK-01
+- [ ] T009 Expor dados de cada área por hooks/serviços (`src/features/<area>/`) e remover imports diretos de `src/data/*` em telas e componentes, começando pela Auria — princípio IV (Tasks e Insights saíram na spec 003)
+- ~~T010 Resumo de tarefas~~ — **sem objeto**: a aba Tasks saiu do app (spec 003).
 - [ ] T011 [P] Trocar e-mails, telefones e nomes com aparência real nos mocks por dados claramente fictícios (`example.com`) — RNF-06
 
 **Checkpoint:** `grep "data/" src/screens src/components` só encontra configuração estática (navegação, modelos, templates).
@@ -41,8 +41,8 @@ muda o comportamento visível do app, exceto T012.
 ## Fase 4 — Correções pequenas
 
 - [x] T012 "Log out" nos Ajustes volta para a tela de Login — RF-LOG-03 (feito na 001-login)
-- [ ] T013 [P] Mover cores soltas para tokens de `src/theme`, começando por `TaskCard.tsx`, `AuriaImageViewer.tsx`, `AuriaCameraView.tsx`, `AuriaVoiceMode.tsx`, `LoginScreen.tsx` — RNF-02
-- [ ] T014 [P] Auditar acessibilidade de Insights, Tasks e Integrations (labels, roles, alvos de 44 pt) — RNF-04
+- [ ] T013 [P] Mover cores soltas para tokens de `src/theme`, começando por `AuriaImageViewer.tsx`, `AuriaCameraView.tsx`, `AuriaVoiceMode.tsx`, `LoginScreen.tsx` — RNF-02
+- [ ] T014 [P] Auditar acessibilidade da Auria e do Perfil (labels, roles, alvos de 44 pt) — RNF-04 (Insights, Tasks e Integrations saíram na spec 003)
 
 **Checkpoint:** typecheck, lint e testes verdes; verificação manual no emulador Android sem regressão visual.
 

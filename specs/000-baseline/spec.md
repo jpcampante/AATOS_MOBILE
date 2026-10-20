@@ -3,7 +3,7 @@
 | Campo | Valor |
 | --- | --- |
 | ID | `000-baseline` |
-| Status | Aprovada (descreve o estado atual) |
+| Status | Aprovada (descreve o estado de 2026-10-15; Insights, Tasks e Integrations saíram na [spec 003](../003-app-so-auria/spec.md)) |
 | Data | 2026-10-15 |
 
 > Esta spec é diferente das demais: ela **documenta o app como ele está hoje**

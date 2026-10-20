@@ -248,13 +248,37 @@ Spec, plano e tarefas: [specs/001-login/](../specs/001-login/spec.md).
 - **Onde:** D-09 da [spec 002](../specs/002-auria-real/spec.md) e as fases do
   [tasks.md](../specs/002-auria-real/tasks.md).
 
+### D-27 · Fase 0 da 002: o que já foi provado
+- **Servidor de produção aceita o token do app:** `GET pilarone.mydailyceo.com/auth/whoami/` → 200.
+  A lista de conversas de conta nova devolve 404 (vira lista vazia). O billing
+  (`settings.mydailyceo.com`) aceita o mesmo token.
+- **Não mandar `Accept: text/event-stream`** no `system_llm/chat`: o backend só
+  tem o renderizador JSON e responde 406.
+- **Conta sem plano** recebe 402 `insufficient_units` / `no_active_plan`
+  (`subscription: null`, `balance: null` no billing): é o caso que a A044 bloqueia.
+- **Pendente:** provar o streaming e o "Parar" (P003) com uma conta que tenha
+  plano ativo; a conta de teste `api.tipscode.teste@gmail.com` não tem plano.
+- **Biblioteca de Markdown (P004):** `react-native-marked`, escolhida pela
+  pessoa usuária (mantida, JS puro, tabelas GFM, roda no Expo Go).
+
+### D-28 · O app é só a Auria (spec 003)
+- **Decisão:** saem Insights, Tasks e Integrations (telas, componentes, dados,
+  testes). A barra de navegação fica com **Auria** e **Perfil**; o app abre na
+  Auria e o voltar do Android leva de volta a ela.
+- **Perfil:** só o que funciona: foto/iniciais, nome, e-mail, tema
+  (Claro/Escuro/Sistema), interesses do Discover e Log out. O modal de Ajustes
+  antigo, cheio de opções simuladas, saiu.
+- **Consequências:** baseline T010 sem objeto; T004, T009, T013 e T014 ficaram
+  só com a Auria; tarefa A015 da 002 removida.
+- **Onde:** [specs/003-app-so-auria/](../specs/003-app-so-auria/spec.md).
+
 ---
 
 ## Pendências em aberto
 
 | Item | Onde |
 | --- | --- |
-| Spec 002: começar pela fase 0 (P002–P004) | [tasks 002](../specs/002-auria-real/tasks.md) |
+| Spec 002: provar o streaming (P003) com uma conta que tenha plano; depois seguir a fundação (A001…) | [tasks 002](../specs/002-auria-real/tasks.md) |
 | Trocar a `internalServiceKey` commitada em `Frontend_Myceo_Example_Authenticator/config.json` | backend |
 | Se a chave RSA do `.env.test` local do backend for usada em algum ambiente real, trocá-la (ela foi exibida por engano numa sessão) | backend |
 | Apagar as worktrees `_wt/mobile-code-login` e `_wt/main-mobile-code` e o SQLite de teste delas | máquina local |

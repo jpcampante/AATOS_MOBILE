@@ -93,9 +93,9 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
   - modo de voz e "Talk to teammate AI" ocultos no menu "+" (D-06).
 
   Arquivos: `AuriaMessageActions.tsx`, `AuriaCreateMenu.tsx`, `AuriaComposer.tsx` — RF-22
-- [ ] A015 "Ask Auria" vindo de Insights abre conversa nova e envia — `AuriaScreen.tsx` (`initialPrompt`) — H1.7
+- ~~A015 "Ask Auria" vindo de Insights~~ — **removida**: Insights saiu do app ([spec 003](../003-app-so-auria/spec.md)). O ID fica reservado.
 
-**Checkpoint (emulador):** H1.1–H1.7. A mesma conversa aparece na web (CS-01).
+**Checkpoint (emulador):** H1.1–H1.6. A mesma conversa aparece na web (CS-01).
 
 ## Fase 3 — História 2: Ver o trabalho da Auria (P1)
 

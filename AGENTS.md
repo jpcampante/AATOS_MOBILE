@@ -62,10 +62,10 @@ Ainda não há lint nem CI; entram com as tarefas T002–T003 da baseline.
 ## Estrutura do código
 
 ```text
-App.tsx                 login → MainApp (lazy) e histórico de abas
-src/MainApp.tsx         shell com as abas do produto
-src/screens/            uma tela por aba (Home, Auria, Tasks, Integrations, Login)
-src/components/<area>/  componentes por área: auria, insights, tasks, integrations
+App.tsx                 login → MainApp (lazy); voltar leva à Auria
+src/MainApp.tsx         shell com as duas abas: Auria e Perfil (spec 003)
+src/screens/            Auria, Profile e Login
+src/components/<area>/  componentes por área: auria, auth, navigation
 src/components/ui/      componentes base reutilizáveis
 src/components/icons/   ícones
 src/features/<area>/    hooks, estado, serviços e tipos de domínio

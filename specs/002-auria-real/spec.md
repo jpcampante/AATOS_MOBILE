@@ -71,7 +71,7 @@ escrita** para **trabalhar com a Auria no celular como faço na web**.
 5. **Dado** que escolhi o modo **Rápido** ou **Profundo**, **quando** envio,
    **então** a Auria responde no modo escolhido, e a escolha fica salva para as próximas mensagens.
 6. **Dado** que a resposta terminou, **então** posso copiar, ouvir em voz alta e compartilhar o texto.
-7. **Dado** que vim do "Ask Auria" de outra aba (Insights), **então** a pergunta é enviada numa conversa nova.
+7. ~~"Ask Auria" vindo de Insights~~ — removido: Insights saiu do app (spec 003).
 
 ### História 2 — Ver o trabalho da Auria (P1)
 

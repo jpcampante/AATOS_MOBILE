@@ -4,7 +4,7 @@
 | --- | --- |
 | ID | `003-app-so-auria` |
 | Branch | `develop` |
-| Status | Aprovada (2026-10-20) |
+| Status | Implementada (2026-10-20) |
 | Data | 2026-10-20 |
 | Substitui | RF-NAV-*, RF-INS-*, RF-TSK-*, RF-INT-*, RF-SET-01 da [baseline](../000-baseline/spec.md) |
 

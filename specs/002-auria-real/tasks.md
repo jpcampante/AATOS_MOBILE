@@ -15,14 +15,15 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
 - Antes de marcar `[x]`: `npm run typecheck` e `npm test` verdes; mudança
   visual conferida no emulador.
 
-> **Status:** rascunho. As tarefas marcadas com **(dúvida N)** dependem da
-> resposta à dúvida N da [spec §9](./spec.md) e podem mudar.
+> **Status:** rascunho. As dúvidas 1–4 foram respondidas em 2026-10-20
+> (D-05 a D-08 da spec). Falta a 5: a ordem P1 → P2 → P3.
 
 ## Fase 0 — Pré-requisitos e spikes (bloqueia tudo)
 
 - [x] P001 Mergear a `feature/001-login` na `develop`. O cliente da Auria usa o token e a renovação de `src/features/auth`. Feito em 2026-10-20 (D-24 do registro), com typecheck e 23 testes verdes.
-- [ ] P002 Conferir host e token **(dúvida 1)**:
-  - com o token do app logado no emulador, chamar `GET {host}/auth/whoami/` (E54) e `GET /auria/chat_importer/chats/visualizer` (E07); o esperado é 200, ou 404 se a conta nunca conversou, nunca 401 nem 403;
+- [ ] P002 Conferir host de produção e token (D-05):
+  - com o token do app logado no emulador, chamar `GET https://pilarone.mydailyceo.com/auth/whoami/` (E54) e `GET /auria/chat_importer/chats/visualizer` (E07); o esperado é 200, ou 404 se a conta nunca conversou, nunca 401 nem 403;
+  - chamar `GET https://settings.mydailyceo.com/billing/subscription/?app=aatos` (E51) com o mesmo token;
   - descobrir se `POST /auth/callback/` é necessário no primeiro login;
   - registrar o resultado no plano §2.
 - [ ] P003 Spike de streaming no emulador (Expo Go):
@@ -35,7 +36,7 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
 
 ## Fase 1 — Fundação (bloqueia as histórias)
 
-- [ ] A001 `EXPO_PUBLIC_AURIA_API_URL` (e `EXPO_PUBLIC_SETTINGS_URL`) no `.env.example`; `config.ts` com os padrões — `src/features/auria/api/config.ts` — RF-01
+- [ ] A001 `EXPO_PUBLIC_AURIA_API_URL` (padrão `https://pilarone.mydailyceo.com`) e `EXPO_PUBLIC_SETTINGS_URL` (padrão `https://settings.mydailyceo.com`) no `.env.example`; `config.ts` com os padrões — `src/features/auria/api/config.ts` — RF-01, RF-12a
 - [ ] A002 [P] `routes.ts` com todos os caminhos usados (E01–E53), incluindo a barra final de `add_chat/`/`remove_chat/` — `src/features/auria/api/routes.ts`
 - [ ] A003 [P] Testes, depois `errors.ts`: lê os 3 formatos de corpo de erro e mapeia cada código/status para mensagem e ação (plano §5) — `src/features/auria/api/errors.ts`, `__tests__/errors.test.ts` — RF-12
 - [ ] A004 `http.ts`: JSON (`get`/`post`/`patch`/`del`) com Bearer, uma renovação em 401 e timeout; `upload` multipart via XHR com progresso — `src/features/auria/api/http.ts` — RNF-04
@@ -85,12 +86,13 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
   - "pacer" de 40–200 caracteres/s no lugar do `useTypewriter`.
 
   Arquivo: `src/components/auria/AuriaMarkdown.tsx` — RF-03, RNF-01, RNF-07
-- [ ] A013 Seletor **Rápido/Profundo** no composer, enviado como `mode` e salvo em `prefs` — `AuriaComposer.tsx`, `AuriaModelSheet.tsx` — RF-05, RF-22 **(dúvida 2)**
+- [ ] A013 Seletor **Rápido/Profundo** no composer, enviado como `mode` e salvo em `prefs` — `AuriaComposer.tsx`, `AuriaModelSheet.tsx` (sai a lista Claude/GPT/Gemini, D-06) — RF-05, RF-22
 - [ ] A014 Ações da mensagem:
   - copiar, ouvir e compartilhar usam o texto sem markdown;
-  - "Branch", "Search the web" e "Use Thinking" ficam ocultos até H6/H7.
+  - "Branch", "Search the web" e "Use Thinking" ficam ocultos até H6/H7;
+  - modo de voz e "Talk to teammate AI" ocultos no menu "+" (D-06).
 
-  Arquivo: `AuriaMessageActions.tsx` — RF-22
+  Arquivos: `AuriaMessageActions.tsx`, `AuriaCreateMenu.tsx`, `AuriaComposer.tsx` — RF-22
 - [ ] A015 "Ask Auria" vindo de Insights abre conversa nova e envia — `AuriaScreen.tsx` (`initialPrompt`) — H1.7
 
 **Checkpoint (emulador):** H1.1–H1.7. A mesma conversa aparece na web (CS-01).
@@ -157,6 +159,13 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
   - depois do erro, a conversa é relida do servidor para pegar o aviso que ele salvou.
 
   Requisito: RF-04, RF-12
+- [ ] A044 Bloqueio por créditos (D-08), movido para a P1:
+  - testes da regra, depois `billing.ts` + `useAuriaCredits`: restante = `(spendable_units ?? available_units) × tokens_per_unit`; bloqueia se ≤ 0, abaixo de `turn_estimates.auria`, plano inativo ou erro na consulta;
+  - consulta ao abrir a Auria e depois de cada resposta;
+  - composer bloqueado com aviso em inglês ("You're out of credits…") e a ação conforme `can_manage_billing`: "Buy credits on the web" ou "Ask your workspace owner"; mostra a data de renovação (`next_reset_at`) quando houver;
+  - o mesmo aviso para o 402 `insufficient_units` vindo do servidor.
+
+  Arquivos: `src/features/auria/api/billing.ts`, `src/features/auria/useAuriaCredits.ts`, `AuriaErrorNotice.tsx`. Endpoint E51 — RF-12, RF-12a
 
 **Checkpoint P1:** typecheck e testes verdes.
 - [ ] V001 Roteiro manual P1 no emulador (H1–H5, casos de borda de rede, voltar e segundo plano), conferido também na web. Registrar data e versão do backend.
@@ -191,30 +200,31 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
   - progresso e erros de créditos.
 
   Endpoint E06 — RF-16
-- [ ] A038 Mensagem `content_type:"image"` renderizada; visualizador em tela cheia; compartilhar (e salvar, se funcionar no Expo Go). Remover `assets/auria-image-mock.jpg` e a ferramenta de pincel **(dúvida 2)** — `AuriaImageArtifact.tsx`, `AuriaImageViewer.tsx` — RF-16, RF-22
+- [ ] A038 Mensagem `content_type:"image"` renderizada; visualizador em tela cheia; compartilhar (e salvar, se funcionar no Expo Go). Remover `assets/auria-image-mock.jpg` e ocultar a ferramenta de pincel (D-06) — `AuriaImageArtifact.tsx`, `AuriaImageViewer.tsx` — RF-16, RF-22
 
 **Checkpoint (emulador):** H8.1–H8.3, e a imagem aparece também na web.
 
 ## Fase 10 — História 9: Documentos da Auria (P2)
 
 - [ ] A039 Cartões de documento vindos de `canvas` e `saved.canvas_documents`; lista de documentos da conversa — E29 — RF-17
-- [ ] A040 Leitor de documento:
+- [ ] A040 Leitor de documento, **só leitura** (D-07):
   - `markdown`/`plain` nativo;
   - `html` em WebView (`react-native-webview`);
-  - `sheet-json` em tabela, `deck-json` em slides.
+  - `sheet-json` em tabela, `deck-json` em slides;
+  - o editor local atual (`AuriaDocEditor`) sai do caminho dos documentos reais.
 
-  Arquivo: `AuriaDocumentReader.tsx`. Endpoint E31 — RF-17 **(dúvida 3)**
+  Arquivo: `AuriaDocumentReader.tsx`. Endpoint E31 — RF-17
 - [ ] A041 Propostas: cartão Aplicar/Rejeitar a partir de `canvas_proposal` e da lista pendente; em 409, recarregar — `AuriaProposalCard.tsx`. Endpoints E34, E35 — RF-17
-- [ ] A042 "Pedir mudança" num trecho → `rewrite` e salvar com `expected_version` — E32, E36 — RF-17 **(dúvida 3)**
-- [ ] A043 Menu "+" → criar documento, planilha ou apresentação manda `create: doc|sheet|slides`. Modelos de documento viram pedidos à Auria; sai o HTML local **(dúvida 2)** — `AuriaCreateMenu.tsx`, `AuriaDocTemplatesModal.tsx` — RF-17, RF-22
+- ~~A042 "Pedir mudança" num trecho~~ — **fora de escopo** (D-07: documentos só leitura). O ID fica reservado.
+- [ ] A043 Menu "+" → criar documento, planilha ou apresentação manda `create: doc|sheet|slides`. Modelos de documento viram pedidos à Auria; sai o HTML local (D-06) — `AuriaCreateMenu.tsx`, `AuriaDocTemplatesModal.tsx` — RF-17, RF-22
 
 **Checkpoint (emulador):** H9.1–H9.5.
 
-## Fase 11 — História 5, parte 2: Bloqueio por créditos (P2)
-
-- [ ] A044 Antes de enviar, consultar plano e saldo e bloquear com explicação quando faltar crédito (mesma regra do web: saldo ≤ 0 ou abaixo do custo mínimo do turno) — `src/features/auria/api/billing.ts`. Endpoint E51 — RF-12 **(dúvida 4)**
-
 **Checkpoint P2:** typecheck e testes verdes; roteiro manual de H6–H9 no emulador.
+
+## Fase 11 — (vazia)
+
+A044 (bloqueio por créditos) subiu para a Fase 6, na P1 (D-08).
 
 ## Fase 12 — História 10: Projetos (P3)
 
@@ -255,7 +265,7 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
 
 ## Fase final — Acabamento
 
-- [ ] A056 Remover mocks mortos da Auria (`auriaMockData` de conversas, projetos, galeria e busca; `auriaModels` se a dúvida 2 confirmar) e conferir que `grep "data/auria" src/screens src/components` só acha configuração estática — RNF-05, CS-02
+- [ ] A056 Remover mocks mortos da Auria (`auriaMockData` de conversas, projetos, galeria e busca; `auriaModels`, D-06) e conferir que `grep "data/auria" src/screens src/components` só acha configuração estática — RNF-05, CS-02
 - [ ] V002 `npm run typecheck` e `npm test` sem erros
 - [ ] V003 Regressão completa no emulador Android (Expo Go), claro e escuro, com conferência cruzada na web. Registrar a versão do backend testada
 - [ ] V004 Spec → **Implementada**; decisões novas no fim de `docs/DECISOES.md`; merge `develop` → `main` quando aprovado
@@ -275,10 +285,11 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
 | RF-10 | A023, A024, A025 |
 | RF-11 | A007, A026 |
 | RF-12, RF-13 | A003, A027, A028, A044 |
+| RF-12a | A001, A044 |
 | RF-14 | A029–A032 |
 | RF-15 | A033–A036 |
 | RF-16 | A037, A038 |
-| RF-17 | A039–A043 |
+| RF-17 | A039, A040, A041, A043 |
 | RF-18 | A045–A048 |
 | RF-19, RF-20 | A049–A051 |
 | RF-21 | A052–A055 |

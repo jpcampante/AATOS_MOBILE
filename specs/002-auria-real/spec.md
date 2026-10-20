@@ -49,6 +49,8 @@ lugares, com o mesmo resultado.
 - Comando de voz e transcrição (o backend não tem endpoint; na web o microfone também não funciona).
 - Edição de imagem (remover com pincel) — não existe no backend.
 - Escopos de módulo de Vendas (`/sales`) e atalhos de formulários de Vendas.
+- Edição manual de documentos e "pedir mudança" num trecho (D-07).
+- Escolha de modelo de IA (Claude/GPT/Gemini): o backend não permite; fica só Rápido/Profundo (D-06).
 
 ## 3. Usuários e cenários
 
@@ -108,7 +110,8 @@ Como **pessoa usuária**, quero **mandar fotos, fotos da câmera e arquivos** pa
 Como **pessoa usuária**, quero **saber por que a Auria não respondeu e o que
 fazer** para **não ficar sem saída**.
 
-1. **Dado** que os créditos da empresa acabaram (ou não há plano ativo), **quando** envio, **então** vejo a explicação e, conforme meu papel, "Comprar créditos na web" ou "Peça a quem administra a empresa".
+1. **Dado** que os créditos da empresa acabaram (ou não há plano ativo), **quando** abro a Auria ou tento enviar, **então** o envio fica bloqueado **antes** de ir ao servidor e vejo um aviso em inglês de que os créditos acabaram, com "Comprar créditos na web" ou "Peça a quem administra a empresa", conforme meu papel.
+1a. **Dado** que o servidor recusar por falta de créditos mesmo assim (saldo mudou no meio), **então** vejo o mesmo aviso.
 2. **Dado** que caí sem internet no meio da resposta, **então** o texto recebido fica, vejo "Conexão perdida" e "Tentar de novo".
 3. **Dado** que a conversa é só leitura para mim, **então** o campo de mensagem fica desabilitado com o motivo.
 4. **Dado** que o serviço está indisponível, demorou demais ou a conversa ficou longa demais, **então** vejo a mensagem específica (e "Nova conversa" quando for o caso).
@@ -140,7 +143,7 @@ fazer** para **não ficar sem saída**.
 2. **Dado** um cartão de documento, **quando** toco, **então** abro o documento para leitura no celular (texto, tabela de planilha ou slides).
 3. **Dado** que a Auria propõe uma mudança num documento, **então** vejo a proposta e posso **Aplicar** ou **Rejeitar**.
 4. **Dado** uma conversa, **então** vejo a lista dos documentos criados nela.
-5. **Dado** um documento, **quando** toco em "Pedir mudança" e escrevo o pedido, **então** a Auria reescreve o trecho e o documento é atualizado.
+5. **Dado** um documento aberto, **então** ele é só leitura: não há edição manual nem "pedir mudança" no leitor (para mudar, peço à Auria na conversa).
 
 ### História 10 — Projetos (P3)
 
@@ -190,16 +193,17 @@ fazer** para **não ficar sem saída**.
 | RF-10 | O app DEVE enviar anexos (imagem, câmera, PDF, TXT, MD, CSV, DOCX, XLSX, JSON até 20 MB) ao servidor e referenciá-los na mensagem. | H4 |
 | RF-11 | O app DEVE exibir anexos privados (imagens e arquivos) das mensagens, inclusive os enviados pela web. | H4 |
 | RF-12 | O app DEVE traduzir cada código de erro do servidor em mensagem e ação (tentar de novo, nova conversa, comprar créditos na web, pedir ao responsável). | H5 |
+| RF-12a | O app DEVE consultar plano e saldo e bloquear o envio antes de chamar a Auria quando os créditos tiverem acabado, com aviso em inglês. | H5 |
 | RF-13 | O app DEVE bloquear o envio em conversa somente leitura e explicar por quê. | H5 |
 | RF-14 | A pessoa DEVE poder gerar de novo uma resposta, editar a própria mensagem, alternar versões e curtir respostas. | H6 |
 | RF-15 | O app DEVE respeitar a preferência de busca na web (empresa, pessoa, conversa) e mostrar andamento, fontes e citações. | H7 |
 | RF-16 | A pessoa DEVE poder gerar imagens; a imagem fica na conversa e pode ser salva e compartilhada. | H8 |
-| RF-17 | O app DEVE mostrar os documentos criados pela Auria (texto, planilha, apresentação), abri-los para leitura, aplicar/rejeitar propostas e pedir reescrita. | H9 |
+| RF-17 | O app DEVE mostrar os documentos criados pela Auria (texto, planilha, apresentação), abri-los só para leitura e aplicar/rejeitar as propostas de mudança que a Auria fizer na conversa. | H9 |
 | RF-18 | A pessoa DEVE poder gerenciar projetos (criar, editar, apagar, membros, adicionar/remover conversas). | H10 |
 | RF-19 | O dono DEVE poder mudar a visibilidade da conversa e compartilhá-la com pessoas da empresa. | H11 |
 | RF-20 | O app DEVE reagir à perda de acesso a conversas e projetos. | H11 |
 | RF-21 | A pessoa DEVE poder mencionar colegas, vincular documentos indexados, escolher escopo de módulo e ver a biblioteca de arquivos. | H12 |
-| RF-22 | Recursos da Auria sem backend (ver seção 9, item 2) DEVEM ser ocultados ou sinalizados, nunca simular um resultado falso. | todas |
+| RF-22 | Recursos da Auria sem backend (D-06) DEVEM ser ocultados ou trocados pelo equivalente real, nunca simular um resultado falso. | todas |
 
 ## 5. Requisitos não funcionais
 
@@ -238,13 +242,17 @@ fazer** para **não ficar sem saída**.
 - D-02 (2026-10-20) — O motor de conversa do app é o mesmo da web: a Auria com ferramentas e streaming. O motor antigo sem ferramentas não é usado.
 - D-03 (2026-10-20) — A interface continua em inglês (D-20 da 001); as mensagens de erro também.
 - D-04 (2026-10-20) — Sem branches de feature: só existem `develop` e `main`. O trabalho é feito e commitado na `develop` e depois mergeado na `main`. Substitui a parte de branches da D-03 do registro geral.
+- D-05 (2026-10-20, dúvida 1) — O app usa o servidor de **produção** da Auria (`pilarone.mydailyceo.com`) e o billing de produção (`settings.mydailyceo.com`), coerente com o login, que já usa o Authenticator de produção.
+- D-06 (2026-10-20, dúvida 2) — O seletor de modelo (Claude/GPT/Gemini) vira o seletor **Rápido/Profundo**; modo de voz e editor de imagem com pincel ficam **ocultos** até terem spec própria; os modelos de documento deixam de montar texto local e viram pedidos à Auria; o painel de busca passa a buscar nas conversas e projetos reais.
+- D-07 (2026-10-20, dúvida 3) — Documentos **só leitura** por enquanto. Sem edição manual e sem "pedir mudança" no leitor. Aplicar/Rejeitar uma proposta que a Auria fez na conversa continua, porque é a confirmação que a própria Auria pede para concluir o pedido.
+- D-08 (2026-10-20, dúvida 4) — O app **bloqueia o envio antes** quando os créditos acabaram e mostra o aviso em **inglês** (sobe para P1).
 
 ## 9. Dúvidas em aberto
 
 A spec só passa para **Aprovada** quando esta lista estiver vazia.
 
-- [ ] 1. [PRECISA ESCLARECER: o app conversa com qual servidor da Auria? `pilarone-dev.mydailyceo.com` (o que a web de desenvolvimento usa) ou `pilarone.mydailyceo.com` (produção)? Lembrando que o login do app já usa o Authenticator de produção.]
-- [ ] 2. [PRECISA ESCLARECER: o que fazer com o que o app tem hoje e o backend não tem — seletor de modelo (Claude/GPT/Gemini; na web ele é só visual), modo de voz, editor de imagem com pincel, modelos de documento locais e o painel de busca simulado? Proposta: trocar o seletor de modelo pelo Rápido/Profundo, ocultar voz e pincel até terem spec própria, manter os modelos de documento pedindo à Auria.]
-- [ ] 3. [PRECISA ESCLARECER: documentos no celular só para leitura (com aplicar/rejeitar propostas e "pedir mudança"), ou também edição manual do texto? Proposta: leitura nesta spec; edição manual em spec futura.]
-- [ ] 4. [PRECISA ESCLARECER: o app deve consultar o saldo de créditos antes de enviar (como a web, que bloqueia o envio) ou só tratar o erro de créditos quando ele vier? Proposta: tratar o erro na P1 e bloquear antes do envio na P2.]
+- [x] 1. Servidor → produção (D-05).
+- [x] 2. Recursos sem backend → como proposto (D-06).
+- [x] 3. Documentos → só leitura por enquanto (D-07).
+- [x] 4. Créditos → bloquear antes e avisar, em inglês (D-08).
 - [ ] 5. [PRECISA ESCLARECER: a ordem de entrega P1 → P2 → P3 da seção 3 está boa? Em especial: Projetos, Compartilhar e Contexto (H10–H12) podem ficar para uma segunda versão?]

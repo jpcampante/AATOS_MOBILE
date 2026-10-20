@@ -3,7 +3,7 @@
 | Campo | Valor |
 | --- | --- |
 | Spec | [spec.md](./spec.md) |
-| Status | Rascunho (depende das respostas da seção 9 da spec) |
+| Status | Rascunho (dúvidas 1–4 respondidas em 2026-10-20; falta a 5) |
 | Data | 2026-10-20 |
 
 > Fontes deste plano, lidas em 2026-10-20:
@@ -35,10 +35,10 @@ para uma spec futura com backend (seção 7).
 
 | Item | Valor | Fonte |
 | --- | --- | --- |
-| Host da API (dev) | `https://pilarone-dev.mydailyceo.com` | `.env` do web; `ALLOWED_HOSTS` |
-| Host da API (prod) | `https://pilarone.mydailyceo.com` | `AURIA_API.md`, `settings.py` |
-| Variável nova no app | `EXPO_PUBLIC_AURIA_API_URL` (padrão: dúvida 1 da spec) | `.env.example` |
-| Billing (P2) | `https://settings-dev.mydailyceo.com` / `settings.mydailyceo.com` → `EXPO_PUBLIC_SETTINGS_URL` | `aatos/src/config/settingsService.ts` |
+| Host da API — **escolhido (D-05)** | `https://pilarone.mydailyceo.com` (produção) | `AURIA_API.md`, `settings.py` |
+| Host da API (dev, só para testes pontuais) | `https://pilarone-dev.mydailyceo.com` | `.env` do web; `ALLOWED_HOSTS` |
+| Variável nova no app | `EXPO_PUBLIC_AURIA_API_URL`, padrão `https://pilarone.mydailyceo.com` | `.env.example` |
+| Billing (P1, D-08) | `EXPO_PUBLIC_SETTINGS_URL`, padrão `https://settings.mydailyceo.com` (dev: `settings-dev`) | `aatos/src/config/settingsService.ts` |
 | WebSocket (P3) | `wss://<host>/ws/`, subprotocolo `["myceo-jwt", <token>]` | `aatos-system/aatos/ws_auth.py` |
 
 **Como o backend valida o token** (`myceo_auth_receiver`):
@@ -113,13 +113,13 @@ Legenda da coluna **Fase**:
 | # | Método e caminho | O que faz | Fase | Tarefa | Observação |
 | --- | --- | --- | --- | --- | --- |
 | E29 | `GET /auria/chats/{chatId}/canvas` | Documentos da conversa | P2 | A039 | `{documents[]}`. |
-| E30 | `POST /auria/chats/{chatId}/canvas` | Cria um documento a partir de um modelo, sem IA | Não usar | — | O app pede o documento à Auria (`create:"doc"`) em vez de montar HTML local. Ver dúvida 2. |
+| E30 | `POST /auria/chats/{chatId}/canvas` | Cria um documento a partir de um modelo, sem IA | Não usar | — | O app pede o documento à Auria (`create:"doc"`) em vez de montar HTML local (D-06). |
 | E31 | `GET /auria/chats/{c}/canvas/{d}` ou `GET /auria/canvas/{d}` | Documento com conteúdo e `ETag` | P2 | A040 | Formatos: `markdown`, `html`, `plain`, `sheet-json`, `deck-json`. |
-| E32 | `PATCH /auria/chats/{c}/canvas/{d}` | Edita (`expected_version`, 409 em conflito) | P2 / Fora | A042 | Só via reescrita nesta spec; edição manual depende da dúvida 3. |
+| E32 | `PATCH /auria/chats/{c}/canvas/{d}` | Edita (`expected_version`, 409 em conflito) | Fora | — | Documentos só leitura (D-07). |
 | E33 | `DELETE /auria/chats/{c}/canvas/{d}` | Apaga o documento | Fora | — | O web não oferece no chat. |
 | E34 | `GET /auria/chats/{chatId}/canvas/proposals` | Propostas pendentes | P2 | A041 | |
 | E35 | `POST /auria/canvas/{doc}/proposals/{id}/apply\|reject` | Aplica ou rejeita uma proposta | P2 | A041 | `{revision}`. Em 409 vem o documento e a proposta atuais. |
-| E36 | `POST /auria/canvas/{doc}/rewrite` | Reescreve um trecho (IA) | P2 | A042 | `{text, instruction}` → `{rewritten}`. Limite de 20/min. Erros de IA e billing. |
+| E36 | `POST /auria/canvas/{doc}/rewrite` | Reescreve um trecho (IA) | Fora | — | Documentos só leitura (D-07). Volta junto com a edição de documentos. |
 | E37 | `…/canvas/{d}/versions`, `…/versions/{n}`, `…/versions/{n}/restore`, `…/export` | Histórico e exportação | Fora | — | Ficam para a spec de edição de documentos. |
 | E38 | `GET`/`POST /auria/canvas`, `/canvas/{id}/trash`, `/restore`, `/placement`, `/members`, `/attachments/{uuid}`; `/auria/essentials/*` | Biblioteca Essentials (Docs/Sheets/Slides) | Fora | — | Exceção: `GET /auria/canvas/{doc}/attachments/{uuid}` (imagem dentro de documento) entra no A040 se aparecer no conteúdo. |
 
@@ -144,7 +144,7 @@ Legenda da coluna **Fase**:
 
 | # | Método e caminho | O que faz | Fase | Tarefa | Observação |
 | --- | --- | --- | --- | --- | --- |
-| E51 | `GET {SETTINGS}/billing/subscription/?app=aatos` | Plano e saldo, para bloquear o envio antes | P2 | A044 | Depende da dúvida 4. |
+| E51 | `GET {SETTINGS}/billing/subscription/?app=aatos` | Plano e saldo, para bloquear o envio antes | P1 | A044 | D-08. Regra do web (`billing/api.ts:93-130`): restante = `(spendable_units ?? available_units) × tokens_per_unit`; bloqueia se ≤ 0 ou abaixo de `turn_estimates.auria`; plano inativo bloqueia; erro na consulta bloqueia (fail-closed). |
 | E52 | `GET /docs/departments/` | Lista de departamentos ("Buscar em…") | P3 | A053 | Vai como `department_id`. |
 | E53 | `wss://<host>/ws/` | Eventos ao vivo (`chat.access_revoked`, `project.access_revoked`) | P3 | A051 | O servidor exige o header `Origin`. Se o React Native não mandar, passar `Origin: https://<host>`. Fecha com 4401 quando o token expira. |
 | E54 | `GET /auth/whoami/`, `POST /auth/callback/` (no host do aatos) | Conferir o token; registro do primeiro login | P0 | P002 | Ver a seção 2. |
@@ -236,7 +236,8 @@ Corpos de erro possíveis:
 | `src/components/auria/AuriaWorkPanel.tsx` | Painel "Trabalhando há Ns" (adapta `AuriaReasoningBlock` / `AuriaThinkingSheet`) |
 | `src/components/auria/AuriaErrorNotice.tsx` | Aviso de erro acima do composer, com ação |
 | `src/components/auria/AuriaWebEvidence.tsx`, `AuriaCitationChip.tsx` | P2 |
-| `src/components/auria/AuriaDocumentReader.tsx`, `AuriaProposalCard.tsx` | P2 |
+| `src/components/auria/AuriaDocumentReader.tsx`, `AuriaProposalCard.tsx` | P2 (leitor só leitura, D-07) |
+| `src/features/auria/api/billing.ts` + `useAuriaCredits.ts` | P1: bloqueio por créditos (D-08) |
 | `src/components/auria/AuriaShareSheet.tsx`, `AuriaMentionPicker.tsx`, `AuriaSourcesSheet` (RAG) | P3 |
 | Telas existentes | `AuriaScreen`, `AuriaChatView`, `AuriaComposer`, `AuriaSidebar`, `AuriaCreateMenu`, `AuriaGalleryPanel`, `AuriaProjects*` passam a consumir os hooks |
 
@@ -303,7 +304,7 @@ Sem módulo nativo fora do Expo Go.
 | --- | --- | --- |
 | 0 | P001–P004 | `feature/001-login` mergeada na `develop`; host e token confirmados; streaming e markdown provados no emulador |
 | 1 | Fundação (A001–A009) | Cliente HTTP, SSE, erros, tipos, reducer, com testes |
-| 2 | P1: H1, H2, H3, H4, H5 (A010–A028) | Auria real conversando, histórico e anexos → V001 |
-| 3 | P2: H6, H7, H8, H9, gate (A029–A044) | Paridade de conteúdo com a web |
+| 2 | P1: H1, H2, H3, H4, H5 com bloqueio por créditos (A010–A028, A044) | Auria real conversando, histórico e anexos → V001 |
+| 3 | P2: H6, H7, H8, H9 (A029–A043, sem A042) | Paridade de conteúdo com a web |
 | 4 | P3: H10, H11, H12 (A045–A055) | Organização e contexto |
 | 5 | Acabamento (A056, V002–V004) | Mocks removidos, spec Implementada |

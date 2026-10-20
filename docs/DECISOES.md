@@ -228,10 +228,14 @@ Spec, plano e tarefas: [specs/001-login/](../specs/001-login/spec.md).
   `client_id` do token, então o token do app deve ser aceito (a confirmar na
   tarefa P002).
 - **Interface:** continua em inglês (D-20).
-- **Dúvidas em aberto:** servidor (dev ou produção), o que fazer com recursos
-  sem backend (seletor de modelo, voz, pincel), documentos só leitura ou
-  editáveis, bloqueio por créditos antes do envio, e a ordem P1 → P2 → P3
-  (seção 9 da spec).
+- **Respostas da pessoa usuária (mesmo dia):**
+  - servidor de **produção** (`pilarone.mydailyceo.com`, billing em `settings.mydailyceo.com`);
+  - seletor de modelo vira Rápido/Profundo; voz e pincel ocultos; modelos de
+    documento viram pedidos à Auria;
+  - documentos **só leitura** por enquanto;
+  - quando os créditos acabam, o app **bloqueia o envio antes** e avisa em inglês (sobe para a P1).
+  Detalhes: D-05 a D-08 da [spec 002](../specs/002-auria-real/spec.md).
+- **Ainda em aberto:** a ordem de entrega P1 → P2 → P3.
 
 ---
 

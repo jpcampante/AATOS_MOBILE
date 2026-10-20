@@ -26,7 +26,8 @@ export const initialConversation: ConversationState = { chatId: null, messages: 
 function settledAnswer(localId: string, run: AuriaRun): AuriaChatMessage | null {
   if (!run.text.trim()) return null; // nothing was written: the error notice says why
   const message: AuriaChatMessage = {
-    id: run.assistantMessageUuid ?? `${localId}-a`,
+    // Same id as the live bubble, so the view keeps its state (the pacer finishes smoothly).
+    id: `${localId}-a`,
     role: 'assistant',
     text: run.text,
   };

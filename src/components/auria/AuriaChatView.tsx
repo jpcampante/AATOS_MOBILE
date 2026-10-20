@@ -5,6 +5,7 @@ import { auriaTypography, liquidGlassBorder, liquidGlassTokens, useTheme } from 
 import type { AuriaChatMessage } from '../../features/auria/types';
 import { AuriaDocumentArtifact } from './AuriaDocumentArtifact';
 import { AuriaImageArtifact } from './AuriaImageArtifact';
+import { AuriaMarkdown } from './AuriaMarkdown';
 import { AuriaMessageActions } from './AuriaMessageActions';
 import { AuriaReasoningBlock } from './AuriaReasoningBlock';
 import { AuriaSourceChips } from './AuriaSourceChips';
@@ -200,12 +201,8 @@ function AssistantBubbleContent({
       {message.reasoning ? (
         <AuriaReasoningBlock reasoning={message.reasoning} onOpenFiles={onOpenFiles} />
       ) : null}
-      {message.text ? (
-        <Text style={[styles.text, styles.textAssistant]}>
-          {message.text}
-          {live ? <AuriaTypingCursor color={cursorColor} style={styles.text} /> : null}
-        </Text>
-      ) : null}
+      {message.text ? <AuriaMarkdown text={message.text} live={live} /> : null}
+      {live && message.text ? <AuriaTypingCursor color={cursorColor} style={styles.text} /> : null}
       {message.status ? (
         <Text style={styles.statusNote}>{message.status === 'stopped' ? 'Stopped' : 'Interrupted'}</Text>
       ) : null}
@@ -271,6 +268,10 @@ function createStyles(
       backgroundColor: ds.offBlack,
     },
     bubbleAssistant: {
+      // A fixed width, not content-sized: Markdown code blocks and tables scroll
+      // horizontally, and a content-sized parent makes Android measure them wrong
+      // (the chat then can't scroll to the end of the answer).
+      width: '88%',
       backgroundColor: glass.fill,
       ...rim,
       ...glass.webBlur,

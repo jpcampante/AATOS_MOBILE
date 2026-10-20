@@ -59,7 +59,7 @@ describe('conversationReducer', () => {
     expect(settled.error).toBeNull();
     expect(settled.messages).toEqual([
       { id: 'u-1', serverId: 'u-1', role: 'user', text: 'Hi Auria' },
-      { id: 'a-1', serverId: 'a-1', role: 'assistant', text: 'Hello!', reasoningText: 'Thinking it over.' },
+      { id: 't1-a', serverId: 'a-1', role: 'assistant', text: 'Hello!', reasoningText: 'Thinking it over.' },
     ]);
   });
 

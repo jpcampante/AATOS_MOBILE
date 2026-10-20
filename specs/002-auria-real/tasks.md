@@ -81,7 +81,7 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
 
   Arquivo: `src/features/auria/useAuriaConversation.ts`. Endpoints E01, E11 — RF-01, RF-02, RF-04
 - [x] A011 Tirar a simulação do caminho de execução: `buildAssistantReply`, `AURIA_CONVERSATION_MOCKS` e o `setTimeout` de `useAuriaWorkspace`. `AuriaScreen`/`AuriaChatView` passam a usar o hook — `src/features/auria/useAuriaWorkspace.ts`, `src/screens/AuriaScreen.tsx`, `src/components/auria/AuriaChatView.tsx` — RF-01, CS-02
-- [ ] A012 `AuriaMarkdown`:
+- [x] A012 `AuriaMarkdown`:
   - tokens do tema, tabela com rolagem horizontal, código, links;
   - renderização em streaming (só o último bloco; link pela metade mostra o rótulo);
   - "pacer" de 40–200 caracteres/s no lugar do `useTypewriter`.

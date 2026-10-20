@@ -42,11 +42,11 @@ type AuriaComposerProps = {
   onVoice?: () => void;
   bottomInset?: number;
   isResponding?: boolean;
-  /** Label shown on the model selector pill (e.g. "Opus 4.8"). */
+  /** Label shown on the answer-mode pill ("Fast" or "Deep"). */
   selectedModelName?: string;
-  /** Optional effort tag shown beside the model name (e.g. "Max"). */
+  /** Optional tag shown beside the label. */
   selectedModelEffort?: string | null;
-  /** Opens the model picker sheet. */
+  /** Opens the answer-mode sheet. */
   onOpenModelPicker?: () => void;
   /** Image attachment URIs shown as thumbnails above the input. */
   attachments?: string[];
@@ -89,8 +89,8 @@ export const AuriaComposer = forwardRef<AuriaComposerHandle, AuriaComposerProps>
       onVoice,
       bottomInset = 0,
       isResponding = false,
-      selectedModelName = 'Opus 4.8',
-      selectedModelEffort = 'Max',
+      selectedModelName = 'Fast',
+      selectedModelEffort = null,
       onOpenModelPicker,
       attachments = [],
       onRemoveAttachment,
@@ -257,7 +257,7 @@ export const AuriaComposer = forwardRef<AuriaComposerHandle, AuriaComposerProps>
           <Pressable
             onPress={onOpenModelPicker}
             accessibilityRole="button"
-            accessibilityLabel={`Model: ${selectedModelName}`}
+            accessibilityLabel={`Answer mode: ${selectedModelName}`}
             hitSlop={6}
             style={({ pressed }) => [styles.modelPill, pressed && styles.modelPillPressed]}
           >

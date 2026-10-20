@@ -8,7 +8,6 @@ import {
   auriaProjects,
   auriaSidebarProjects,
 } from '../../data/auriaMockData';
-import { DEFAULT_MODEL_ID } from '../../data/auriaModels';
 
 /**
  * UI state of the Auria workspace: which panel is open, the composer text and
@@ -25,7 +24,6 @@ const nextSeq = () => (__auriaSeq += 1);
 type WorkspaceState = {
   panel: AuriaPanel;
   composerText: string;
-  selectedModel: string;
   projects: AuriaProject[];
   projectRows: AuriaSidebarProjectRow[];
   newProjectOpen: boolean;
@@ -33,7 +31,6 @@ type WorkspaceState = {
 
 type WorkspaceAction =
   | { type: 'set-composer'; value: string }
-  | { type: 'set-model'; value: string }
   | { type: 'open-panel'; panel: AuriaPanel }
   | { type: 'open-project-modal' }
   | { type: 'close-project-modal' }
@@ -50,7 +47,6 @@ type WorkspaceAction =
 const initialState: WorkspaceState = {
   panel: 'chat',
   composerText: '',
-  selectedModel: DEFAULT_MODEL_ID,
   projects: [...auriaProjects],
   projectRows: [...auriaSidebarProjects],
   newProjectOpen: false,
@@ -60,8 +56,6 @@ function workspaceReducer(state: WorkspaceState, action: WorkspaceAction): Works
   switch (action.type) {
     case 'set-composer':
       return { ...state, composerText: action.value };
-    case 'set-model':
-      return { ...state, selectedModel: action.value };
     case 'open-panel':
       return { ...state, panel: action.panel };
     case 'open-project-modal':
@@ -118,7 +112,6 @@ export function useAuriaWorkspace() {
       ...state,
       showComposer: state.panel === 'chat',
       setComposerText: (value: string) => dispatch({ type: 'set-composer', value }),
-      setSelectedModel: (value: string) => dispatch({ type: 'set-model', value }),
       openPanel: (panel: AuriaPanel) => dispatch({ type: 'open-panel', panel }),
       openProjectModal: () => dispatch({ type: 'open-project-modal' }),
       closeProjectModal: () => dispatch({ type: 'close-project-modal' }),

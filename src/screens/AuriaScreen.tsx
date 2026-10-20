@@ -16,9 +16,8 @@ import {
 import { AuriaCreateMenu } from '../components/auria/AuriaCreateMenu';
 import { AuriaDocTemplatesModal } from '../components/auria/AuriaDocTemplatesModal';
 import type { AuriaDocTemplate } from '../data/auriaDocTemplates';
-import { AuriaModelSheet } from '../components/auria/AuriaModelSheet';
+import { AuriaModeSheet, auriaModeLabel } from '../components/auria/AuriaModeSheet';
 import { AuriaPromptSuggestions } from '../components/auria/AuriaPromptSuggestions';
-import { getModelById } from '../data/auriaModels';
 import {
   AuriaGalleryPanel,
   AuriaNewsPanel,
@@ -74,7 +73,6 @@ export function AuriaScreen({
   const workspace = useAuriaWorkspace();
   const conversation = useAuriaConversation();
   const isWelcomeHome = workspace.panel === 'chat' && conversation.messages.length === 0;
-  const activeModel = getModelById(workspace.selectedModel);
   const { toast, showToast } = useAuriaToast();
 
   // Until the notice above the composer lands (A027), a failed answer shows a toast.
@@ -395,7 +393,7 @@ export function AuriaScreen({
         messages={conversation.messages}
         isResponding={conversation.run !== null && !conversation.run.text}
         onOpenFiles={() => transitionPanel('gallery')}
-        modelLabel={`Used ${activeModel?.name ?? 'Auria'}${activeModel?.effort ? ` ${activeModel.effort}` : ''}`}
+        modelLabel={`Auria · ${auriaModeLabel(conversation.mode)}`}
         onActionFeedback={showToast}
       />
     );
@@ -486,8 +484,8 @@ export function AuriaScreen({
                   }}
                   bottomInset={keyboardInset}
                   isResponding={conversation.isBusy}
-                  selectedModelName={activeModel?.name ?? 'Opus 4.8'}
-                  selectedModelEffort={activeModel?.effort ?? null}
+                  selectedModelName={auriaModeLabel(conversation.mode)}
+                  selectedModelEffort={null}
                   onOpenModelPicker={() => {
                     dismissKeyboard();
                     setModelPickerOpen(true);
@@ -524,10 +522,10 @@ export function AuriaScreen({
               bottomOffset={shellBottomInset - 20}
             />
 
-            <AuriaModelSheet
+            <AuriaModeSheet
               visible={modelPickerOpen}
-              selectedId={workspace.selectedModel}
-              onSelect={workspace.setSelectedModel}
+              selected={conversation.mode}
+              onSelect={conversation.setMode}
               onClose={() => setModelPickerOpen(false)}
             />
 

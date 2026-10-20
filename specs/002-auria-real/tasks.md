@@ -20,7 +20,7 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
 
 ## Fase 0 — Pré-requisitos e spikes (bloqueia tudo)
 
-- [ ] P001 Mergear a `feature/001-login` na `develop`. O cliente da Auria usa o token e a renovação de `src/features/auth`.
+- [x] P001 Mergear a `feature/001-login` na `develop`. O cliente da Auria usa o token e a renovação de `src/features/auth`. Feito em 2026-10-20 (D-24 do registro), com typecheck e 23 testes verdes.
 - [ ] P002 Conferir host e token **(dúvida 1)**:
   - com o token do app logado no emulador, chamar `GET {host}/auth/whoami/` (E54) e `GET /auria/chat_importer/chats/visualizer` (E07); o esperado é 200, ou 404 se a conta nunca conversou, nunca 401 nem 403;
   - descobrir se `POST /auth/callback/` é necessário no primeiro login;

@@ -27,7 +27,7 @@ Decisões novas entram no fim, com data.
   `web:tunnel` e a dependência `@expo/ngrok`.
 - **Commit:** `837db0c`.
 
-### D-03 · Só duas branches permanentes
+### D-03 · Só duas branches permanentes — **Substituída por D-23**
 - **Decisão:** `main` (estável) e `develop` (integração). Trabalho em
   `feature/NNN-slug` (a partir de `develop`) ou `fix/…`. Nunca commitar direto
   na `main`.
@@ -192,9 +192,46 @@ Spec, plano e tarefas: [specs/001-login/](../specs/001-login/spec.md).
   contra o Authenticator real; o código chegou e ela entrou no app. A spec
   001 foi marcada como **Implementada**.
 
-### D-22 · PR do app adiado
+### D-22 · PR do app adiado — **Substituída por D-24**
 - **Decisão:** a branch `feature/001-login` está no GitHub, mas o PR para a
   `develop` **ainda não** foi aberto, por decisão da pessoa usuária.
+
+---
+
+## 2026-10-20 — Fluxo de branches e planejamento da 002 (Auria real)
+
+### D-23 · Só `develop` e `main`, sem branches de feature
+- **Decisão:** não se criam mais branches `feature/…` nem `fix/…`. Todo
+  trabalho é commitado na `develop`; a `main` só recebe merge da `develop`.
+- **Por quê:** pedido da pessoa usuária; o projeto tem uma pessoa
+  desenvolvendo e o PR por feature não estava sendo usado.
+- **Onde:** [AGENTS.md](../AGENTS.md), [CLAUDE.md](../CLAUDE.md),
+  [specs/README.md](../specs/README.md), comandos `/sdd-specify` e
+  `/sdd-implement`, modelo de spec (commit `f525d4f`).
+
+### D-24 · 001 mergeada na `develop`
+- **Decisão:** a `feature/001-login` foi mergeada direto na `develop` (sem PR),
+  com typecheck e 23 testes verdes depois do merge. A branch
+  `feature/001-login` fica só como histórico.
+
+### D-25 · Spec 002: Auria real com o mesmo backend da web
+- **Decisão:** a Auria do app passa a usar o backend `aatos-auria` (servido pelo
+  `aatos-system` em `/auria/...`), o mesmo da web, com o JWT da 001.
+  Spec, plano (inventário de 56 endpoints, um a um) e tarefas em
+  [specs/002-auria-real/](../specs/002-auria-real/spec.md), status **Rascunho**.
+- **Contrato de referência:** o que está em produção — o `aatos-system` `main`
+  fixa o `aatos-auria` no commit `6567791` (17/10). A cópia local
+  `D:\REPOS\Backend\aatos-auria` (`dev` de 29/09) está desatualizada.
+- **Motor:** `POST /auria/system_llm/chat?stream=1` (SSE por POST, com
+  ferramentas). O motor antigo `/auria/generate` não é usado.
+- **Backend:** nenhuma mudança prevista. O backend não confere `aud` nem
+  `client_id` do token, então o token do app deve ser aceito (a confirmar na
+  tarefa P002).
+- **Interface:** continua em inglês (D-20).
+- **Dúvidas em aberto:** servidor (dev ou produção), o que fazer com recursos
+  sem backend (seletor de modelo, voz, pincel), documentos só leitura ou
+  editáveis, bloqueio por créditos antes do envio, e a ordem P1 → P2 → P3
+  (seção 9 da spec).
 
 ---
 
@@ -202,11 +239,11 @@ Spec, plano e tarefas: [specs/001-login/](../specs/001-login/spec.md).
 
 | Item | Onde |
 | --- | --- |
-| Abrir o PR `feature/001-login` → `develop` | GitHub |
+| Responder as 5 dúvidas da spec 002 e começar pela fase 0 (P002–P004) | [spec 002 §9](../specs/002-auria-real/spec.md) |
 | Trocar a `internalServiceKey` commitada em `Frontend_Myceo_Example_Authenticator/config.json` | backend |
 | Se a chave RSA do `.env.test` local do backend for usada em algum ambiente real, trocá-la (ela foi exibida por engano numa sessão) | backend |
 | Apagar as worktrees `_wt/mobile-code-login` e `_wt/main-mobile-code` e o SQLite de teste delas | máquina local |
-| Dúvidas de produto: backend dos dados, LLM da Auria, idioma da interface, Play Store ou interno | [baseline §7](../specs/000-baseline/spec.md) |
+| Dúvidas de produto: backend dos dados, idioma da interface, Play Store ou interno (LLM da Auria: respondido pela D-25) | [baseline §7](../specs/000-baseline/spec.md) |
 | Tarefas da baseline ainda abertas: ESLint (T002), CI (T003), testes (T004), permissões (T005), SDK 56 (T006), tema automático (T007), camada de dados (T009–T011), tokens de cor (T013), acessibilidade (T014) | [baseline tasks](../specs/000-baseline/tasks.md) |
 | Aviso do Expo: `expo@54.0.35`, esperado `~54.0.37` | `package.json` |
 | Fase 2 do login: botões nativos Google/Microsoft e SSO empresarial | spec futura |

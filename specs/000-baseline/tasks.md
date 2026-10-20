@@ -23,7 +23,7 @@ muda o comportamento visível do app, exceto T012.
 
 ## Fase 2 — Plataforma
 
-- [ ] T005 [P] Declarar plugins e permissões Android de câmera, fotos e microfone no `app.json` (`expo-camera`, `expo-image-picker`, `expo-audio`) — RNF-01
+- [x] T005 [P] Declarar plugins e permissões Android de câmera, fotos e microfone no `app.json` (`expo-camera`, `expo-image-picker`, `expo-audio`) — RNF-01 (feito na 002, A023)
 - [ ] T006 Atualizar Expo SDK 54 → 56 seguindo o guia de upgrade da v56 (`npx expo install expo@^56 --fix`), revisar breaking changes e atualizar o AGENTS.md — RNF-01
 - [ ] T007 [P] `app.json`: `userInterfaceStyle: "automatic"` para o tema "Sistema" funcionar no nativo — RNF-02
 

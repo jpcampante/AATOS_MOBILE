@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
+  GestureResponderEvent,
   Keyboard,
   LayoutChangeEvent,
   PanResponder,
-  Pressable,
   StyleSheet,
   useWindowDimensions,
   View,
@@ -188,6 +188,21 @@ export function AuriaScreen({
       return;
     }
     dismissKeyboard();
+  };
+
+  // A tap on the content closes the sidebar or the keyboard. Detected from raw
+  // touches (no responder) so the chat and the panels keep scrolling on Android.
+  const contentTouch = useRef<{ x: number; y: number } | null>(null);
+  const contentTapHandlers = {
+    onTouchStart: (e: GestureResponderEvent) => {
+      contentTouch.current = { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY };
+    },
+    onTouchEnd: (e: GestureResponderEvent) => {
+      const start = contentTouch.current;
+      contentTouch.current = null;
+      const moved = start ? Math.hypot(e.nativeEvent.pageX - start.x, e.nativeEvent.pageY - start.y) : Infinity;
+      if (moved < 8) handleContentTap();
+    },
   };
 
   const transitionPanel = (next: AuriaPanel) => {
@@ -407,8 +422,12 @@ export function AuriaScreen({
         aria-hidden={sidebarOpen}
         accessibilityElementsHidden={sidebarOpen}
         importantForAccessibility={sidebarOpen ? 'no-hide-descendants' : 'auto'}
-        {...sidebarSwipe.panHandlers}
+        // A pan responder over the whole screen stops the chat from scrolling on
+        // Android, so the full-screen swipe only exists while the sidebar is open
+        // (to close it); opening uses the edge strip below.
+        {...(sidebarOpen ? sidebarSwipe.panHandlers : null)}
       >
+        {!sidebarOpen ? <View style={styles.edgeSwipeStrip} {...sidebarSwipe.panHandlers} /> : null}
         <View style={styles.pushSurface}>
           <View style={styles.headerBar}>
             <AuriaWorkspaceHeader
@@ -436,7 +455,7 @@ export function AuriaScreen({
           </View>
 
           <View style={styles.main}>
-            <Pressable style={styles.contentTapArea} onPress={handleContentTap} accessible={false}>
+            <View style={styles.contentTapArea} {...contentTapHandlers}>
               <Animated.View
                 key={panelKey}
                 style={[
@@ -447,7 +466,7 @@ export function AuriaScreen({
               >
                 {renderMain()}
               </Animated.View>
-            </Pressable>
+            </View>
 
             {workspace.showComposer ? (
               <View style={styles.composerOverlay} onLayout={handleComposerLayout}>
@@ -557,6 +576,15 @@ function createStyles(ds: ReturnType<typeof useTheme>['ds']) {
     pushSurface: {
       flex: 1,
       backgroundColor: ds.gray50,
+    },
+    // Left-edge strip that catches the swipe to open the sidebar (below the header).
+    edgeSwipeStrip: {
+      position: 'absolute',
+      left: 0,
+      top: WORKSPACE_HEADER_HEIGHT,
+      bottom: 0,
+      width: 20,
+      zIndex: 3,
     },
     main: {
       flex: 1,

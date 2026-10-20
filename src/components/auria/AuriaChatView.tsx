@@ -3,9 +3,9 @@ import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, View } from 're
 import { AURIA_CHAT_SCROLL_END_PADDING, AURIA_CONTENT_HORIZONTAL_INSET } from './auriaLayout';
 import { auriaTypography, liquidGlassBorder, liquidGlassTokens, useTheme } from '../../theme';
 import type { AuriaChatMessage } from '../../features/auria/types';
-import { useTypewriter } from '../../features/auria/useTypewriter';
 import { AuriaDocumentArtifact } from './AuriaDocumentArtifact';
 import { AuriaImageArtifact } from './AuriaImageArtifact';
+import { AuriaMarkdown } from './AuriaMarkdown';
 import { AuriaMessageActions } from './AuriaMessageActions';
 import { AuriaReasoningBlock } from './AuriaReasoningBlock';
 import { AuriaSourceChips } from './AuriaSourceChips';
@@ -16,8 +16,6 @@ type AuriaChatViewProps = {
   isResponding?: boolean;
   /** Redirect to the files area when an internal document is opened. */
   onOpenFiles?: () => void;
-  /** Fired when a fresh reply has finished writing, so the Stop button can clear. */
-  onMessageDone?: (id: string) => void;
   /** Model label shown in a reply's "•••" menu (e.g. "Used Opus 4.8"). */
   modelLabel?: string;
   /** Starts a new chat from a reply ("Branch in new chat"). */
@@ -78,7 +76,6 @@ export function AuriaChatView({
   messages,
   isResponding = false,
   onOpenFiles,
-  onMessageDone,
   modelLabel,
   onBranch,
   onRegenerate,
@@ -148,7 +145,6 @@ export function AuriaChatView({
                     styles={styles}
                     cursorColor={ds.gray500}
                     onOpenFiles={onOpenFiles}
-                    onMessageDone={onMessageDone}
                     modelLabel={modelLabel}
                     onBranch={onBranch}
                     onRegenerate={onRegenerate}
@@ -174,17 +170,14 @@ export function AuriaChatView({
 
 /**
  * Renders an assistant reply across every response mode (text, reasoning,
- * sources, document/image artifacts). For a freshly-arrived reply the text
- * streams in like Auria is writing it, and the sources/artifact reveal only
- * once the text has finished — a calm, natural sequence. History renders
- * instantly (no `fresh` flag) so reopening a chat doesn't re-animate.
+ * sources, document/image artifacts). The live answer grows as the stream
+ * arrives, with a cursor; sources, artifacts and actions show once it settles.
  */
 function AssistantBubbleContent({
   message,
   styles,
   cursorColor,
   onOpenFiles,
-  onMessageDone,
   modelLabel,
   onBranch,
   onRegenerate,
@@ -194,32 +187,24 @@ function AssistantBubbleContent({
   styles: ReturnType<typeof createStyles>;
   cursorColor: string;
   onOpenFiles?: () => void;
-  onMessageDone?: (id: string) => void;
   modelLabel?: string;
   onBranch?: () => void;
   onRegenerate?: (messageId: string, mode: 'retry' | 'thinking' | 'search') => void;
   onActionFeedback?: (message: string) => void;
 }) {
-  const fresh = !!message.fresh;
-  const { shown, done } = useTypewriter(message.text, { enabled: fresh, cps: 50 });
-  // Hold the trailing content back until the prose finishes writing.
-  const revealRest = !fresh || done;
-
-  // Once a fresh reply finishes writing, let the workspace clear its busy state.
-  useEffect(() => {
-    if (fresh && done) onMessageDone?.(message.id);
-  }, [fresh, done, message.id, onMessageDone]);
+  const live = !!message.live;
+  // Hold the trailing content back until the answer is settled.
+  const revealRest = !live;
 
   return (
     <>
       {message.reasoning ? (
         <AuriaReasoningBlock reasoning={message.reasoning} onOpenFiles={onOpenFiles} />
       ) : null}
-      {message.text ? (
-        <Text style={[styles.text, styles.textAssistant]}>
-          {shown}
-          {fresh && !done ? <AuriaTypingCursor color={cursorColor} style={styles.text} /> : null}
-        </Text>
+      {message.text ? <AuriaMarkdown text={message.text} live={live} /> : null}
+      {live && message.text ? <AuriaTypingCursor color={cursorColor} style={styles.text} /> : null}
+      {message.status ? (
+        <Text style={styles.statusNote}>{message.status === 'stopped' ? 'Stopped' : 'Interrupted'}</Text>
       ) : null}
       {revealRest && message.sources && message.sources.length > 0 ? (
         <AuriaSourceChips sources={message.sources} onOpenFiles={onOpenFiles} />
@@ -235,9 +220,9 @@ function AssistantBubbleContent({
           text={message.text}
           modelLabel={modelLabel}
           onBranch={onBranch}
-          onRetry={() => onRegenerate?.(message.id, 'retry')}
-          onUseThinking={() => onRegenerate?.(message.id, 'thinking')}
-          onSearchWeb={() => onRegenerate?.(message.id, 'search')}
+          onRetry={onRegenerate ? () => onRegenerate(message.id, 'retry') : undefined}
+          onUseThinking={onRegenerate ? () => onRegenerate(message.id, 'thinking') : undefined}
+          onSearchWeb={onRegenerate ? () => onRegenerate(message.id, 'search') : undefined}
           onFeedback={onActionFeedback}
         />
       ) : null}
@@ -283,6 +268,10 @@ function createStyles(
       backgroundColor: ds.offBlack,
     },
     bubbleAssistant: {
+      // A fixed width, not content-sized: Markdown code blocks and tables scroll
+      // horizontally, and a content-sized parent makes Android measure them wrong
+      // (the chat then can't scroll to the end of the answer).
+      width: '88%',
       backgroundColor: glass.fill,
       ...rim,
       ...glass.webBlur,
@@ -328,6 +317,11 @@ function createStyles(
       alignItems: 'center',
       gap: 8,
       paddingVertical: 10,
+    },
+    statusNote: {
+      ...auriaTypography.body,
+      color: ds.gray500,
+      fontSize: 12,
     },
     thinkingText: {
       color: ds.gray500,

@@ -5,6 +5,7 @@ import * as Speech from 'expo-speech';
 import * as Haptics from 'expo-haptics';
 import { AuriaIcon, AuriaIconName, AURIA_ICON_SIZE } from '../icons';
 import { auriaTypography, MYCEO_CORNER_RADIUS, useTheme } from '../../theme';
+import { markdownToPlainText } from '../../features/auria/markdownBlocks';
 
 type MenuItem = {
   id: 'branch' | 'retry' | 'thinking' | 'search';
@@ -60,6 +61,16 @@ export function AuriaMessageActions({
   const styles = useMemo(() => createStyles(ds, theme), [ds, theme]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [speaking, setSpeaking] = useState(false);
+  // The answer is Markdown; copy, read aloud and share use it without the marks.
+  const plain = useMemo(() => markdownToPlainText(text), [text]);
+  // Each menu item shows only when its action is wired (Retry and friends come with H6/H7).
+  const menuHandlers: Record<MenuItem['id'], (() => void) | undefined> = {
+    branch: onBranch,
+    retry: onRetry,
+    thinking: onUseThinking,
+    search: onSearchWeb,
+  };
+  const menuItems = MENU_ITEMS.filter((item) => menuHandlers[item.id]);
 
   // Never leave speech running after this reply unmounts.
   useEffect(
@@ -73,7 +84,7 @@ export function AuriaMessageActions({
     try {
       // expo-clipboard works on iOS, Android and web (uses the async
       // Clipboard API with a document.execCommand fallback under the hood).
-      await Clipboard.setStringAsync(text);
+      await Clipboard.setStringAsync(plain);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       onFeedback?.('Message copied');
     } catch {
@@ -90,7 +101,7 @@ export function AuriaMessageActions({
         return;
       }
       setSpeaking(true);
-      Speech.speak(text, {
+      Speech.speak(plain, {
         onDone: () => setSpeaking(false),
         onStopped: () => setSpeaking(false),
         onError: () => setSpeaking(false),
@@ -110,17 +121,17 @@ export function AuriaMessageActions({
             ? (navigator as Navigator & { share?: (d: { text: string }) => Promise<void> })
             : null;
         if (nav?.share) {
-          await nav.share({ text });
+          await nav.share({ text: plain });
         } else {
           // No Web Share API (most desktop browsers) — copy instead so the
           // user still walks away with the text.
-          await Clipboard.setStringAsync(text);
+          await Clipboard.setStringAsync(plain);
           void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
           onFeedback?.('Copied to clipboard');
         }
         return;
       }
-      await Share.share({ message: text });
+      await Share.share({ message: plain });
     } catch {
       // User dismissed the share sheet — not an error worth surfacing.
     }
@@ -152,16 +163,18 @@ export function AuriaMessageActions({
           color={speaking ? ds.auriaBlue : ds.gray600}
         />
         <ActionButton icon="upload" label="Share" onPress={share} styles={styles} color={ds.gray600} />
-        <ActionButton
-          icon="moreHorizontal"
-          label="More actions"
-          onPress={() => setMenuOpen((open) => !open)}
-          styles={styles}
-          color={ds.gray600}
-        />
+        {menuItems.length > 0 ? (
+          <ActionButton
+            icon="moreHorizontal"
+            label="More actions"
+            onPress={() => setMenuOpen((open) => !open)}
+            styles={styles}
+            color={ds.gray600}
+          />
+        ) : null}
       </View>
 
-      {menuOpen ? (
+      {menuOpen && menuItems.length > 0 ? (
         <>
           {/* Tap-away backdrop confined to the chat surface. */}
           <Pressable
@@ -172,20 +185,23 @@ export function AuriaMessageActions({
           />
           <View style={styles.menu}>
             <Text style={styles.menuStamp}>{nowStamp()}</Text>
-            <Pressable
-              onPress={() => runMenu('branch')}
-              style={({ pressed }) => [styles.menuItem, pressed && styles.menuItemPressed]}
-              accessibilityRole="button"
-              accessibilityLabel="Branch in new chat"
-            >
-              <AuriaIcon name="branch" size={AURIA_ICON_SIZE.sm} color={ds.gray900} />
-              <Text style={styles.menuLabel}>Branch in new chat</Text>
-            </Pressable>
-
-            <View style={styles.menuDivider} />
+            {onBranch ? (
+              <>
+                <Pressable
+                  onPress={() => runMenu('branch')}
+                  style={({ pressed }) => [styles.menuItem, pressed && styles.menuItemPressed]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Branch in new chat"
+                >
+                  <AuriaIcon name="branch" size={AURIA_ICON_SIZE.sm} color={ds.gray900} />
+                  <Text style={styles.menuLabel}>Branch in new chat</Text>
+                </Pressable>
+                <View style={styles.menuDivider} />
+              </>
+            ) : null}
             <Text style={styles.menuStamp}>{modelLabel}</Text>
 
-            {MENU_ITEMS.filter((item) => item.id !== 'branch').map((item) => (
+            {menuItems.filter((item) => item.id !== 'branch').map((item) => (
               <Pressable
                 key={item.id}
                 onPress={() => runMenu(item.id)}

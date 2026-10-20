@@ -59,7 +59,7 @@ export function AppShell({
   ).current;
   const sidebarWidth = getSidebarWidth(width);
   const shellBackground =
-    activeTab === 'auria' || activeTab === 'settings' ? ds.gray50 : theme.colors.page;
+    activeTab === 'auria' || activeTab === 'profile' ? ds.gray50 : theme.colors.page;
   const bottomReservation = APP_SHELL_BOTTOM_INSET + safeArea.bottom;
 
   useEffect(() => {

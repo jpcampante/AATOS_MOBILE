@@ -1,8 +1,9 @@
-import { lazy, Suspense, useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, BackHandler, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ScreenTransition } from './src/components/ui/transitions';
 import { ProductTabId } from './src/data/productNavigation';
+import { AuthProvider, useAuth } from './src/features/auth';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { ThemeProvider } from './src/theme';
 import { ensureWebBrandFont } from './src/theme/webFont';
@@ -12,51 +13,57 @@ ensureWebBrandFont();
 
 const MainApp = lazy(() => import('./src/MainApp'));
 
-type AppPhase = 'login' | 'main';
-
 export default function App() {
-  const [phase, setPhase] = useState<AppPhase>('login');
-  const [activeTab, setActiveTab] = useState<ProductTabId>('insights');
-  const [tabHistory, setTabHistory] = useState<ProductTabId[]>([]);
-  const activeTabRef = useRef(activeTab);
-  activeTabRef.current = activeTab;
-  const tabHistoryRef = useRef(tabHistory);
-  tabHistoryRef.current = tabHistory;
-
-  // Remember where the user came from so an edge swipe-back can return there.
-  const navigateTab = useCallback((tab: ProductTabId) => {
-    if (tab !== activeTabRef.current) {
-      setTabHistory((h) => [...h, activeTabRef.current]);
-    }
-    setActiveTab(tab);
-  }, []);
-
-  const goBack = useCallback(() => {
-    const h = tabHistoryRef.current;
-    if (h.length === 0) return;
-    setActiveTab(h[h.length - 1]);
-    setTabHistory(h.slice(0, -1));
-  }, []);
-
   return (
     <SafeAreaProvider>
       <ThemeProvider initialPreference="light">
-        {phase === 'login' ? (
-          <ScreenTransition key="login">
-            <LoginScreen onContinue={() => setPhase('main')} />
-          </ScreenTransition>
-        ) : (
-          <Suspense fallback={<BootFallback />}>
-            <MainApp
-              activeTab={activeTab}
-              onTabChange={navigateTab}
-              onBack={goBack}
-              canGoBack={tabHistory.length > 0}
-            />
-          </Suspense>
-        )}
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
       </ThemeProvider>
     </SafeAreaProvider>
+  );
+}
+
+function AppContent() {
+  const { status } = useAuth();
+  const [activeTab, setActiveTab] = useState<ProductTabId>('auria');
+  const canGoBack = activeTab !== 'auria';
+
+  // A new session always starts on Auria.
+  useEffect(() => {
+    if (status === 'signedOut') setActiveTab('auria');
+  }, [status]);
+
+  // Auria is home: the edge swipe-back and the Android back button return there.
+  const goBack = useCallback(() => setActiveTab('auria'), []);
+
+  useEffect(() => {
+    if (status !== 'signedIn' || !canGoBack) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      goBack();
+      return true;
+    });
+    return () => sub.remove();
+  }, [status, canGoBack, goBack]);
+
+  // Reading the stored session takes a few ms; stay on the login's blank white
+  // canvas so a signed-in start never flashes the login sheet.
+  if (status === 'loading') return <View style={styles.blank} />;
+
+  return status === 'signedOut' ? (
+    <ScreenTransition key="login">
+      <LoginScreen />
+    </ScreenTransition>
+  ) : (
+    <Suspense fallback={<BootFallback />}>
+      <MainApp
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        onBack={goBack}
+        canGoBack={canGoBack}
+      />
+    </Suspense>
   );
 }
 
@@ -69,6 +76,10 @@ function BootFallback() {
 }
 
 const styles = StyleSheet.create({
+  blank: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
   boot: {
     flex: 1,
     alignItems: 'center',

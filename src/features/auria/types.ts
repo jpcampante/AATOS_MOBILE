@@ -66,10 +66,59 @@ export type AuriaSource = {
   excerpt?: string;
 };
 
+/** A file attached to a message (uploaded by the person, from the app or the web). */
+export type AuriaAttachment = {
+  /** Attachment uuid on the server, when the URL is an Auria attachment. */
+  id?: string;
+  name: string;
+  /** Absolute URL. `private` ones need the Bearer token to load. */
+  url: string;
+  isImage: boolean;
+  private: boolean;
+};
+
+/** A conversation as the sidebar lists it. */
+export type AuriaConversation = {
+  id: string;
+  title: string;
+  /** Origin: `auria_system` (Auria), `aatos`, `chatgpt`, `anthropic`… — imported chats are read-only here. */
+  provider: string;
+  visibility: 'private' | 'public';
+  ownerPublicUid: string | null;
+  isPinned: boolean;
+  lastActivity: string | null;
+  messageCount: number | null;
+  createdAt: string | null;
+};
+
+/** One page of a paginated list. */
+export type AuriaPage<T> = {
+  items: T[];
+  count: number;
+  hasMore: boolean;
+};
+
 export type AuriaChatMessage = {
   id: string;
   role: 'user' | 'assistant';
   text: string;
+  /** Message uuid on the server (absent while a sent message is still local). */
+  serverId?: string;
+  createdAt?: string;
+  /** Saved reasoning ("Thinking") text, as the server stored it. */
+  reasoningText?: string;
+  liked?: boolean;
+  /** Which version of this message is shown (`< 2/3 >`), with all version ids. */
+  version?: { index: number; count: number; ids: string[] };
+  /** Real attachments (images and files) of the message. */
+  files?: AuriaAttachment[];
+  /** A generated image (absolute URL; generated images are public). */
+  imageUrl?: string;
+  mentions?: { userPublicUid: string; name?: string }[];
+  /** The answer being written right now (its text grows as the stream arrives). */
+  live?: boolean;
+  /** An answer that did not finish: the person stopped it, or it failed midway. */
+  status?: 'stopped' | 'error';
   /**
    * Image attachment URIs sent by the user. Rendered bare (outside the bubble):
    * a single image at its natural aspect ratio, multiple as a 2-column grid.
@@ -78,10 +127,4 @@ export type AuriaChatMessage = {
   artifact?: AuriaArtifact;
   reasoning?: AuriaReasoning;
   sources?: AuriaSource[];
-  /**
-   * True for a reply that just arrived live, so the chat streams its text in
-   * like Auria is writing it. History (saved conversations) loads without this
-   * flag and renders instantly.
-   */
-  fresh?: boolean;
 };

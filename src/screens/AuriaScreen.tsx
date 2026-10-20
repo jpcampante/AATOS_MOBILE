@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
+  GestureResponderEvent,
   Keyboard,
   LayoutChangeEvent,
   PanResponder,
-  Pressable,
   StyleSheet,
   useWindowDimensions,
   View,
@@ -16,9 +16,8 @@ import {
 import { AuriaCreateMenu } from '../components/auria/AuriaCreateMenu';
 import { AuriaDocTemplatesModal } from '../components/auria/AuriaDocTemplatesModal';
 import type { AuriaDocTemplate } from '../data/auriaDocTemplates';
-import { AuriaModelSheet } from '../components/auria/AuriaModelSheet';
+import { AuriaModeSheet, auriaModeLabel } from '../components/auria/AuriaModeSheet';
 import { AuriaPromptSuggestions } from '../components/auria/AuriaPromptSuggestions';
-import { getModelById } from '../data/auriaModels';
 import {
   AuriaGalleryPanel,
   AuriaNewsPanel,
@@ -33,7 +32,6 @@ import {
   getWelcomeContentTopPadding,
 } from '../components/auria/auriaLayout';
 import { AuriaChatView } from '../components/auria/AuriaChatView';
-import { AuriaVoiceMode } from '../components/auria/AuriaVoiceMode';
 import { AuriaCameraView } from '../components/auria/AuriaCameraView';
 import { AuriaNewProjectInput, AuriaNewProjectModal } from '../components/auria/AuriaNewProjectModal';
 import { AuriaSidebar } from '../components/auria/AuriaSidebar';
@@ -42,6 +40,8 @@ import { AuriaWorkspaceHeader, WORKSPACE_HEADER_HEIGHT } from '../components/aur
 import { APP_SHELL_BOTTOM_INSET } from '../components/navigation/AppShell';
 import { AuriaPanel } from '../data/auriaMockData';
 import { useAuriaWorkspace } from '../features/auria/useAuriaWorkspace';
+import { useAuriaConversation } from '../features/auria/useAuriaConversation';
+import { describeAuriaError } from '../features/auria/api/errors';
 import { useAuriaToast } from '../features/auria/useAuriaToast';
 import { AuriaActionToast } from '../components/auria/AuriaActionToast';
 import { AuriaDiscoverHeaderActions } from '../components/auria/AuriaDiscoverHeaderActions';
@@ -52,7 +52,7 @@ import { SUPPORTS_NATIVE_DRIVER, motionDuration, motionEasing, useTheme } from '
 type AuriaScreenProps = {
   onSidebarOpenChange?: (open: boolean) => void;
   onOpenSettings?: () => void;
-  /** When set (deep-link from Insights), pre-fills the composer once. */
+  /** When set (deep link from another screen), pre-fills the composer once. */
   initialPrompt?: string | null;
   onPromptConsumed?: () => void;
 };
@@ -70,10 +70,23 @@ export function AuriaScreen({
   const keyboardInset = useKeyboardInset(shellBottomInset);
   const composerRef = useRef<AuriaComposerHandle>(null);
   const workspace = useAuriaWorkspace();
-  const activeModel = getModelById(workspace.selectedModel);
+  const conversation = useAuriaConversation();
+  const isWelcomeHome = workspace.panel === 'chat' && conversation.messages.length === 0;
   const { toast, showToast } = useAuriaToast();
 
-  // Deep-link from Insights "Ask Auria": seed the composer once, then clear it.
+  // Until the notice above the composer lands (A027), a failed answer shows a toast.
+  useEffect(() => {
+    if (conversation.error) showToast(describeAuriaError(conversation.error).message);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversation.error]);
+
+  /** Sends to the real Auria from any entry point (composer, suggestion, article…). */
+  const sendToAuria = (text: string) => {
+    if (workspace.panel !== 'chat') workspace.openPanel('chat');
+    return conversation.send(text);
+  };
+
+  // Deep link with a prompt: seed the composer once, then clear it.
   useEffect(() => {
     if (initialPrompt) {
       workspace.setComposerText(initialPrompt);
@@ -85,7 +98,6 @@ export function AuriaScreen({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
-  const [voiceOpen, setVoiceOpen] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [attachments, setAttachments] = useState<string[]>([]);
   const [imageMode, setImageMode] = useState(false);
@@ -174,6 +186,21 @@ export function AuriaScreen({
     dismissKeyboard();
   };
 
+  // A tap on the content closes the sidebar or the keyboard. Detected from raw
+  // touches (no responder) so the chat and the panels keep scrolling on Android.
+  const contentTouch = useRef<{ x: number; y: number } | null>(null);
+  const contentTapHandlers = {
+    onTouchStart: (e: GestureResponderEvent) => {
+      contentTouch.current = { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY };
+    },
+    onTouchEnd: (e: GestureResponderEvent) => {
+      const start = contentTouch.current;
+      contentTouch.current = null;
+      const moved = start ? Math.hypot(e.nativeEvent.pageX - start.x, e.nativeEvent.pageY - start.y) : Infinity;
+      if (moved < 8) handleContentTap();
+    },
+  };
+
   const transitionPanel = (next: AuriaPanel) => {
     dismissKeyboard();
     closeSidebar();
@@ -224,7 +251,9 @@ export function AuriaScreen({
 
   const handleNewChat = () => {
     dismissKeyboard();
-    workspace.newChat();
+    conversation.newChat();
+    workspace.openPanel('chat');
+    workspace.setComposerText('');
     setAttachments([]);
     setImageMode(false);
     setPanelKey((key) => key + 1);
@@ -234,7 +263,7 @@ export function AuriaScreen({
 
   const handleSuggestion = (text: string) => {
     dismissKeyboard();
-    workspace.sendMessage(text);
+    sendToAuria(text);
     setAttachments([]);
     setImageMode(false);
   };
@@ -244,7 +273,7 @@ export function AuriaScreen({
     question: string,
   ) => {
     dismissKeyboard();
-    workspace.sendMessage(
+    sendToAuria(
       `About the article "${article.title}" (${article.sourceName} — ${article.url}): ${question}`,
     );
     setAttachments([]);
@@ -255,15 +284,19 @@ export function AuriaScreen({
     const text = workspace.composerText.trim();
     if (imageMode) {
       if (!text) return;
-      workspace.sendMessage(`Create an image with aspect ratio ${imageRatio}. Image brief: ${text}`);
+      if (!sendToAuria(`Create an image with aspect ratio ${imageRatio}. Image brief: ${text}`)) return;
+      workspace.setComposerText('');
       setImageMode(false);
       dismissKeyboard();
       return;
     }
-    if (!text && attachments.length === 0) return;
-    workspace.sendMessage(text, attachments);
+    if (attachments.length > 0) {
+      // Uploading photos and files arrives with A024/A025; keep them in the composer until then.
+      showToast('Sending photos and files is coming in the next update.');
+    }
+    if (!text || !sendToAuria(text)) return;
+    workspace.setComposerText('');
     dismissKeyboard();
-    setAttachments([]);
   };
 
   const openNewProjectModal = () => {
@@ -283,7 +316,7 @@ export function AuriaScreen({
   };
 
   const handleCreateRequest = (request: string) => {
-    workspace.sendMessage(request);
+    sendToAuria(request);
     setAttachments([]);
     setImageMode(false);
     setPanelKey((key) => key + 1);
@@ -292,7 +325,7 @@ export function AuriaScreen({
 
   const handleUseTemplate = (template: AuriaDocTemplate) => {
     setDocTemplatesOpen(false);
-    workspace.sendMessage(`Create a document from the "${template.label}" template.`);
+    sendToAuria(`Create a document from the "${template.label}" template.`);
     setPanelKey((key) => key + 1);
     panelAnim.setValue(1);
   };
@@ -306,12 +339,10 @@ export function AuriaScreen({
 
   const handleConversation = (id: string) => {
     dismissKeyboard();
-    workspace.openConversation(id);
-    setAttachments([]);
-    setImageMode(false);
-    setPanelKey((key) => key + 1);
-    panelAnim.setValue(1);
     closeSidebar();
+    // Saved chats load from the server in A020 (the sidebar list is wired in A019).
+    void id;
+    showToast('Opening saved chats is coming in the next update.');
   };
 
   const panelTranslateX = panelAnim.interpolate({
@@ -320,7 +351,7 @@ export function AuriaScreen({
   });
 
   const renderMain = () => {
-    if (workspace.isWelcomeHome) {
+    if (isWelcomeHome) {
       return (
         <AuriaWelcomeView
           contentMaxWidth={contentMaxWidth}
@@ -357,13 +388,10 @@ export function AuriaScreen({
 
     return (
       <AuriaChatView
-        messages={workspace.messages}
-        isResponding={workspace.isResponding}
+        messages={conversation.messages}
+        isResponding={conversation.run !== null && !conversation.run.text}
         onOpenFiles={() => transitionPanel('gallery')}
-        onMessageDone={workspace.finishMessage}
-        modelLabel={`Used ${activeModel?.name ?? 'Auria'}${activeModel?.effort ? ` ${activeModel.effort}` : ''}`}
-        onBranch={handleNewChat}
-        onRegenerate={workspace.regenerate}
+        modelLabel={`Auria · ${auriaModeLabel(conversation.mode)}`}
         onActionFeedback={showToast}
       />
     );
@@ -376,7 +404,7 @@ export function AuriaScreen({
         width={sidebarWidth}
         revealProgress={slideProgress}
         activePanel={workspace.panel}
-        activeConversationId={workspace.activeConversationId}
+        activeConversationId={conversation.chatId}
         projectRows={workspace.projectRows}
         projects={workspace.projects}
         onNewChat={handleNewChat}
@@ -390,8 +418,12 @@ export function AuriaScreen({
         aria-hidden={sidebarOpen}
         accessibilityElementsHidden={sidebarOpen}
         importantForAccessibility={sidebarOpen ? 'no-hide-descendants' : 'auto'}
-        {...sidebarSwipe.panHandlers}
+        // A pan responder over the whole screen stops the chat from scrolling on
+        // Android, so the full-screen swipe only exists while the sidebar is open
+        // (to close it); opening uses the edge strip below.
+        {...(sidebarOpen ? sidebarSwipe.panHandlers : null)}
       >
+        {!sidebarOpen ? <View style={styles.edgeSwipeStrip} {...sidebarSwipe.panHandlers} /> : null}
         <View style={styles.pushSurface}>
           <View style={styles.headerBar}>
             <AuriaWorkspaceHeader
@@ -419,7 +451,7 @@ export function AuriaScreen({
           </View>
 
           <View style={styles.main}>
-            <Pressable style={styles.contentTapArea} onPress={handleContentTap} accessible={false}>
+            <View style={styles.contentTapArea} {...contentTapHandlers}>
               <Animated.View
                 key={panelKey}
                 style={[
@@ -430,11 +462,11 @@ export function AuriaScreen({
               >
                 {renderMain()}
               </Animated.View>
-            </Pressable>
+            </View>
 
             {workspace.showComposer ? (
               <View style={styles.composerOverlay} onLayout={handleComposerLayout}>
-                {workspace.isWelcomeHome ? (
+                {isWelcomeHome ? (
                   <AuriaPromptSuggestions onSelect={handleSuggestion} />
                 ) : null}
                 <AuriaComposer
@@ -442,16 +474,12 @@ export function AuriaScreen({
                   value={workspace.composerText}
                   onChangeText={workspace.setComposerText}
                   onSend={handleSend}
-                  onStop={workspace.stopResponding}
+                  onStop={conversation.stop}
                   onAttach={openCreateMenu}
-                  onVoice={() => {
-                    dismissKeyboard();
-                    setVoiceOpen(true);
-                  }}
                   bottomInset={keyboardInset}
-                  isResponding={workspace.isBusy}
-                  selectedModelName={activeModel?.name ?? 'Opus 4.8'}
-                  selectedModelEffort={activeModel?.effort ?? null}
+                  isResponding={conversation.isBusy}
+                  selectedModelName={auriaModeLabel(conversation.mode)}
+                  selectedModelEffort={null}
                   onOpenModelPicker={() => {
                     dismissKeyboard();
                     setModelPickerOpen(true);
@@ -488,10 +516,10 @@ export function AuriaScreen({
               bottomOffset={shellBottomInset - 20}
             />
 
-            <AuriaModelSheet
+            <AuriaModeSheet
               visible={modelPickerOpen}
-              selectedId={workspace.selectedModel}
-              onSelect={workspace.setSelectedModel}
+              selected={conversation.mode}
+              onSelect={conversation.setMode}
               onClose={() => setModelPickerOpen(false)}
             />
 
@@ -510,7 +538,6 @@ export function AuriaScreen({
         onCreate={handleCreateProject}
       />
 
-      <AuriaVoiceMode visible={voiceOpen} onClose={() => setVoiceOpen(false)} />
 
       <AuriaCameraView
         visible={cameraOpen}
@@ -540,6 +567,15 @@ function createStyles(ds: ReturnType<typeof useTheme>['ds']) {
     pushSurface: {
       flex: 1,
       backgroundColor: ds.gray50,
+    },
+    // Left-edge strip that catches the swipe to open the sidebar (below the header).
+    edgeSwipeStrip: {
+      position: 'absolute',
+      left: 0,
+      top: WORKSPACE_HEADER_HEIGHT,
+      bottom: 0,
+      width: 20,
+      zIndex: 3,
     },
     main: {
       flex: 1,

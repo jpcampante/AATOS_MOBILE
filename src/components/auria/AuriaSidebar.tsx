@@ -2,7 +2,6 @@ import { useMemo, type ReactNode } from 'react';
 import { Animated, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
   auriaConversations,
-  auriaProfileInitials,
   auriaProjects,
   auriaSidebarProjects,
   auriaSidebarTopItems,
@@ -19,6 +18,7 @@ import {
 } from '../icons';
 import { auriaTypography, liquidGlassBorder, liquidGlassTokens, useTheme } from '../../theme';
 import { AuriaBloomMark } from './AuriaBloomMark';
+import { useCurrentUser } from '../../features/auth';
 
 type AuriaSidebarProps = {
   open?: boolean;
@@ -141,6 +141,7 @@ export function AuriaSidebar({
   onCreateProject,
 }: AuriaSidebarProps) {
   const { ds, theme } = useTheme();
+  const user = useCurrentUser();
   const styles = useMemo(() => createStyles(ds, theme, width), [ds, theme, width]);
   const projectMeta = useMemo(() => projectMetaById(projects), [projects]);
 
@@ -207,7 +208,7 @@ export function AuriaSidebar({
             accessibilityLabel="Profile and settings"
             onPress={() => onSelectPanel('settings')}
           >
-            <Text style={styles.profileInitials}>{auriaProfileInitials}</Text>
+            <Text style={styles.profileInitials}>{user.initials}</Text>
           </Pressable>
           </View>
         </View>

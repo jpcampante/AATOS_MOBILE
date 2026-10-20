@@ -43,7 +43,7 @@ export function ProductTabTransition({ activeTab, renderScreen }: ProductTabTran
 
     transitionRef.current.start(() => {
       // Always swap tab even if the out-animation was interrupted — otherwise
-      // the nav highlights Auria while the screen stays on Insights (blank/stuck).
+      // the nav highlights one tab while the screen stays on the other (blank/stuck).
       setDisplayTab(activeTab);
       progress.setValue(0);
 

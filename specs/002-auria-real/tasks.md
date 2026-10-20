@@ -54,7 +54,7 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
   - token fresco antes de abrir.
 
   Arquivo: `src/features/auria/api/streamChat.ts`. Endpoint E01 — RF-01, RF-04
-- [ ] A007 [P] Testes com fixtures reais, depois `types.ts` + `mappers.ts`:
+- [x] A007 [P] Testes com fixtures reais, depois `types.ts` + `mappers.ts`:
   - conversa, mensagem (texto, imagem, multimodal) e anexos extraídos do markdown;
   - versões e curtida.
 

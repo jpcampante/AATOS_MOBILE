@@ -72,7 +72,7 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
 
 ## Fase 2 — História 1: Conversar com a Auria (P1)
 
-- [ ] A010 `useAuriaConversation`:
+- [x] A010 `useAuriaConversation`:
   - envio com `chat_id: null` na primeira mensagem;
   - adota o id real em `chat`/`saved`;
   - uma resposta por vez e `client_operation_id`;

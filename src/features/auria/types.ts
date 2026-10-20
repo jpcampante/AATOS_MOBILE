@@ -115,6 +115,10 @@ export type AuriaChatMessage = {
   /** A generated image (absolute URL; generated images are public). */
   imageUrl?: string;
   mentions?: { userPublicUid: string; name?: string }[];
+  /** The answer being written right now (its text grows as the stream arrives). */
+  live?: boolean;
+  /** An answer that did not finish: the person stopped it, or it failed midway. */
+  status?: 'stopped' | 'error';
   /**
    * Image attachment URIs sent by the user. Rendered bare (outside the bubble):
    * a single image at its natural aspect ratio, multiple as a 2-column grid.

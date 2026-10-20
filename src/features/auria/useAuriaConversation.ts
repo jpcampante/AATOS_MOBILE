@@ -8,6 +8,14 @@ import { newClientOperationId, type AuriaMode, type StreamChatRequest } from './
 import { conversationReducer, initialConversation, visibleMessages } from './conversationReducer';
 import { DEFAULT_MODE, loadMode, saveMode } from './prefs';
 
+/** Fetches the latest messages of a chat (the last two server pages), oldest first. */
+async function fetchLatest(chatId: string) {
+  const first = await listMessages(chatId, 1);
+  const pages = latestPages(first.count, MESSAGE_PAGE_SIZE);
+  const results = await Promise.all(pages.map((page) => (page === 1 ? first : listMessages(chatId, page))));
+  return { messages: results.flatMap((r) => r.items), oldestPage: pages[0] };
+}
+
 let turnSeq = 0;
 const nextTurnId = () => `t${(turnSeq += 1)}`;
 
@@ -60,6 +68,8 @@ export function useAuriaConversation() {
 
     const controller = new AbortController();
     abortRef.current = controller;
+    let turnChatId = current.chatId;
+    let failed = false;
     streamChat(
       {
         message,
@@ -69,7 +79,10 @@ export function useAuriaConversation() {
         ...options,
       },
       {
-        onEvent: (event) => dispatch({ type: 'run', localId, action: { type: 'event', event } }),
+        onEvent: (event) => {
+          if (event.type === 'chat') turnChatId = event.chatId;
+          dispatch({ type: 'run', localId, action: { type: 'event', event } });
+        },
         signal: controller.signal,
       },
     )
@@ -83,12 +96,21 @@ export function useAuriaConversation() {
         if (isAuriaApiError(err) && err.code === 'aborted') {
           dispatch({ type: 'run', localId, action: { type: 'stop' } });
         } else {
+          failed = true;
           dispatch({ type: 'run', localId, action: { type: 'fail', error: isAuriaApiError(err) ? err : networkError(err) } });
         }
       })
       .finally(() => {
         if (abortRef.current === controller) abortRef.current = null;
         dispatch({ type: 'settle', localId });
+        // A turn that failed midway: the server may have saved the answer or a notice. Re-read it
+        // quietly (the notice stays; a partial answer is kept if the server has nothing better).
+        const chatId = turnChatId;
+        if (failed && chatId) {
+          fetchLatest(chatId)
+            .then(({ messages, oldestPage }) => dispatch({ type: 'history-replace', chatId, messages, oldestPage }))
+            .catch(() => {});
+        }
       });
     return true;
   }, []);
@@ -109,14 +131,6 @@ export function useAuriaConversation() {
 
   const clearError = useCallback(() => dispatch({ type: 'clear-error' }), []);
 
-  /** Fetches the latest messages of a chat (the last two server pages), oldest first. */
-  const fetchLatest = useCallback(async (chatId: string) => {
-    const first = await listMessages(chatId, 1);
-    const pages = latestPages(first.count, MESSAGE_PAGE_SIZE);
-    const results = await Promise.all(pages.map((page) => (page === 1 ? first : listMessages(chatId, page))));
-    return { messages: results.flatMap((r) => r.items), oldestPage: pages[0] };
-  }, []);
-
   /** Open a saved chat. A running answer in another chat is stopped (the server keeps it). */
   const openChat = useCallback(
     async (chatId: string, provider: string | null) => {
@@ -130,7 +144,7 @@ export function useAuriaConversation() {
         dispatch({ type: 'history-failed', chatId, error: isAuriaApiError(err) ? err : networkError(err) });
       }
     },
-    [fetchLatest],
+    [],
   );
 
   const loadEarlier = useCallback(async () => {

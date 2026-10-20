@@ -155,7 +155,7 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
   - composer desabilitado em conversa só leitura e sem rede.
 
   Arquivo: `src/components/auria/AuriaErrorNotice.tsx` — RF-12, RF-13, CS-04
-- [ ] A028 Resposta interrompida (parar, `connection_lost`, `error` com parcial):
+- [x] A028 Resposta interrompida (parar, `connection_lost`, `error` com parcial):
   - o texto fica com a marca "interrompida";
   - depois do erro, a conversa é relida do servidor para pegar o aviso que ele salvou.
 

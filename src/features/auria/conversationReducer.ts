@@ -33,6 +33,8 @@ export type ConversationAction =
   | { type: 'earlier-loading'; chatId: string }
   | { type: 'earlier-loaded'; chatId: string; messages: AuriaChatMessage[]; page: number }
   | { type: 'history-failed'; chatId: string; error: AuriaApiError }
+  /** After a failed turn: the server's copy wins when it has an answer after the last question (keeps the notice). */
+  | { type: 'history-replace'; chatId: string; messages: AuriaChatMessage[]; oldestPage: number }
   | { type: 'send'; localId: string; text: string; now: number }
   | { type: 'run'; localId: string; action: AuriaRunAction }
   /** The turn ended (finished, stopped or failed): the live answer becomes a message. */
@@ -105,6 +107,17 @@ export function conversationReducer(state: ConversationState, action: Conversati
         messages: prepend(action.messages, state.messages),
         history: { loading: false, oldestPage: action.page, hasEarlier: action.page > 1, error: null },
       };
+
+    case 'history-replace': {
+      if (state.chatId !== action.chatId || state.live) return state;
+      const last = action.messages[action.messages.length - 1];
+      if (!last || last.role !== 'assistant') return state; // the server saved nothing better
+      return {
+        ...state,
+        messages: action.messages,
+        history: { loading: false, oldestPage: action.oldestPage, hasEarlier: action.oldestPage > 1, error: null },
+      };
+    }
 
     case 'history-failed':
       if (state.chatId !== action.chatId) return state;

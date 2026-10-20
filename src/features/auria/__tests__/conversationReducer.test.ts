@@ -201,3 +201,39 @@ describe('conversationReducer — saved chats', () => {
     expect(state.provider).toBe('auria_system');
   });
 });
+
+describe('conversationReducer — after a failed turn', () => {
+  const failed = () =>
+    apply([
+      { type: 'send', localId: 't1', text: 'Q', now: 0 },
+      ev('t1', { type: 'chat', chatId: 'c-1', userMessageUuid: 'u-1' }),
+      ev('t1', { type: 'delta', content: 'Half' }),
+      { type: 'run', localId: 't1', action: { type: 'fail', error: connectionLostError() } },
+      { type: 'settle', localId: 't1' },
+    ]);
+
+  it("takes the server's copy when it has the answer, keeping the notice", () => {
+    const state = conversationReducer(failed(), {
+      type: 'history-replace',
+      chatId: 'c-1',
+      messages: [
+        { id: 'u-1', serverId: 'u-1', role: 'user', text: 'Q' },
+        { id: 'a-1', serverId: 'a-1', role: 'assistant', text: 'The full answer' },
+      ],
+      oldestPage: 1,
+    });
+    expect(state.messages.map((m) => m.text)).toEqual(['Q', 'The full answer']);
+    expect(state.error?.code).toBe('connection_lost');
+  });
+
+  it('keeps the partial text when the server saved no answer', () => {
+    const before = failed();
+    const state = conversationReducer(before, {
+      type: 'history-replace',
+      chatId: 'c-1',
+      messages: [{ id: 'u-1', serverId: 'u-1', role: 'user', text: 'Q' }],
+      oldestPage: 1,
+    });
+    expect(state).toBe(before);
+  });
+});

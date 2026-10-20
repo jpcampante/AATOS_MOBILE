@@ -32,6 +32,7 @@ Leia antes de começar:
 2. [specs/README.md](specs/README.md) — o fluxo, estrutura de pastas e branches.
 3. [specs/000-baseline/spec.md](specs/000-baseline/spec.md) — o que o app faz hoje.
 4. [specs/000-baseline/plan.md](specs/000-baseline/plan.md) — mapa da arquitetura e do código.
+5. [docs/DECISOES.md](docs/DECISOES.md) — registro de todas as decisões tomadas (acrescente as novas no fim).
 
 Regras para agentes:
 

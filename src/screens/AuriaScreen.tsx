@@ -45,6 +45,9 @@ import { useAuriaWorkspace } from '../features/auria/useAuriaWorkspace';
 import { useAuriaConversation } from '../features/auria/useAuriaConversation';
 import { useAuriaChats } from '../features/auria/useAuriaChats';
 import { useAuriaCredits } from '../features/auria/useAuriaCredits';
+import { useAuriaAttachments } from '../features/auria/useAuriaAttachments';
+import type { PickedFile } from '../features/auria/attachments';
+import type { SendOptions } from '../features/auria/useAuriaConversation';
 import { creditsMessage, resetHint } from '../features/auria/credits';
 import type { AuriaConversation } from '../features/auria/types';
 import { AuriaConversationMenu } from '../components/auria/AuriaConversationMenu';
@@ -220,14 +223,14 @@ export function AuriaScreen({
   };
 
   /** Sends to the real Auria from any entry point (composer, suggestion, article…). */
-  const sendToAuria = (text: string) => {
+  const sendToAuria = (text: string, files: SendOptions['attachments'] = []) => {
     if (workspace.panel !== 'chat') workspace.openPanel('chat');
     // Out of credits (or the check failed): block before calling Auria (D-08). The notice says why.
     if (credits.blocked) {
       void credits.check();
       return false;
     }
-    return conversation.send(text);
+    return conversation.send(text, { attachments: files });
   };
 
   // Deep link with a prompt: seed the composer once, then clear it.
@@ -243,7 +246,7 @@ export function AuriaScreen({
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
-  const [attachments, setAttachments] = useState<string[]>([]);
+  const attachments = useAuriaAttachments();
   const [imageMode, setImageMode] = useState(false);
   const [imageRatio, setImageRatio] = useState('1:1');
   const [docTemplatesOpen, setDocTemplatesOpen] = useState(false);
@@ -398,7 +401,7 @@ export function AuriaScreen({
     conversation.newChat();
     workspace.openPanel('chat');
     workspace.setComposerText('');
-    setAttachments([]);
+    attachments.clear();
     setImageMode(false);
     setPanelKey((key) => key + 1);
     panelAnim.setValue(1);
@@ -408,7 +411,7 @@ export function AuriaScreen({
   const handleSuggestion = (text: string) => {
     dismissKeyboard();
     sendToAuria(text);
-    setAttachments([]);
+    attachments.clear();
     setImageMode(false);
   };
 
@@ -420,7 +423,7 @@ export function AuriaScreen({
     sendToAuria(
       `About the article "${article.title}" (${article.sourceName} — ${article.url}): ${question}`,
     );
-    setAttachments([]);
+    attachments.clear();
     setImageMode(false);
   };
 
@@ -434,13 +437,22 @@ export function AuriaScreen({
       dismissKeyboard();
       return;
     }
-    if (attachments.length > 0) {
-      // Uploading photos and files arrives with A024/A025; keep them in the composer until then.
-      showToast('Sending photos and files is coming in the next update.');
+    if (attachments.uploading) {
+      showToast('Wait for the files to finish uploading.');
+      return;
     }
-    if (!text || !sendToAuria(text)) return;
+    const ready = attachments.readyForMessage;
+    if (!text && ready.length === 0) return;
+    if (!sendToAuria(text, ready)) return;
     workspace.setComposerText('');
+    attachments.clear();
     dismissKeyboard();
+  };
+
+  /** Picked photos and files upload right away; refused ones (type or size) are explained. */
+  const addAttachments = (picked: PickedFile[]) => {
+    const refused = attachments.add(picked, conversation.chatId);
+    if (refused.length) showToast(`${refused[0].name}: ${refused[0].reason}`);
   };
 
   const openNewProjectModal = () => {
@@ -461,7 +473,7 @@ export function AuriaScreen({
 
   const handleCreateRequest = (request: string) => {
     sendToAuria(request);
-    setAttachments([]);
+    attachments.clear();
     setImageMode(false);
     setPanelKey((key) => key + 1);
     panelAnim.setValue(1);
@@ -484,7 +496,7 @@ export function AuriaScreen({
   const handleConversation = (id: string) => {
     dismissKeyboard();
     closeSidebar();
-    setAttachments([]);
+    attachments.clear();
     setImageMode(false);
     workspace.setComposerText('');
     if (workspace.panel !== 'chat') workspace.openPanel('chat');
@@ -665,10 +677,8 @@ export function AuriaScreen({
                     dismissKeyboard();
                     setModelPickerOpen(true);
                   }}
-                  attachments={attachments}
-                  onRemoveAttachment={(uri) =>
-                    setAttachments((current) => current.filter((item) => item !== uri))
-                  }
+                  attachments={attachments.items}
+                  onRemoveAttachment={attachments.remove}
                   imageMode={imageMode}
                   imageRatio={imageRatio}
                   onSelectRatio={setImageRatio}
@@ -686,7 +696,7 @@ export function AuriaScreen({
                 setCreateMenuOpen(false);
                 setCameraOpen(true);
               }}
-              onAddPhotos={(uris) => setAttachments((current) => [...current, ...uris])}
+              onAddFiles={addAttachments}
               onCreateImage={() => {
                 setCreateMenuOpen(false);
                 setImageMode(true);
@@ -726,7 +736,7 @@ export function AuriaScreen({
         onClose={() => setCameraOpen(false)}
         onCapture={(uri) => {
           setCameraOpen(false);
-          setAttachments((current) => [...current, uri]);
+          addAttachments([{ uri }]);
         }}
       />
 

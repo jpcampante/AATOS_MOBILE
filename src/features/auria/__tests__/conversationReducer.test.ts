@@ -237,3 +237,18 @@ describe('conversationReducer — after a failed turn', () => {
     expect(state).toBe(before);
   });
 });
+
+describe('conversationReducer — attachments', () => {
+  const photo = { id: 'p-1', name: 'photo.jpg', url: 'https://api.test/auria/chat/attachments/p-1', isImage: true, private: true };
+
+  it('shows the question and the files apart in the user bubble', () => {
+    const state = conversationReducer(initialConversation, { type: 'send', localId: 't1', text: 'What is this?', now: 0, files: [photo] });
+    expect(state.messages[0]).toEqual({ id: 't1-u', role: 'user', text: 'What is this?', files: [photo] });
+  });
+
+  it('sends files without text', () => {
+    const state = conversationReducer(initialConversation, { type: 'send', localId: 't1', text: '', now: 0, files: [photo] });
+    expect(state.messages).toHaveLength(1);
+    expect(state.live).not.toBeNull();
+  });
+});

@@ -1,6 +1,6 @@
 import type { AuriaApiError } from './api/errors';
 import { createRun, runReducer, type AuriaRun, type AuriaRunAction } from './runReducer';
-import type { AuriaChatMessage } from './types';
+import type { AuriaAttachment, AuriaChatMessage } from './types';
 
 /** Loading state of a saved chat's history (oldest-first pages on the server). */
 export type HistoryState = {
@@ -35,7 +35,7 @@ export type ConversationAction =
   | { type: 'history-failed'; chatId: string; error: AuriaApiError }
   /** After a failed turn: the server's copy wins when it has an answer after the last question (keeps the notice). */
   | { type: 'history-replace'; chatId: string; messages: AuriaChatMessage[]; oldestPage: number }
-  | { type: 'send'; localId: string; text: string; now: number }
+  | { type: 'send'; localId: string; text: string; now: number; files?: AuriaAttachment[] }
   | { type: 'run'; localId: string; action: AuriaRunAction }
   /** The turn ended (finished, stopped or failed): the live answer becomes a message. */
   | { type: 'settle'; localId: string }
@@ -125,8 +125,10 @@ export function conversationReducer(state: ConversationState, action: Conversati
 
     case 'send': {
       const text = action.text.trim();
-      if (state.live || !text) return state;
+      const files = action.files ?? [];
+      if (state.live || (!text && files.length === 0)) return state;
       const user: AuriaChatMessage = { id: `${action.localId}-u`, role: 'user', text };
+      if (files.length) user.files = files;
       return {
         ...state,
         error: null,

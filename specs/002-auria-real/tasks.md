@@ -134,7 +134,7 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
 
 - [x] A023 [P] Plugins e permissões Android de câmera e fotos no `app.json` (tarefa T005 da baseline, se ainda aberta) — `app.json` — RF-10
 - [x] A024 Testes da validação (20 MB, tipos), depois o serviço de anexos: upload com progresso e remoção. Endpoints E24, E27 — `src/features/auria/api/attachments.ts`, `useAuriaAttachments.ts` — RF-10
-- [ ] A025 Fila de anexos no composer (galeria, câmera, arquivos):
+- [x] A025 Fila de anexos no composer (galeria, câmera, arquivos):
   - envia `attachment_uuids` + markdown do anexo, como o web;
   - só anexo, sem texto: grava a mensagem sem IA;
   - criar conversa antes do primeiro anexo, se preciso.

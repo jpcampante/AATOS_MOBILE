@@ -21,6 +21,17 @@ import {
   AURIA_CONTENT_HORIZONTAL_INSET,
 } from './auriaLayout';
 
+/** What the composer needs to show one queued attachment. */
+export type ComposerAttachmentView = {
+  id: string;
+  uri: string;
+  name: string;
+  isImage: boolean;
+  status: 'uploading' | 'ready' | 'failed';
+  progress: number;
+  error?: string;
+};
+
 export type AuriaComposerHandle = {
   blur: () => void;
   focus: () => void;
@@ -48,10 +59,10 @@ type AuriaComposerProps = {
   selectedModelEffort?: string | null;
   /** Opens the answer-mode sheet. */
   onOpenModelPicker?: () => void;
-  /** Image attachment URIs shown as thumbnails above the input. */
-  attachments?: string[];
-  /** Removes an attachment by its URI. */
-  onRemoveAttachment?: (uri: string) => void;
+  /** Files in the queue: images as thumbnails, other files as name chips, with upload state. */
+  attachments?: ComposerAttachmentView[];
+  /** Removes an attachment by its id. */
+  onRemoveAttachment?: (id: string) => void;
   /** Image-generation mode: show aspect-ratio chips and prompt for an image. */
   imageMode?: boolean;
   /** Currently selected aspect ratio (e.g. "1:1"). */
@@ -110,7 +121,10 @@ export const AuriaComposer = forwardRef<AuriaComposerHandle, AuriaComposerProps>
     const setText = onChangeText ?? setDraft;
     const hasText = text.trim().length > 0;
     const hasAttachments = attachments.length > 0;
-    const canSend = (imageMode ? hasText : hasText || hasAttachments) && !isResponding;
+    const hasReadyFile = attachments.some((a) => a.status === 'ready');
+    // Wait for every upload to finish, so the message carries all the files.
+    const uploading = attachments.some((a) => a.status === 'uploading');
+    const canSend = (imageMode ? hasText : hasText || hasReadyFile) && !isResponding && !uploading;
 
     useImperativeHandle(ref, () => ({
       blur: () => {
@@ -161,20 +175,52 @@ export const AuriaComposer = forwardRef<AuriaComposerHandle, AuriaComposerProps>
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={styles.attachmentRow}
           >
-            {attachments.map((uri) => (
-              <View key={uri} style={styles.thumbWrap}>
-                <Image source={{ uri }} style={styles.thumb} />
-                <Pressable
-                  onPress={() => onRemoveAttachment?.(uri)}
-                  style={styles.removeButton}
-                  hitSlop={8}
-                  accessibilityRole="button"
-                  accessibilityLabel="Remove attachment"
+            {attachments.map((item) => {
+              const label =
+                item.status === 'uploading'
+                  ? `${item.name}, uploading ${Math.round(item.progress * 100)}%`
+                  : item.status === 'failed'
+                    ? `${item.name}, ${item.error ?? 'upload failed'}`
+                    : item.name;
+              return (
+                <View
+                  key={item.id}
+                  style={[item.isImage ? styles.thumbWrap : styles.fileChip, item.status === 'failed' && styles.attachmentFailed]}
+                  accessible
+                  accessibilityLabel={label}
                 >
-                  <AuriaIcon name="close" size={12} color={ds.gray900} strokeWidth={2.5} />
-                </Pressable>
-              </View>
-            ))}
+                  {item.isImage ? (
+                    <Image source={{ uri: item.uri }} style={[styles.thumb, item.status !== 'ready' && styles.thumbPending]} />
+                  ) : (
+                    <>
+                      <AuriaIcon name="document" size={16} color={ds.gray600} strokeWidth={1.8} />
+                      <Text style={styles.fileChipText} numberOfLines={1}>
+                        {item.name}
+                      </Text>
+                    </>
+                  )}
+                  {item.status === 'uploading' ? (
+                    <View style={styles.uploadBadge}>
+                      <Text style={styles.uploadBadgeText}>{Math.round(item.progress * 100)}%</Text>
+                    </View>
+                  ) : null}
+                  {item.status === 'failed' ? (
+                    <View style={[styles.uploadBadge, styles.uploadBadgeFailed]}>
+                      <AuriaIcon name="exclaimCircle" size={12} color={ds.white} strokeWidth={2.2} />
+                    </View>
+                  ) : null}
+                  <Pressable
+                    onPress={() => onRemoveAttachment?.(item.id)}
+                    style={styles.removeButton}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Remove ${item.name}`}
+                  >
+                    <AuriaIcon name="close" size={12} color={ds.gray900} strokeWidth={2.5} />
+                  </Pressable>
+                </View>
+              );
+            })}
           </ScrollView>
         ) : null}
 
@@ -367,6 +413,49 @@ function createStyles(
       height: 64,
       borderRadius: 12,
       backgroundColor: ds.gray200,
+    },
+    thumbPending: {
+      opacity: 0.55,
+    },
+    fileChip: {
+      height: 64,
+      maxWidth: 200,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      paddingLeft: 12,
+      paddingRight: 30,
+      borderRadius: 12,
+      backgroundColor: ds.gray100,
+    },
+    fileChipText: {
+      ...auriaTypography.body,
+      flexShrink: 1,
+      fontSize: 13,
+      color: ds.gray900,
+    },
+    attachmentFailed: {
+      borderWidth: 1.5,
+      borderColor: ds.danger,
+      borderRadius: 12,
+    },
+    uploadBadge: {
+      position: 'absolute',
+      left: 4,
+      bottom: 4,
+      paddingHorizontal: 5,
+      paddingVertical: 1,
+      borderRadius: 8,
+      backgroundColor: ds.offBlackOverlay,
+    },
+    uploadBadgeFailed: {
+      backgroundColor: ds.danger,
+      paddingVertical: 3,
+    },
+    uploadBadgeText: {
+      ...auriaTypography.label,
+      fontSize: 10.5,
+      color: ds.white,
     },
     removeButton: {
       position: 'absolute',

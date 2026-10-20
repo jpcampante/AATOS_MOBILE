@@ -4,6 +4,10 @@ import { auriaHttp, streamChat } from './api/http';
 import { auriaRoutes } from './api/routes';
 import { listMessages, MESSAGE_PAGE_SIZE } from './api/chats';
 import { canContinueChat, latestPages } from './chatList';
+import { messageWithAttachments } from './attachments';
+import { absolutizeUrl } from './mappers';
+import { AURIA_API_URL } from './api/config';
+import type { AuriaAttachment } from './types';
 import { newClientOperationId, type AuriaMode, type StreamChatRequest } from './api/streamChat';
 import { conversationReducer, initialConversation, visibleMessages } from './conversationReducer';
 import { DEFAULT_MODE, loadMode, saveMode } from './prefs';
@@ -22,7 +26,10 @@ const nextTurnId = () => `t${(turnSeq += 1)}`;
 /** Chats get the first 40 characters as their title, like the web does. */
 const TITLE_LENGTH = 40;
 
-export type SendOptions = Pick<StreamChatRequest, 'attachmentUuids' | 'create'>;
+export type SendOptions = Pick<StreamChatRequest, 'create'> & {
+  /** Uploaded files (from `useAuriaAttachments`): their uuids go to Auria, their links into the message. */
+  attachments?: { uuid: string; name: string; url: string; isImage: boolean }[];
+};
 
 /**
  * The open Auria conversation, talking to the real backend: send a message,
@@ -58,13 +65,23 @@ export function useAuriaConversation() {
 
   /** Returns false when the message was not sent (empty, or an answer is still running). */
   const send = useCallback((text: string, options: SendOptions = {}): boolean => {
-    const message = text.trim();
+    const question = text.trim();
+    const attachments = options.attachments ?? [];
     const current = stateRef.current;
-    if (!message || current.live || !canContinueChat(current.provider)) return false;
+    if ((!question && attachments.length === 0) || current.live || !canContinueChat(current.provider)) return false;
 
     const localId = nextTurnId();
     const isNewChat = !current.chatId;
-    dispatch({ type: 'send', localId, text: message, now: Date.now() });
+    // The server gets the attachments inline (the web's format); the bubble shows them apart.
+    const message = messageWithAttachments(question, attachments);
+    const files: AuriaAttachment[] = attachments.map((a) => ({
+      id: a.uuid,
+      name: a.name,
+      url: absolutizeUrl(a.url, AURIA_API_URL),
+      isImage: a.isImage,
+      private: true,
+    }));
+    dispatch({ type: 'send', localId, text: question, files, now: Date.now() });
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -76,7 +93,8 @@ export function useAuriaConversation() {
         chatId: current.chatId,
         clientOperationId: newClientOperationId(),
         mode: modeRef.current,
-        ...options,
+        create: options.create,
+        attachmentUuids: attachments.map((a) => a.uuid),
       },
       {
         onEvent: (event) => {
@@ -89,7 +107,8 @@ export function useAuriaConversation() {
       .then((result) => {
         if (isNewChat && result.chatId) {
           // Best effort: without it the sidebar shows the server's generic title.
-          void auriaHttp.patch(auriaRoutes.chat(result.chatId), { title: message.slice(0, TITLE_LENGTH) }).catch(() => {});
+          const title = (question || attachments[0]?.name || 'New chat').slice(0, TITLE_LENGTH);
+          void auriaHttp.patch(auriaRoutes.chat(result.chatId), { title }).catch(() => {});
         }
       })
       .catch((err: unknown) => {

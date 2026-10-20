@@ -40,7 +40,7 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
 - [x] A001 `EXPO_PUBLIC_AURIA_API_URL` (padrão `https://pilarone.mydailyceo.com`) e `EXPO_PUBLIC_SETTINGS_URL` (padrão `https://settings.mydailyceo.com`) no `.env.example`; `config.ts` com os padrões — `src/features/auria/api/config.ts` — RF-01, RF-12a
 - [x] A002 [P] `routes.ts` com todos os caminhos usados (E01–E53), incluindo a barra final de `add_chat/`/`remove_chat/` — `src/features/auria/api/routes.ts`
 - [x] A003 [P] Testes, depois `errors.ts`: lê os 3 formatos de corpo de erro e mapeia cada código/status para mensagem e ação (plano §5) — `src/features/auria/api/errors.ts`, `__tests__/errors.test.ts` — RF-12
-- [ ] A004 `http.ts`: JSON (`get`/`post`/`patch`/`del`) com Bearer, uma renovação em 401 e timeout; `upload` multipart via XHR com progresso — `src/features/auria/api/http.ts` — RNF-04
+- [x] A004 `http.ts`: JSON (`get`/`post`/`patch`/`del`) com Bearer, uma renovação em 401 e timeout; `upload` multipart via XHR com progresso — `src/features/auria/api/http.ts` — RNF-04
 - [ ] A005 [P] Testes, depois `sse.ts`, leitor puro de SSE. Casos:
   - frame partido entre chunks;
   - vários frames num chunk;

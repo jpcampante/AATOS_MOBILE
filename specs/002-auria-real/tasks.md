@@ -100,11 +100,13 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
 
 ## Fase 3 — História 2: Ver o trabalho da Auria (P1)
 
-- [ ] A016 Painel "Trabalhando há Ns":
-  - estado, rodada, etapas de ferramenta com rótulo e ícone do `service`, raciocínio ao vivo;
+- [x] A016 Painel "Working for Ns" (igual à web):
+  - linha ao vivo com a etapa atual, a anterior e os segundos; fechado vira "Reasoned for 8 seconds · Fast" com os logos dos serviços usados e abre o detalhe (narrativa por seção e cada etapa);
+  - etapas vindas dos eventos reais (`status`, `tool` com `service`, `delta`, `canvas`, `done`/parada/erro), rótulos e logos da tabela da web;
   - leitor de tela só anuncia o fim.
+  - Raciocínio: como na web, o painel mostra as etapas; o texto do raciocínio fica em `reasoningText` e aparece pelo "Pensamento" (A017).
 
-  Arquivos: `src/components/auria/AuriaWorkPanel.tsx` (adapta `AuriaReasoningBlock`/`AuriaThinkingSheet`) — RF-06, RNF-02
+  Arquivos: `src/features/auria/work/` (`workRun`, `workTools`, `workText`, hooks `useElapsed`, `useStepReveal`, `useAnnounceWhenFinished`) e `src/components/auria/work/` (`AuriaWorkPanel`, `AuriaWorkLiveLine`, `AuriaWorkDetails`, `AuriaWorkStepRow`, `AuriaServiceMark`) — RF-06, RNF-02
 - [ ] A017 "Pensamento" salvo: mostrar `reasoning` das mensagens do histórico (E16) — `AuriaReasoningBlock.tsx` — RF-06
 
 **Checkpoint (emulador):** H2.1–H2.3 com uma pergunta que usa ferramentas (ex.: "quais minhas tarefas de hoje?").

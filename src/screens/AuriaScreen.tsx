@@ -550,7 +550,6 @@ export function AuriaScreen({
     return (
       <AuriaChatView
         messages={conversation.messages}
-        isResponding={conversation.run !== null && !conversation.run.text}
         onOpenFiles={() => transitionPanel('gallery')}
         modelLabel={`Auria · ${auriaModeLabel(conversation.mode)}`}
         onActionFeedback={showToast}

@@ -11,10 +11,10 @@ import { AuriaMessageActions } from './AuriaMessageActions';
 import { AuriaReasoningBlock } from './AuriaReasoningBlock';
 import { AuriaSourceChips } from './AuriaSourceChips';
 import { AuriaTypingCursor } from './AuriaTypingCursor';
+import { AuriaWorkPanel } from './work/AuriaWorkPanel';
 
 type AuriaChatViewProps = {
   messages: AuriaChatMessage[];
-  isResponding?: boolean;
   /** Redirect to the files area when an internal document is opened. */
   onOpenFiles?: () => void;
   /** Model label shown in a reply's "•••" menu (e.g. "Used Opus 4.8"). */
@@ -79,7 +79,6 @@ function ChatAttachmentImage({ uri, placeholderColor }: { uri: string; placehold
 
 export function AuriaChatView({
   messages,
-  isResponding = false,
   onOpenFiles,
   modelLabel,
   onBranch,
@@ -155,6 +154,7 @@ export function AuriaChatView({
         const attachments = message.attachments ?? [];
         const hasBubbleContent =
           !!message.text ||
+          !!message.work ||
           !!message.reasoning ||
           (message.sources?.length ?? 0) > 0 ||
           !!message.artifact;
@@ -216,14 +216,6 @@ export function AuriaChatView({
           </View>
         );
       })}
-      {isResponding ? (
-        <View style={[styles.row, styles.rowAssistant]}>
-          <View style={[styles.bubble, styles.bubbleAssistant, styles.thinkingBubble]}>
-            <ActivityIndicator size="small" color={ds.gray500} />
-            <Text style={[styles.text, styles.thinkingText]}>Auria is thinking</Text>
-          </View>
-        </View>
-      ) : null}
     </ScrollView>
   );
 }
@@ -258,6 +250,8 @@ function AssistantBubbleContent({
 
   return (
     <>
+      {/* What the Auria is doing / did in this turn ("Working for 6s" → "Reasoned for 8 seconds"). */}
+      {message.work ? <AuriaWorkPanel run={message.work} /> : null}
       {message.reasoning ? (
         <AuriaReasoningBlock reasoning={message.reasoning} onOpenFiles={onOpenFiles} />
       ) : null}
@@ -372,12 +366,6 @@ function createStyles(
     textAssistant: {
       color: ds.gray900,
     },
-    thinkingBubble: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-      paddingVertical: 10,
-    },
     historyButton: {
       alignSelf: 'center',
       flexDirection: 'row',
@@ -408,10 +396,6 @@ function createStyles(
       ...auriaTypography.body,
       color: ds.gray500,
       fontSize: 12,
-    },
-    thinkingText: {
-      color: ds.gray500,
-      fontSize: 13,
     },
   });
 }

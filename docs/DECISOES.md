@@ -336,13 +336,37 @@ Data: 2026-10-21
   compartilhar com o nome original; arquivo de tipo não aceito é recusado com
   aviso; o chip do composer mostra e remove o arquivo.
 
+### D-32 · Painel de trabalho da Auria (A016)
+
+Data: 2026-10-21
+
+- **Mesmo modelo e mesmas palavras da web** (`thinking/workRun.ts`,
+  `auriaThinkingTools.ts`, `AuriaWorkPanel.tsx`): seções plano / pesquisa /
+  criação / entrega, etapas vindas dos eventos reais do stream, "Working for
+  6s" ao vivo e "Reasoned for 8 seconds · Fast" no fim. O antigo balão
+  "Auria is thinking" saiu: o painel aparece no instante do envio.
+- **Logos dos serviços** (Gmail, Outlook, Google Calendar, Teams, OneDrive,
+  Meet, Drive) copiados da web e desenhados com `SvgXml`; as cores
+  `rgb(x%,y%,z%)` dos SVGs viraram hex porque o `react-native-svg` não as lê.
+  Família sem fornecedor conhecido usa um ícone neutro (cores em
+  `src/theme/serviceColors.ts`).
+- **Raciocínio ao vivo:** como na web, o painel não mostra o texto do
+  raciocínio; ele continua sendo guardado e aparece no "Pensamento" (A017).
+- **Acessibilidade:** a linha ao vivo não é região "live"; só o fim é anunciado.
+- **Verificado no emulador** com um turno simulado (a conta de teste não tem
+  plano): linha ao vivo, logos, detalhe com etapa que falhou.
+- **Bug encontrado (anterior à A016):** o aviso de erro/créditos acima do
+  composer cobre o fim da conversa, e o último trecho da resposta e os botões
+  dela não podem ser alcançados rolando.
+
 ---
 
 ## Pendências em aberto
 
 | Item | Onde |
 | --- | --- |
-| Spec 002: provar o streaming (P003) com uma conta que tenha plano; seguir pela Fase 3 (A016) | [tasks 002](../specs/002-auria-real/tasks.md) |
+| Spec 002: provar o streaming (P003) com uma conta que tenha plano; seguir pela A017 | [tasks 002](../specs/002-auria-real/tasks.md) |
+| O aviso de erro/créditos cobre o fim da conversa (D-32) | `AuriaScreen` / `AuriaChatView` |
 | Trocar a `internalServiceKey` commitada em `Frontend_Myceo_Example_Authenticator/config.json` | backend |
 | Se a chave RSA do `.env.test` local do backend for usada em algum ambiente real, trocá-la (ela foi exibida por engano numa sessão) | backend |
 | Apagar as worktrees `_wt/mobile-code-login` e `_wt/main-mobile-code` e o SQLite de teste delas | máquina local |

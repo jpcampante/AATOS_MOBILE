@@ -81,7 +81,7 @@ export function useAuriaConversation() {
       isImage: a.isImage,
       private: true,
     }));
-    dispatch({ type: 'send', localId, text: question, files, now: Date.now() });
+    dispatch({ type: 'send', localId, text: question, files, now: Date.now(), mode: modeRef.current });
 
     const controller = new AbortController();
     abortRef.current = controller;

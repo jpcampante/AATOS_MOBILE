@@ -1,3 +1,5 @@
+import type { WorkRun } from './work/workRun';
+
 export type AuriaDocumentArtifact = {
   kind: 'document';
   title: string;
@@ -119,6 +121,8 @@ export type AuriaChatMessage = {
   live?: boolean;
   /** An answer that did not finish: the person stopped it, or it failed midway. */
   status?: 'stopped' | 'error';
+  /** What the Auria did in this turn (the "Working for 6s" panel). Only for answers written in this session. */
+  work?: WorkRun;
   /**
    * Image attachment URIs sent by the user. Rendered bare (outside the bubble):
    * a single image at its natural aspect ratio, multiple as a 2-column grid.

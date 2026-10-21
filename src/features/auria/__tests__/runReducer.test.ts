@@ -103,6 +103,72 @@ describe('runReducer', () => {
   });
 });
 
+describe('runReducer → work panel', () => {
+  const steps = (run: AuriaRun) =>
+    run.work.sections.flatMap((sec) => sec.steps.map((st) => `${sec.id}:${st.label}:${st.status}`));
+
+  it('starts from the question and the mode the turn was sent in', () => {
+    const run = createRun(1000, null, { prompt: 'what are my tasks today?', mode: 'deep' });
+    expect(run.work).toMatchObject({ startedAt: 1000, mode: 'deep', title: 'What are my tasks today?', status: 'planning' });
+  });
+
+  it('turns stream events into panel steps and stops the clock on done', () => {
+    const at = (event: AuriaStreamEvent, time: number) => ({ type: 'event' as const, event, at: time });
+    const run = [
+      at({ type: 'status', phase: 'started', mode: 'fast' }, 1100),
+      at({ type: 'status', phase: 'thinking', round: 1 }, 1200),
+      at({ type: 'tool', name: 'list_my_kanban_tasks', status: 'running', service: 'tasks' }, 1300),
+      at({ type: 'tool', name: 'list_my_kanban_tasks', status: 'done', ok: true, service: 'tasks' }, 1400),
+      at({ type: 'delta', content: 'You have 3 tasks.' }, 1500),
+      at({ type: 'done', response: 'You have 3 tasks.', reasoning: null, canvasDocuments: null, web: null, model: null }, 7000),
+    ].reduce(runReducer, createRun(1000, null, { prompt: 'tasks', mode: 'fast' }));
+
+    expect(steps(run)).toEqual([
+      'plan:Understand the request:done',
+      'plan:Scope: Tasks:done',
+      'plan:Plan the work:done',
+      'research:Gather workspace context:done',
+      'research:Scan your tasks:done',
+      'create:Write the answer:done',
+    ]);
+    expect(run.work.status).toBe('complete');
+    expect(run.work.finishedAt).toBe(7000);
+  });
+
+  it('an empty delta is not the answer yet; a retracted preamble leaves the panel', () => {
+    const empty = play([{ type: 'delta', content: '' }]);
+    expect(empty.work.status).toBe('planning');
+    const retracted = play([
+      { type: 'delta', content: 'Let me check.' },
+      { type: 'delta_reset', chars: 13, reason: 'preamble' },
+    ]);
+    expect(steps(retracted)).not.toContain('create:Write the answer:running');
+  });
+
+  it('a delivered document is packaged', () => {
+    const run = play([
+      {
+        type: 'canvas',
+        action: 'created',
+        document: { id: 'd-1', title: 'Q3 plan', document_type: 'doc' } as never,
+      },
+    ]);
+    expect(run.work.delivered).toEqual(['Q3 plan']);
+  });
+
+  it('stop and failure end the panel too', () => {
+    expect(runReducer(play([]), { type: 'stop', at: 5000 }).work).toMatchObject({ status: 'stopped', finishedAt: 5000 });
+    expect(runReducer(play([]), { type: 'fail', error: connectionLostError(), at: 6000 }).work).toMatchObject({
+      status: 'failed',
+      finishedAt: 6000,
+    });
+    const errored = play([
+      { type: 'error', error: new AuriaApiError({ code: 'provider_timeout' }), chatId: null, partial: false, requiredTokens: null },
+    ]);
+    expect(errored.work.status).toBe('failed');
+  });
+});
+
 describe('trailingUtf16Units', () => {
   it('counts surrogate pairs as one code point', () => {
     expect(trailingUtf16Units('ab🎉', 1)).toBe(2);

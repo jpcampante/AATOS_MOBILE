@@ -29,7 +29,7 @@ const done = (response: string): AuriaStreamEvent => ({
 describe('conversationReducer', () => {
   it('sends the first message, adopts the chat id and settles the answer', () => {
     const live = apply([
-      { type: 'send', localId: 't1', text: '  Hi Auria  ', now: 0 },
+      { type: 'send', localId: 't1', text: '  Hi Auria  ', now: 0, mode: 'deep' },
       ev('t1', { type: 'chat', chatId: 'c-1', userMessageUuid: 'u-1' }),
       ev('t1', { type: 'reasoning', content: 'Thinking it over.', source: 'model' }),
       ev('t1', { type: 'delta', content: 'Hello' }),
@@ -37,7 +37,14 @@ describe('conversationReducer', () => {
     expect(live.chatId).toBe('c-1');
     expect(visibleMessages(live)).toEqual([
       { id: 't1-u', role: 'user', text: 'Hi Auria' },
-      { id: 't1-a', role: 'assistant', text: 'Hello', live: true },
+      {
+        id: 't1-a',
+        role: 'assistant',
+        text: 'Hello',
+        live: true,
+        // The panel follows the turn: the question, the mode, and now writing the answer.
+        work: expect.objectContaining({ title: 'Hi Auria', mode: 'deep', status: 'writing', startedAt: 0 }),
+      },
     ]);
 
     const settled = apply(
@@ -59,7 +66,14 @@ describe('conversationReducer', () => {
     expect(settled.error).toBeNull();
     expect(settled.messages).toEqual([
       { id: 'u-1', serverId: 'u-1', role: 'user', text: 'Hi Auria' },
-      { id: 't1-a', serverId: 'a-1', role: 'assistant', text: 'Hello!', reasoningText: 'Thinking it over.' },
+      {
+        id: 't1-a',
+        serverId: 'a-1',
+        role: 'assistant',
+        text: 'Hello!',
+        reasoningText: 'Thinking it over.',
+        work: expect.objectContaining({ status: 'complete' }),
+      },
     ]);
   });
 
@@ -97,10 +111,16 @@ describe('conversationReducer', () => {
     const state = apply([
       { type: 'send', localId: 't1', text: 'Long one', now: 0 },
       ev('t1', { type: 'delta', content: 'Partial' }),
-      { type: 'run', localId: 't1', action: { type: 'stop' } },
+      { type: 'run', localId: 't1', action: { type: 'stop', at: 4000 } },
       { type: 'settle', localId: 't1' },
     ]);
-    expect(state.messages[1]).toEqual({ id: 't1-a', role: 'assistant', text: 'Partial', status: 'stopped' });
+    expect(state.messages[1]).toEqual({
+      id: 't1-a',
+      role: 'assistant',
+      text: 'Partial',
+      status: 'stopped',
+      work: expect.objectContaining({ status: 'stopped', finishedAt: 4000 }),
+    });
     expect(state.error).toBeNull();
   });
 

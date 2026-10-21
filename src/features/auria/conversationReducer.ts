@@ -1,4 +1,5 @@
 import type { AuriaApiError } from './api/errors';
+import type { AuriaMode } from './api/streamChat';
 import { createRun, runReducer, type AuriaRun, type AuriaRunAction } from './runReducer';
 import type { AuriaAttachment, AuriaChatMessage } from './types';
 
@@ -35,7 +36,7 @@ export type ConversationAction =
   | { type: 'history-failed'; chatId: string; error: AuriaApiError }
   /** After a failed turn: the server's copy wins when it has an answer after the last question (keeps the notice). */
   | { type: 'history-replace'; chatId: string; messages: AuriaChatMessage[]; oldestPage: number }
-  | { type: 'send'; localId: string; text: string; now: number; files?: AuriaAttachment[] }
+  | { type: 'send'; localId: string; text: string; now: number; files?: AuriaAttachment[]; mode?: AuriaMode }
   | { type: 'run'; localId: string; action: AuriaRunAction }
   /** The turn ended (finished, stopped or failed): the live answer becomes a message. */
   | { type: 'settle'; localId: string }
@@ -64,6 +65,7 @@ function settledAnswer(localId: string, run: AuriaRun): AuriaChatMessage | null 
   if (run.reasoning.trim()) message.reasoningText = run.reasoning.trim();
   if (run.status === 'stopped') message.status = 'stopped';
   if (run.status === 'error') message.status = 'error';
+  message.work = run.work; // the panel stays above the answer, closed ("Reasoned for 8 seconds")
   return message;
 }
 
@@ -133,7 +135,10 @@ export function conversationReducer(state: ConversationState, action: Conversati
         ...state,
         error: null,
         messages: [...state.messages, user],
-        live: { localId: action.localId, run: createRun(action.now, state.chatId) },
+        live: {
+          localId: action.localId,
+          run: createRun(action.now, state.chatId, { prompt: text || (files[0]?.name ?? ''), mode: action.mode ?? 'fast' }),
+        },
       };
     }
 
@@ -171,5 +176,5 @@ export function conversationReducer(state: ConversationState, action: Conversati
 export function visibleMessages(state: ConversationState): AuriaChatMessage[] {
   if (!state.live) return state.messages;
   const { localId, run } = state.live;
-  return [...state.messages, { id: `${localId}-a`, role: 'assistant', text: run.text, live: true }];
+  return [...state.messages, { id: `${localId}-a`, role: 'assistant', text: run.text, live: true, work: run.work }];
 }

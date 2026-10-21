@@ -29,6 +29,7 @@ import {
 } from '../components/auria/AuriaPanels';
 import {
   getAuriaComposerOverlayHeight,
+  getChatBottomReserve,
   getContentMaxWidth,
   getSidebarWidth,
   getWelcomeContentTopPadding,
@@ -283,6 +284,8 @@ export function AuriaScreen({
   const sidebarWidth = useMemo(() => getSidebarWidth(screenWidth), [screenWidth]);
   const contentMaxWidth = useMemo(() => getContentMaxWidth(screenWidth), [screenWidth]);
   const composerOverlayHeight = getAuriaComposerOverlayHeight(keyboardInset);
+  // The welcome layout is designed around the composer alone; a conversation must clear the whole overlay.
+  const contentBottomReserve = isWelcomeHome ? composerOverlayHeight : getChatBottomReserve(composerHeight, keyboardInset);
   const welcomeTopPadding = useMemo(
     () =>
       getWelcomeContentTopPadding(
@@ -640,7 +643,7 @@ export function AuriaScreen({
                 key={panelKey}
                 style={[
                   styles.content,
-                  workspace.showComposer ? { paddingBottom: composerOverlayHeight } : null,
+                  workspace.showComposer ? { paddingBottom: contentBottomReserve } : null,
                   { transform: [{ translateX: panelTranslateX }] },
                 ]}
               >

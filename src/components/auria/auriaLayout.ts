@@ -49,6 +49,16 @@ export function getAuriaComposerOverlayHeight(bottomInset = 0): number {
 }
 
 /**
+ * Space the chat keeps free at the bottom so nothing hides behind the overlay.
+ * The overlay can be taller than the composer (an error or credits notice, the
+ * read-only notice, queued attachments), so the measured height wins; the
+ * estimate is the floor until the first measurement arrives.
+ */
+export function getChatBottomReserve(measuredOverlayHeight: number, bottomInset = 0): number {
+  return Math.max(measuredOverlayHeight, getAuriaComposerOverlayHeight(bottomInset));
+}
+
+/**
  * Top-biased welcome offset (web: ~22vh) inside the band above the composer.
  * Avoids vertical centering that drifts when keyboard/composer height changes.
  */

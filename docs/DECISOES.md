@@ -357,7 +357,10 @@ Data: 2026-10-21
   plano): linha ao vivo, logos, detalhe com etapa que falhou.
 - **Bug encontrado (anterior à A016):** o aviso de erro/créditos acima do
   composer cobre o fim da conversa, e o último trecho da resposta e os botões
-  dela não podem ser alcançados rolando.
+  dela não podem ser alcançados rolando. **Corrigido** logo depois: a conversa
+  reserva embaixo a altura medida de tudo o que fica sobre ela (composer,
+  avisos, anexos na fila), nunca menos que a do composer; a tela de boas-vindas
+  continua com a medida fixa.
 
 ---
 
@@ -366,7 +369,6 @@ Data: 2026-10-21
 | Item | Onde |
 | --- | --- |
 | Spec 002: provar o streaming (P003) com uma conta que tenha plano; seguir pela A017 | [tasks 002](../specs/002-auria-real/tasks.md) |
-| O aviso de erro/créditos cobre o fim da conversa (D-32) | `AuriaScreen` / `AuriaChatView` |
 | Trocar a `internalServiceKey` commitada em `Frontend_Myceo_Example_Authenticator/config.json` | backend |
 | Se a chave RSA do `.env.test` local do backend for usada em algum ambiente real, trocá-la (ela foi exibida por engano numa sessão) | backend |
 | Apagar as worktrees `_wt/mobile-code-login` e `_wt/main-mobile-code` e o SQLite de teste delas | máquina local |

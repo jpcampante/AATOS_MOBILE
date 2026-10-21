@@ -10,3 +10,6 @@ jest.mock('expo-glass-effect', () => {
     isGlassEffectAPIAvailable: () => false,
   };
 });
+
+// expo/fetch is native-only (and no test may reach the network): API tests pass their own fetch.
+jest.mock('expo/fetch', () => ({ fetch: jest.fn(() => Promise.reject(new Error('No network in tests'))) }));

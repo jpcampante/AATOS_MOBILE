@@ -362,6 +362,22 @@ Data: 2026-10-21
   avisos, anexos na fila), nunca menos que a do composer; a tela de boas-vindas
   continua com a medida fixa.
 
+### D-33 · "Pensamento" salvo (A017)
+
+Data: 2026-10-21
+
+- **Como a web** (`ThinkingDisclosure`): uma linha "Thinking ›", fechada,
+  que abre o raciocínio salvo ali mesmo, com uma barra à esquerda. Aparece em
+  respostas do histórico e em turnos que pararam ou falharam no meio; um turno
+  concluído nesta sessão já conta tudo no painel da A016.
+- O `AuriaReasoningBlock`/`AuriaThinkingSheet` (folha com etapas e fontes)
+  é do mock e não serve para o texto salvo; sai com os mocks na A056.
+- **Testes:** Jest passa a transformar `marked` (ESM) e simula o
+  `expo/fetch` no setup, para testar telas inteiras como o `AuriaChatView`.
+- **Verificado no emulador** com um turno parado no meio; o caminho do
+  histórico usa o mesmo componente e está coberto por testes (a conta de teste
+  não tem conversa com raciocínio salvo, e o backend não deixa gravar um).
+
 ---
 
 ## Pendências em aberto

@@ -107,7 +107,7 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
   - Raciocínio: como na web, o painel mostra as etapas; o texto do raciocínio fica em `reasoningText` e aparece pelo "Pensamento" (A017).
 
   Arquivos: `src/features/auria/work/` (`workRun`, `workTools`, `workText`, hooks `useElapsed`, `useStepReveal`, `useAnnounceWhenFinished`) e `src/components/auria/work/` (`AuriaWorkPanel`, `AuriaWorkLiveLine`, `AuriaWorkDetails`, `AuriaWorkStepRow`, `AuriaServiceMark`) — RF-06, RNF-02
-- [ ] A017 "Pensamento" salvo: mostrar `reasoning` das mensagens do histórico (E16) — `AuriaReasoningBlock.tsx` — RF-06
+- [x] A017 "Pensamento" salvo: mostrar `reasoning` das mensagens do histórico (E16), como a web: linha "Thinking ›" que abre o texto, em respostas do histórico e em turnos que pararam no meio; turno concluído na sessão fica com o painel da A016 — `AuriaThinkingDisclosure.tsx`, regra em `features/auria/thinking.ts` (o `AuriaReasoningBlock` é do mock e sai na A056) — RF-06
 
 **Checkpoint (emulador):** H2.1–H2.3 com uma pergunta que usa ferramentas (ex.: "quais minhas tarefas de hoje?").
 

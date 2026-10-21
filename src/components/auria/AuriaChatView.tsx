@@ -3,6 +3,7 @@ import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View
 import { AURIA_CHAT_SCROLL_END_PADDING, AURIA_CONTENT_HORIZONTAL_INSET } from './auriaLayout';
 import { auriaTypography, liquidGlassBorder, liquidGlassTokens, useTheme } from '../../theme';
 import type { AuriaChatMessage } from '../../features/auria/types';
+import { savedThinking } from '../../features/auria/thinking';
 import { AuriaDocumentArtifact } from './AuriaDocumentArtifact';
 import { AuriaImageArtifact } from './AuriaImageArtifact';
 import { AuriaMarkdown } from './AuriaMarkdown';
@@ -10,6 +11,7 @@ import { AuriaMessageFiles } from './AuriaMessageFiles';
 import { AuriaMessageActions } from './AuriaMessageActions';
 import { AuriaReasoningBlock } from './AuriaReasoningBlock';
 import { AuriaSourceChips } from './AuriaSourceChips';
+import { AuriaThinkingDisclosure } from './AuriaThinkingDisclosure';
 import { AuriaTypingCursor } from './AuriaTypingCursor';
 import { AuriaWorkPanel } from './work/AuriaWorkPanel';
 
@@ -247,11 +249,14 @@ function AssistantBubbleContent({
   const live = !!message.live;
   // Hold the trailing content back until the answer is settled.
   const revealRest = !live;
+  const thinking = savedThinking(message);
 
   return (
     <>
       {/* What the Auria is doing / did in this turn ("Working for 6s" → "Reasoned for 8 seconds"). */}
       {message.work ? <AuriaWorkPanel run={message.work} /> : null}
+      {/* Saved reasoning: answers from the history, or a turn that stopped midway. */}
+      {thinking ? <AuriaThinkingDisclosure text={thinking} /> : null}
       {message.reasoning ? (
         <AuriaReasoningBlock reasoning={message.reasoning} onOpenFiles={onOpenFiles} />
       ) : null}

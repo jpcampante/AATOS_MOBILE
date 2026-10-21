@@ -89,6 +89,9 @@ export function createHttpClient({ baseUrl, tokens, timeoutMs, fetchImpl }: Clie
         if (opts.signal?.aborted) return reject(abortedError());
         const xhr = new XMLHttpRequest();
         xhr.open('POST', url(path));
+        // Never send the device's cookies: with a session cookie the backend authenticates by
+        // cookie and refuses writes from an untrusted Origin (403), ignoring the Bearer token.
+        xhr.withCredentials = false;
         if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
         xhr.setRequestHeader('Accept', 'application/json');
         xhr.upload.onprogress = (e) => {

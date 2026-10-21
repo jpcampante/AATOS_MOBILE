@@ -43,7 +43,10 @@ type StreamResponse = {
   body: { getReader(): { read(): Promise<{ done: boolean; value?: Uint8Array }>; cancel?(): Promise<void> } } | null;
 };
 
-type StreamFetch = (url: string, init: { method: string; headers: Record<string, string>; body: string; signal?: AbortSignal }) => Promise<StreamResponse>;
+type StreamFetch = (
+  url: string,
+  init: { method: string; headers: Record<string, string>; body: string; signal?: AbortSignal; credentials: 'omit' },
+) => Promise<StreamResponse>;
 
 const SCOPE_POLICY_VERSION = 1;
 
@@ -90,6 +93,8 @@ export function createStreamChat({ baseUrl, tokens, fetchImpl }: { baseUrl: stri
           headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : null) },
           body,
           signal,
+          // Bearer only: a session cookie would make the backend refuse the write (403).
+          credentials: 'omit',
         });
       } catch (e) {
         if (signal?.aborted) throw abortedError();

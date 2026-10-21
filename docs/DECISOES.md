@@ -301,6 +301,41 @@ Spec, plano e tarefas: [specs/001-login/](../specs/001-login/spec.md).
   **Falta** ver uma resposta real em streaming (P003), que precisa de uma
   conta com plano ativo.
 
+### D-30 · Testes de funcionalidade, componentes pequenos, uma tarefa por vez
+
+Data: 2026-10-21 · Constituição 2.1.0
+
+- Toda tarefa entrega **teste de funcionalidade**: lógica com Jest e
+  componentes com **React Native Testing Library**
+  (`@testing-library/react-native`), testando o que aparece e os toques.
+- **Um componente por arquivo, reutilizar antes de criar**, lógica em hooks e
+  serviços, boas práticas de React Native (princípio VIII da constituição).
+- **Uma tarefa por vez:** implementar, testar, conferir no emulador e
+  commitar antes de ir para a próxima.
+
+### D-31 · Anexos privados no Android (A026)
+
+Data: 2026-10-21
+
+- **Sem cookies nas chamadas que escrevem.** Com um cookie de sessão no
+  aparelho, o backend autentica pelo cookie, ignora o Bearer e recusa o envio
+  de origem não confiável (403 "Valid MyCEO access token required"). O upload
+  (XHR) usa `withCredentials = false` e o streaming `credentials: 'omit'`.
+- **Links `http://` do backend.** Atrás do proxy o backend monta URLs
+  absolutas com `http://`; o app troca para o esquema da API (`https`) os
+  links do próprio host, para o token nunca ir sem criptografia.
+- **O `Image` do Android ignora `headers`** (o servidor recebia sem o token:
+  401). Imagens privadas são baixadas com Bearer para o cache
+  (`expo-file-system`) e mostradas da cópia local; o mesmo cache serve para
+  abrir arquivos no menu de compartilhar (`expo-sharing`). Um download por
+  arquivo, com uma nova tentativa após renovar o token.
+- **Testes de componente** com `@testing-library/react-native` 13.3 e
+  `react-test-renderer` 19.1.0; `jest.setup.ts` simula o
+  `expo-glass-effect` (só iOS).
+- **Verificado no emulador:** imagem privada aparece; o arquivo abre no menu de
+  compartilhar com o nome original; arquivo de tipo não aceito é recusado com
+  aviso; o chip do composer mostra e remove o arquivo.
+
 ---
 
 ## Pendências em aberto

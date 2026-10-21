@@ -97,3 +97,100 @@ describe('createHttpClient', () => {
     expect(calls[0].url).toBe('https://other.test/billing/');
   });
 });
+
+describe('upload', () => {
+  type Reply = { status: number; body?: unknown };
+
+  /** Stand-in for React Native's XMLHttpRequest: records what was sent and answers from a queue. */
+  class FakeXhr {
+    static sent: FakeXhr[] = [];
+    static replies: Reply[] = [];
+    method = '';
+    url = '';
+    headers: Record<string, string> = {};
+    withCredentials = true; // what a cookie-sending default would look like
+    form: FormData | null = null;
+    status = 0;
+    responseText = '';
+    upload: { onprogress: ((e: { lengthComputable: boolean; loaded: number; total: number }) => void) | null } = { onprogress: null };
+    onload: (() => void) | null = null;
+    onerror: (() => void) | null = null;
+    ontimeout: (() => void) | null = null;
+    onabort: (() => void) | null = null;
+    open(method: string, url: string) {
+      this.method = method;
+      this.url = url;
+    }
+    setRequestHeader(name: string, value: string) {
+      this.headers[name] = value;
+    }
+    getResponseHeader() {
+      return null;
+    }
+    abort() {
+      this.onabort?.();
+    }
+    send(form: FormData) {
+      this.form = form;
+      FakeXhr.sent.push(this);
+      const reply = FakeXhr.replies.shift() ?? { status: 200, body: {} };
+      this.upload.onprogress?.({ lengthComputable: true, loaded: 5, total: 10 });
+      this.status = reply.status;
+      this.responseText = reply.body === undefined ? '' : JSON.stringify(reply.body);
+      setTimeout(() => this.onload?.(), 0);
+    }
+  }
+
+  const realXhr = global.XMLHttpRequest;
+  beforeEach(() => {
+    FakeXhr.sent = [];
+    FakeXhr.replies = [];
+    (global as { XMLHttpRequest: unknown }).XMLHttpRequest = FakeXhr;
+  });
+  afterAll(() => {
+    global.XMLHttpRequest = realXhr;
+  });
+
+  const FILE = { uri: 'file:///photo.jpg', name: 'photo.jpg', type: 'image/jpeg' };
+
+  it('sends the file with the Bearer token and without the device cookies', async () => {
+    FakeXhr.replies = [{ status: 201, body: { uuid: 'u-1', url: '/auria/chat/attachments/u-1' } }];
+    const { client } = setup([]);
+    const progress: number[] = [];
+
+    const result = await client.upload('/auria/chat/attachments', { file: FILE, fields: { chat_id: 'c-1' }, onProgress: (p) => progress.push(p) });
+
+    const xhr = FakeXhr.sent[0];
+    expect(result).toEqual({ uuid: 'u-1', url: '/auria/chat/attachments/u-1' });
+    expect(xhr.method).toBe('POST');
+    expect(xhr.url).toBe('https://api.test/auria/chat/attachments');
+    expect(xhr.headers.Authorization).toBe('Bearer token-1');
+    // With a session cookie the backend ignores the Bearer token and refuses the write (403).
+    expect(xhr.withCredentials).toBe(false);
+    expect(progress).toEqual([0.5, 1]);
+  });
+
+  it('refreshes once after a 401 and sends again', async () => {
+    FakeXhr.replies = [{ status: 401, body: { detail: 'expired' } }, { status: 201, body: { uuid: 'u-2' } }];
+    const { client } = setup([]);
+
+    await expect(client.upload('/auria/chat/attachments', { file: FILE })).resolves.toEqual({ uuid: 'u-2' });
+    expect(FakeXhr.sent.map((x) => x.headers.Authorization)).toEqual(['Bearer token-1', 'Bearer token-2']);
+  });
+
+  it('turns a refused upload into AuriaApiError', async () => {
+    FakeXhr.replies = [{ status: 413, body: { error: 'File too large' } }];
+    const { client } = setup([]);
+
+    await expect(client.upload('/auria/chat/attachments', { file: FILE })).rejects.toMatchObject({ status: 413 });
+  });
+
+  it('does not start when it was already cancelled', async () => {
+    const { client } = setup([]);
+    const controller = new AbortController();
+    controller.abort();
+
+    await expect(client.upload('/auria/chat/attachments', { file: FILE, signal: controller.signal })).rejects.toMatchObject({ code: 'aborted' });
+    expect(FakeXhr.sent).toHaveLength(0);
+  });
+});

@@ -1,6 +1,5 @@
 import { forwardRef, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import {
-  Image,
   Keyboard,
   Platform,
   Pressable,
@@ -11,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { LiquidGlassSurface } from '../ui/LiquidGlassSurface';
+import { AuriaComposerAttachment, type ComposerAttachmentView } from './AuriaComposerAttachment';
 import { AuriaIcon, AURIA_ICON_SIZE, AURIA_ICON_STROKE_SEND, AURIA_ICON_STROKE_STRONG } from '../icons';
 import { auriaTypography, liquidGlassTokens, MYCEO_CORNER_RADIUS, useTheme } from '../../theme';
 import {
@@ -21,16 +21,7 @@ import {
   AURIA_CONTENT_HORIZONTAL_INSET,
 } from './auriaLayout';
 
-/** What the composer needs to show one queued attachment. */
-export type ComposerAttachmentView = {
-  id: string;
-  uri: string;
-  name: string;
-  isImage: boolean;
-  status: 'uploading' | 'ready' | 'failed';
-  progress: number;
-  error?: string;
-};
+export type { ComposerAttachmentView } from './AuriaComposerAttachment';
 
 export type AuriaComposerHandle = {
   blur: () => void;
@@ -175,52 +166,9 @@ export const AuriaComposer = forwardRef<AuriaComposerHandle, AuriaComposerProps>
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={styles.attachmentRow}
           >
-            {attachments.map((item) => {
-              const label =
-                item.status === 'uploading'
-                  ? `${item.name}, uploading ${Math.round(item.progress * 100)}%`
-                  : item.status === 'failed'
-                    ? `${item.name}, ${item.error ?? 'upload failed'}`
-                    : item.name;
-              return (
-                <View
-                  key={item.id}
-                  style={[item.isImage ? styles.thumbWrap : styles.fileChip, item.status === 'failed' && styles.attachmentFailed]}
-                  accessible
-                  accessibilityLabel={label}
-                >
-                  {item.isImage ? (
-                    <Image source={{ uri: item.uri }} style={[styles.thumb, item.status !== 'ready' && styles.thumbPending]} />
-                  ) : (
-                    <>
-                      <AuriaIcon name="document" size={16} color={ds.gray600} strokeWidth={1.8} />
-                      <Text style={styles.fileChipText} numberOfLines={1}>
-                        {item.name}
-                      </Text>
-                    </>
-                  )}
-                  {item.status === 'uploading' ? (
-                    <View style={styles.uploadBadge}>
-                      <Text style={styles.uploadBadgeText}>{Math.round(item.progress * 100)}%</Text>
-                    </View>
-                  ) : null}
-                  {item.status === 'failed' ? (
-                    <View style={[styles.uploadBadge, styles.uploadBadgeFailed]}>
-                      <AuriaIcon name="exclaimCircle" size={12} color={ds.white} strokeWidth={2.2} />
-                    </View>
-                  ) : null}
-                  <Pressable
-                    onPress={() => onRemoveAttachment?.(item.id)}
-                    style={styles.removeButton}
-                    hitSlop={8}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Remove ${item.name}`}
-                  >
-                    <AuriaIcon name="close" size={12} color={ds.gray900} strokeWidth={2.5} />
-                  </Pressable>
-                </View>
-              );
-            })}
+            {attachments.map((item) => (
+              <AuriaComposerAttachment key={item.id} item={item} onRemove={onRemoveAttachment} />
+            ))}
           </ScrollView>
         ) : null}
 
@@ -403,70 +351,6 @@ function createStyles(
     attachmentRow: {
       gap: 8,
       paddingBottom: 2,
-    },
-    thumbWrap: {
-      width: 64,
-      height: 64,
-    },
-    thumb: {
-      width: 64,
-      height: 64,
-      borderRadius: 12,
-      backgroundColor: ds.gray200,
-    },
-    thumbPending: {
-      opacity: 0.55,
-    },
-    fileChip: {
-      height: 64,
-      maxWidth: 200,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-      paddingLeft: 12,
-      paddingRight: 30,
-      borderRadius: 12,
-      backgroundColor: ds.gray100,
-    },
-    fileChipText: {
-      ...auriaTypography.body,
-      flexShrink: 1,
-      fontSize: 13,
-      color: ds.gray900,
-    },
-    attachmentFailed: {
-      borderWidth: 1.5,
-      borderColor: ds.danger,
-      borderRadius: 12,
-    },
-    uploadBadge: {
-      position: 'absolute',
-      left: 4,
-      bottom: 4,
-      paddingHorizontal: 5,
-      paddingVertical: 1,
-      borderRadius: 8,
-      backgroundColor: ds.offBlackOverlay,
-    },
-    uploadBadgeFailed: {
-      backgroundColor: ds.danger,
-      paddingVertical: 3,
-    },
-    uploadBadgeText: {
-      ...auriaTypography.label,
-      fontSize: 10.5,
-      color: ds.white,
-    },
-    removeButton: {
-      position: 'absolute',
-      top: 4,
-      right: 4,
-      width: 20,
-      height: 20,
-      borderRadius: 10,
-      backgroundColor: ds.white,
-      alignItems: 'center',
-      justifyContent: 'center',
     },
     imageBar: {
       flexDirection: 'row',

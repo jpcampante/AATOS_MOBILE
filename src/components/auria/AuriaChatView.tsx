@@ -6,6 +6,7 @@ import type { AuriaChatMessage } from '../../features/auria/types';
 import { AuriaDocumentArtifact } from './AuriaDocumentArtifact';
 import { AuriaImageArtifact } from './AuriaImageArtifact';
 import { AuriaMarkdown } from './AuriaMarkdown';
+import { AuriaMessageFiles } from './AuriaMessageFiles';
 import { AuriaMessageActions } from './AuriaMessageActions';
 import { AuriaReasoningBlock } from './AuriaReasoningBlock';
 import { AuriaSourceChips } from './AuriaSourceChips';
@@ -179,6 +180,11 @@ export function AuriaChatView({
                   />
                 ))}
               </View>
+            ) : null}
+
+            {/* Real attachments (uploaded from the app or the web): images bare, files as chips. */}
+            {message.files?.length ? (
+              <AuriaMessageFiles files={message.files} onOpenFailed={onActionFeedback} />
             ) : null}
 
             {hasBubbleContent ? (

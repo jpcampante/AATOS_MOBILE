@@ -140,9 +140,11 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
   - criar conversa antes do primeiro anexo, se preciso.
 
   Arquivos: `AuriaComposer.tsx`, `AuriaCreateMenu.tsx`, `AuriaScreen.tsx`. Endpoints E09, E17, E24 — RF-10
-- [ ] A026 Exibir anexos privados:
-  - imagens com `headers` de Bearer;
-  - arquivos baixados com Bearer e abertos/compartilhados (dependências `expo-file-system` + `expo-sharing`).
+- [x] A026 Exibir anexos privados:
+  - imagens baixadas com Bearer para o cache do aparelho e mostradas da cópia local (o `Image` do Android ignora `headers`: 401);
+  - arquivos baixados com Bearer e abertos/compartilhados com o nome original (dependências `expo-file-system` + `expo-sharing`);
+  - componentes `AuriaMessageFiles`, `AuriaAttachmentImage`, `AuriaFileChip` (compartilhado com o composer) e `AuriaComposerAttachment`; hook `useAttachmentOpener`.
+  - Testes: `attachmentFiles`, `useAttachmentOpener`, os quatro componentes, upload sem cookie e stream sem cookie.
 
   Endpoint E26 — RF-11, RNF-04
 

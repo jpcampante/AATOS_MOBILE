@@ -3,7 +3,7 @@ import { isAuriaApiError, networkError } from './api/errors';
 import { auriaHttp, streamChat } from './api/http';
 import { auriaRoutes } from './api/routes';
 import { listMessages, MESSAGE_PAGE_SIZE } from './api/chats';
-import { editMessage, regenerateMessage, type ReplayOptions } from './api/messages';
+import { activateVersion, editMessage, regenerateMessage, type ReplayOptions } from './api/messages';
 import { canContinueChat, latestPages } from './chatList';
 import { messageWithAttachments } from './attachments';
 import { absolutizeUrl, serverPath } from './mappers';
@@ -44,6 +44,8 @@ export function useAuriaConversation() {
   const abortRef = useRef<AbortController | null>(null);
 
   const [mode, setModeState] = useState<AuriaMode>(DEFAULT_MODE);
+  /** The message whose version is switching (E21), for the switcher's spinner. */
+  const [switchingVersionOf, setSwitchingVersionOf] = useState<string | null>(null);
   const modeRef = useRef(mode);
   modeRef.current = mode;
 
@@ -207,6 +209,29 @@ export function useAuriaConversation() {
     [runReplay],
   );
 
+  /**
+   * Show the previous (-1) or next (1) version of a message: it becomes the
+   * active branch on the server, then the chat is re-read. Resolves false when
+   * it couldn't switch (the screen says so); nothing changes on screen then.
+   */
+  const switchVersion = useCallback(async (messageId: string, direction: -1 | 1): Promise<boolean> => {
+    const { chatId, live, messages } = stateRef.current;
+    const message = messages.find((m) => m.id === messageId);
+    const target = message?.version?.ids[message.version.index - 1 + direction];
+    if (!chatId || live || !target) return false;
+    setSwitchingVersionOf(messageId);
+    try {
+      await activateVersion(target);
+      const { messages: branch, oldestPage } = await fetchLatest(chatId);
+      dispatch({ type: 'branch-loaded', chatId, messages: branch, oldestPage });
+      return true;
+    } catch {
+      return false;
+    } finally {
+      setSwitchingVersionOf(null);
+    }
+  }, []);
+
   /** Stop the answer being written. What already arrived stays, marked as stopped. */
   const stop = useCallback(() => {
     const live = stateRef.current.live;
@@ -276,6 +301,8 @@ export function useAuriaConversation() {
     send,
     retry,
     edit,
+    switchVersion,
+    switchingVersionOf,
     stop,
     newChat,
     openChat,

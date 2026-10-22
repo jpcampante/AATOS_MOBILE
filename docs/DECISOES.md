@@ -429,6 +429,26 @@ Data: 2026-10-22
 - **Notado:** se a edição falha, o texto editado se perde (a web faz igual);
   melhor devolvê-lo ao composer — fica nas pendências.
 
+
+### D-36 · Versões `< 2/3 >` (A031)
+
+Data: 2026-10-22
+
+- **`AuriaVersionSwitcher`**: aparece quando a mensagem tem mais de uma
+  versão (`version_count`): sob a pergunta editada e no início da linha de
+  ações da resposta, como no ChatGPT. Tocar numa seta chama o `activate` (E21)
+  da versão vizinha (`versions`) e relê a conversa; enquanto troca, um
+  indicador ocupa o número; falha → "Couldn't switch versions." e nada muda.
+  Não troca durante uma resposta. A web não usa esse endpoint; o app usa.
+- **"Branch in new chat" removido**, como a A031 permitia: não tem backend e a
+  tela nunca o ligava. Saíram também "Use Thinking" e "Search the web" do menu
+  "•••" (sobras do mock); a busca volta pela A034 no lugar certo. O menu fica
+  só com **Retry**.
+- **Verificado no emulador** com versões simuladas na conversa de QA (só
+  versões reais nascem de um Retry/Edit bem-sucedido, que depende de plano):
+  os dois seletores, setas desativadas nas pontas e a recusa real do
+  `activate` com o aviso.
+
 ---
 
 ## Pendências em aberto

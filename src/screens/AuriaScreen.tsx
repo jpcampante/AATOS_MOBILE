@@ -589,6 +589,16 @@ export function AuriaScreen({
         onActionFeedback={showToast}
         onRetry={conversation.canContinue ? retryAnswer : undefined}
         onQuestionLongPress={questions.openMenu}
+        // Versions (E21): not while an answer is running.
+        onSwitchVersion={
+          conversation.isBusy
+            ? undefined
+            : (id, direction) =>
+                void conversation.switchVersion(id, direction).then((ok) => {
+                  if (!ok) showToast("Couldn't switch versions.");
+                })
+        }
+        switchingVersionOf={conversation.switchingVersionOf}
         history={{
           loading: conversation.history.loading,
           hasEarlier: conversation.history.hasEarlier,

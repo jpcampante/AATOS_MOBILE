@@ -1,5 +1,5 @@
 import { auriaHttp } from '../http';
-import { editMessage, regenerateMessage } from '../messages';
+import { activateVersion, editMessage, regenerateMessage } from '../messages';
 import { AURIA_REPLAY_TIMEOUT_MS } from '../config';
 
 jest.mock('../http', () => ({ auriaHttp: { post: jest.fn(), patch: jest.fn() } }));
@@ -61,5 +61,13 @@ describe('editMessage (E20)', () => {
     );
     expect(saved.question).toMatchObject({ id: 'u-2', text: 'And tomorrow?', files: [expect.objectContaining({ name: 'a.png' })] });
     expect(saved.answer).toMatchObject({ id: 'a-3', text: 'Two tasks.' });
+  });
+});
+
+describe('activateVersion (E21)', () => {
+  it('makes that version the active branch', async () => {
+    post.mockResolvedValue({ active_path: [] });
+    await activateVersion('a-1');
+    expect(post).toHaveBeenCalledWith('/auria/chat_importer/messages/a-1/activate', undefined, { signal: undefined });
   });
 });

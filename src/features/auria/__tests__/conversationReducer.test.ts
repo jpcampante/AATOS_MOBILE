@@ -385,3 +385,28 @@ describe('conversationReducer — edit (E20)', () => {
     expect(conversationReducer(state, { type: 'replay-start', localId: 'e1', from: 'u-1', now: 0, question: { text: '   ' } })).toBe(state);
   });
 });
+
+describe('conversationReducer — versions (E21)', () => {
+  const opened = apply([
+    { type: 'open', chatId: 'c-1', provider: 'auria_system' },
+    { type: 'history-loaded', chatId: 'c-1', oldestPage: 1, messages: [{ id: 'a-2', serverId: 'a-2', role: 'assistant', text: 'B' }] },
+  ]);
+
+  it('shows the branch the server made active', () => {
+    const state = conversationReducer(opened, {
+      type: 'branch-loaded',
+      chatId: 'c-1',
+      oldestPage: 2,
+      messages: [{ id: 'a-1', serverId: 'a-1', role: 'assistant', text: 'A' }],
+    });
+    expect(state.messages.map((m) => m.text)).toEqual(['A']);
+    expect(state.history.hasEarlier).toBe(true);
+  });
+
+  it('ignores a branch of another chat or during a turn', () => {
+    const other = conversationReducer(opened, { type: 'branch-loaded', chatId: 'c-9', oldestPage: 1, messages: [] });
+    expect(other).toBe(opened);
+    const busy = conversationReducer(opened, { type: 'send', localId: 't1', text: 'hi', now: 0 });
+    expect(conversationReducer(busy, { type: 'branch-loaded', chatId: 'c-1', oldestPage: 1, messages: [] })).toBe(busy);
+  });
+});

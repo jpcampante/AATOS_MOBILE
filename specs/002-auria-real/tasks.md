@@ -19,7 +19,7 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
 > **v1** = P1 + P2 (Fases 0–10 e o fechamento da v1). **v2** = P3 (Fases 12–14).
 >
 > **Andamento (2026-10-22):** Fases 1–6 (P1) concluídas, exceto P003 e V001. Fase 7 em curso:
-> A029 e A030 feitas; próxima A031. Na `main` até a A029 (merge de 2026-10-22). Bloqueio: a conta
+> A029, A030 e A031 feitas; próxima A032. Na `main` até a A029 (merge de 2026-10-22). Bloqueio: a conta
 > de teste não tem plano (402), então nenhuma resposta real da Auria foi vista ainda (P003).
 
 ## Fase 0 — Pré-requisitos e spikes (bloqueia tudo)
@@ -183,10 +183,10 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
 
 - [x] A029 [P] "Tentar de novo" → `regenerate` e recarga — E19 — RF-14. Menu "•••" da resposta salva com **Retry**; o painel da A016 ocupa o lugar da resposta ("Writing the answer · Ns") até o servidor gravar a versão nova; falha devolve a resposta antiga com o aviso; Stop relê a conversa. `api/messages.ts`, ações `replay-*` no `conversationReducer`, `retry` no `useAuriaConversation`
 - [x] A030 [P] Editar mensagem da pessoa (mantém o markdown dos anexos) → `edit` e recarga — E20 — RF-14. Segurar o dedo na pergunta salva → folha "Copy / Edit" (`AuriaQuestionMenu` sobre o novo `AuriaActionSheet`, que o menu da barra lateral também usa); o texto vai para o composer com a faixa "Editing message ✕" (`AuriaEditingBanner`, hook `useQuestionEditing`); enviar salva a edição pelo mesmo turno "replay" da A029 (pergunta nova + painel no lugar do turno antigo). O "+" fica desativado durante a edição. `AssistantBubbleContent` saiu do `AuriaChatView` para `AuriaAssistantContent`
-- [ ] A031 Alternar versões `< 2/3 >` com `activate`; ligar o "Branch" atual a isso ou removê-lo — E21 — RF-14
+- [x] A031 Alternar versões `< 2/3 >` com `activate`; ligar o "Branch" atual a isso ou removê-lo — E21 — RF-14. `AuriaVersionSwitcher` sob a pergunta editada e no início da linha de ações da resposta; troca → `activate` e releitura (`branch-loaded`), falha → aviso curto. O "Branch in new chat" (sem backend) foi **removido**, junto com "Use Thinking" e "Search the web" do menu do mock
 - [ ] A032 [P] Curtir resposta — E22 — RF-14
 
-**Checkpoint (emulador):** H6.1–H6.4. **H6.1 e H6.2 parciais em 2026-10-22:** Retry e Edit contra o backend real até a recusa 402 (D-34, D-35); a resposta nova depende de plano (P003). Conversas de QA: "App QA — retry test" apagada; "App QA — edit test" a apagar.
+**Checkpoint (emulador):** H6.1–H6.4. **H6.1 e H6.2 parciais em 2026-10-22:** Retry e Edit contra o backend real até a recusa 402 (D-34, D-35); a resposta nova depende de plano (P003). **H6.3 parcial:** seletor de versões visto com versões simuladas e recusa real do `activate` (D-36); trocar entre versões reais depende de criar uma (P003). Conversas de QA: "App QA — retry test" apagada; "App QA — edit test" a apagar.
 
 ## Fase 8 — História 7: Busca na web e fontes (P2)
 

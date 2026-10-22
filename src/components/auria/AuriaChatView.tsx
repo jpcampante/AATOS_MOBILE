@@ -5,6 +5,7 @@ import { auriaTypography, liquidGlassBorder, liquidGlassTokens, useTheme } from 
 import type { AuriaChatMessage } from '../../features/auria/types';
 import { AuriaAssistantContent } from './AuriaAssistantContent';
 import { AuriaMessageFiles } from './AuriaMessageFiles';
+import { AuriaVersionSwitcher } from './AuriaVersionSwitcher';
 
 type AuriaChatViewProps = {
   messages: AuriaChatMessage[];
@@ -12,10 +13,12 @@ type AuriaChatViewProps = {
   onOpenFiles?: () => void;
   /** Model label shown in a reply's "•••" menu (e.g. "Used Opus 4.8"). */
   modelLabel?: string;
-  /** Starts a new chat from a reply ("Branch in new chat"). */
-  onBranch?: () => void;
   /** "Retry": a new version of a saved answer (E19). */
   onRetry?: (messageId: string) => void;
+  /** Show another version of a message (`< 2/3 >`, E21). */
+  onSwitchVersion?: (messageId: string, direction: -1 | 1) => void;
+  /** The message whose version is switching right now. */
+  switchingVersionOf?: string | null;
   /** Long press on one of the person's messages (copy, edit). */
   onQuestionLongPress?: (message: AuriaChatMessage) => void;
   /** Transient feedback from a message action (copied, reading aloud, …). */
@@ -76,8 +79,9 @@ export function AuriaChatView({
   messages,
   onOpenFiles,
   modelLabel,
-  onBranch,
   onRetry,
+  onSwitchVersion,
+  switchingVersionOf = null,
   onQuestionLongPress,
   onActionFeedback,
   history,
@@ -85,6 +89,16 @@ export function AuriaChatView({
   onRetryHistory,
 }: AuriaChatViewProps) {
   const { ds, theme } = useTheme();
+  /** `< 2/3 >` for a message with other versions (retried answers, edited questions). */
+  const versionSwitcher = (message: AuriaChatMessage) =>
+    message.version && message.version.count > 1 ? (
+      <AuriaVersionSwitcher
+        index={message.version.index}
+        count={message.version.count}
+        onSwitch={onSwitchVersion && message.serverId ? (direction) => onSwitchVersion(message.id, direction) : undefined}
+        busy={switchingVersionOf === message.id}
+      />
+    ) : null;
   const styles = useMemo(() => createStyles(ds, theme), [ds, theme]);
   const scrollRef = useRef<ScrollView>(null);
 
@@ -211,13 +225,14 @@ export function AuriaChatView({
                     message={message}
                     onOpenFiles={onOpenFiles}
                     modelLabel={modelLabel}
-                    onBranch={onBranch}
+                    versionSwitcher={versionSwitcher(message)}
                     onRetry={onRetry}
                     onActionFeedback={onActionFeedback}
                   />
                 )}
               </View>
             ) : null}
+            {isUser ? versionSwitcher(message) : null}
           </View>
         );
       })}

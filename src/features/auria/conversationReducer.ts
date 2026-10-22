@@ -62,6 +62,8 @@ export type ConversationAction =
     }
   /** The new version is saved: the chat as the server has it now (its active branch). */
   | { type: 'replay-done'; localId: string; chatId: string; messages: AuriaChatMessage[]; oldestPage: number }
+  /** Another version became active (E21): the chat as the server has it now. Ignored during a turn. */
+  | { type: 'branch-loaded'; chatId: string; messages: AuriaChatMessage[]; oldestPage: number }
   /** It didn't happen: the old messages come back, with the reason (or none when stopped). */
   | { type: 'replay-failed'; localId: string; error: AuriaApiError | null }
   | { type: 'clear-error' };
@@ -224,6 +226,14 @@ export function conversationReducer(state: ConversationState, action: Conversati
     case 'replay-failed':
       if (state.live?.localId !== action.localId) return state;
       return { ...state, live: null, error: action.error };
+
+    case 'branch-loaded':
+      if (state.chatId !== action.chatId || state.live) return state;
+      return {
+        ...state,
+        messages: action.messages,
+        history: { loading: false, oldestPage: action.oldestPage, hasEarlier: action.oldestPage > 1, error: null },
+      };
 
     case 'clear-error':
       return state.error ? { ...state, error: null } : state;

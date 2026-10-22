@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { StyleSheet, Text } from 'react-native';
 import { savedThinking } from '../../features/auria/thinking';
 import type { AuriaChatMessage } from '../../features/auria/types';
@@ -16,8 +17,9 @@ type AuriaAssistantContentProps = {
   message: AuriaChatMessage;
   onOpenFiles?: () => void;
   modelLabel?: string;
-  onBranch?: () => void;
   onRetry?: (messageId: string) => void;
+  /** The version switcher `< 2/3 >`, drawn at the start of the actions row. */
+  versionSwitcher?: ReactNode;
   onActionFeedback?: (message: string) => void;
 };
 
@@ -30,8 +32,8 @@ export function AuriaAssistantContent({
   message,
   onOpenFiles,
   modelLabel,
-  onBranch,
   onRetry,
+  versionSwitcher,
   onActionFeedback,
 }: AuriaAssistantContentProps) {
   const { ds } = useTheme();
@@ -61,7 +63,7 @@ export function AuriaAssistantContent({
         <AuriaMessageActions
           text={message.text}
           modelLabel={modelLabel}
-          onBranch={onBranch}
+          leading={versionSwitcher}
           // Only a saved answer has a version to replace.
           onRetry={onRetry && message.serverId ? () => onRetry(message.id) : undefined}
           onFeedback={onActionFeedback}

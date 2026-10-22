@@ -54,3 +54,8 @@ export async function editMessage(
     answer: mapApiMessage(saved.assistant_message, AURIA_API_URL),
   };
 }
+
+/** Show another version of a message (E21): it becomes the active branch. The chat is re-read after. */
+export async function activateVersion(messageUuid: string, signal?: AbortSignal): Promise<void> {
+  await auriaHttp.post(auriaRoutes.activateVersion(messageUuid), undefined, { signal });
+}

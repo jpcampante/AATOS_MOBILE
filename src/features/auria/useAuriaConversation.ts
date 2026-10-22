@@ -3,7 +3,7 @@ import { isAuriaApiError, networkError } from './api/errors';
 import { auriaHttp, streamChat } from './api/http';
 import { auriaRoutes } from './api/routes';
 import { listMessages, MESSAGE_PAGE_SIZE } from './api/chats';
-import { activateVersion, editMessage, regenerateMessage, type ReplayOptions } from './api/messages';
+import { activateVersion, editMessage, regenerateMessage, setLiked, type ReplayOptions } from './api/messages';
 import { canContinueChat, latestPages } from './chatList';
 import { messageWithAttachments } from './attachments';
 import { absolutizeUrl, serverPath } from './mappers';
@@ -232,6 +232,25 @@ export function useAuriaConversation() {
     }
   }, []);
 
+  /**
+   * Like or unlike a saved answer (E22). The thumb changes at once; if the
+   * server refuses it goes back and this resolves false (the screen says so).
+   */
+  const toggleLike = useCallback(async (messageId: string): Promise<boolean> => {
+    const message = stateRef.current.messages.find((m) => m.id === messageId);
+    if (!message?.serverId || message.role !== 'assistant') return false;
+    const before = !!message.liked;
+    dispatch({ type: 'liked', messageId, liked: !before });
+    try {
+      const saved = await setLiked(message.serverId, !before);
+      if (saved !== !before) dispatch({ type: 'liked', messageId, liked: saved });
+      return true;
+    } catch {
+      dispatch({ type: 'liked', messageId, liked: before });
+      return false;
+    }
+  }, []);
+
   /** Stop the answer being written. What already arrived stays, marked as stopped. */
   const stop = useCallback(() => {
     const live = stateRef.current.live;
@@ -303,6 +322,7 @@ export function useAuriaConversation() {
     edit,
     switchVersion,
     switchingVersionOf,
+    toggleLike,
     stop,
     newChat,
     openChat,

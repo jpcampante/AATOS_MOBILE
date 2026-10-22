@@ -449,6 +449,20 @@ Data: 2026-10-22
   os dois seletores, setas desativadas nas pontas e a recusa real do
   `activate` com o aviso.
 
+
+### D-37 · Curtir resposta (A032)
+
+Data: 2026-10-22
+
+- **👍 na linha de ações** da resposta salva, azul quando curtida e anunciado
+  como selecionado. Marca na hora (otimista); se o servidor recusar, volta e
+  aparece "Couldn't save your like.". O app manda o valor (`{liked}`), não o
+  "alternar" do endpoint, para não se perder com toques repetidos. A web não
+  usa esse endpoint; o app usa.
+- **Verificado no emulador de ponta a ponta** (curtir não usa IA, então a conta
+  sem plano serve): curtir e descurtir ficam salvos depois de reiniciar o app,
+  na conversa de QA "App QA — like test" (**apagar pelo app**).
+
 ---
 
 ## Pendências em aberto
@@ -459,6 +473,7 @@ Data: 2026-10-22
 | Com créditos bloqueados, o aviso de créditos esconde qualquer outro erro; o "Try again" do aviso devolve a pergunta ao composer também depois de um Retry (D-34) | `AuriaScreen` |
 | A lista de conversas da barra lateral só recarrega ao abrir o app (D-34) | `useAuriaChats` |
 | Edição que falha (ex.: 402) perde o texto editado; devolvê-lo ao composer (D-35) | `useQuestionEditing` |
+| Apagar a conversa de QA "App QA — like test" (D-37) | app |
 | Trocar a `internalServiceKey` commitada em `Frontend_Myceo_Example_Authenticator/config.json` | backend |
 | Se a chave RSA do `.env.test` local do backend for usada em algum ambiente real, trocá-la (ela foi exibida por engano numa sessão) | backend |
 | Apagar as worktrees `_wt/mobile-code-login` e `_wt/main-mobile-code` e o SQLite de teste delas | máquina local |

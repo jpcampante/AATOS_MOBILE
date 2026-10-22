@@ -15,6 +15,8 @@ type AuriaChatViewProps = {
   modelLabel?: string;
   /** "Retry": a new version of a saved answer (E19). */
   onRetry?: (messageId: string) => void;
+  /** Like / unlike a saved answer (E22). */
+  onToggleLike?: (messageId: string) => void;
   /** Show another version of a message (`< 2/3 >`, E21). */
   onSwitchVersion?: (messageId: string, direction: -1 | 1) => void;
   /** The message whose version is switching right now. */
@@ -80,6 +82,7 @@ export function AuriaChatView({
   onOpenFiles,
   modelLabel,
   onRetry,
+  onToggleLike,
   onSwitchVersion,
   switchingVersionOf = null,
   onQuestionLongPress,
@@ -227,6 +230,7 @@ export function AuriaChatView({
                     modelLabel={modelLabel}
                     versionSwitcher={versionSwitcher(message)}
                     onRetry={onRetry}
+                    onToggleLike={onToggleLike}
                     onActionFeedback={onActionFeedback}
                   />
                 )}

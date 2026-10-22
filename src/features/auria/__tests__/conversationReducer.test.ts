@@ -410,3 +410,23 @@ describe('conversationReducer — versions (E21)', () => {
     expect(conversationReducer(busy, { type: 'branch-loaded', chatId: 'c-1', oldestPage: 1, messages: [] })).toBe(busy);
   });
 });
+
+describe('conversationReducer — like (E22)', () => {
+  it('marks only that answer', () => {
+    const opened = apply([
+      { type: 'open', chatId: 'c-1', provider: 'auria_system' },
+      {
+        type: 'history-loaded',
+        chatId: 'c-1',
+        oldestPage: 1,
+        messages: [
+          { id: 'a-1', serverId: 'a-1', role: 'assistant', text: 'A' },
+          { id: 'a-2', serverId: 'a-2', role: 'assistant', text: 'B', liked: true },
+        ],
+      },
+    ]);
+    const liked = conversationReducer(opened, { type: 'liked', messageId: 'a-1', liked: true });
+    expect(liked.messages.map((m) => m.liked)).toEqual([true, true]);
+    expect(conversationReducer(opened, { type: 'liked', messageId: 'nope', liked: true })).toBe(opened);
+  });
+});

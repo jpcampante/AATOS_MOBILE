@@ -1,5 +1,5 @@
 import { auriaHttp } from '../http';
-import { activateVersion, editMessage, regenerateMessage } from '../messages';
+import { activateVersion, editMessage, regenerateMessage, setLiked } from '../messages';
 import { AURIA_REPLAY_TIMEOUT_MS } from '../config';
 
 jest.mock('../http', () => ({ auriaHttp: { post: jest.fn(), patch: jest.fn() } }));
@@ -69,5 +69,13 @@ describe('activateVersion (E21)', () => {
     post.mockResolvedValue({ active_path: [] });
     await activateVersion('a-1');
     expect(post).toHaveBeenCalledWith('/auria/chat_importer/messages/a-1/activate', undefined, { signal: undefined });
+  });
+});
+
+describe('setLiked (E22)', () => {
+  it('sends the value and returns what the server saved', async () => {
+    post.mockResolvedValue({ uuid: 'a-1', liked: true });
+    await expect(setLiked('a-1', true)).resolves.toBe(true);
+    expect(post).toHaveBeenCalledWith('/auria/chat_importer/messages/a-1/like', { liked: true });
   });
 });

@@ -3,6 +3,7 @@ import { isAuriaApiError, networkError } from './api/errors';
 import { auriaHttp, streamChat } from './api/http';
 import { auriaRoutes } from './api/routes';
 import { listMessages, MESSAGE_PAGE_SIZE } from './api/chats';
+import { regenerateMessage } from './api/messages';
 import { canContinueChat, latestPages } from './chatList';
 import { messageWithAttachments } from './attachments';
 import { absolutizeUrl } from './mappers';
@@ -134,6 +135,43 @@ export function useAuriaConversation() {
     return true;
   }, []);
 
+  /**
+   * "Retry" an answer (E19): the server writes a new version and keeps the old
+   * one; then the chat is re-read (its active branch). Returns false when it
+   * can't start (an answer is running, or the answer isn't saved yet).
+   */
+  const retry = useCallback((answerId: string): boolean => {
+    const current = stateRef.current;
+    const answer = current.messages.find((m) => m.id === answerId);
+    const chatId = current.chatId;
+    if (current.live || !chatId || !answer?.serverId || answer.role !== 'assistant' || !canContinueChat(current.provider)) {
+      return false;
+    }
+    const localId = nextTurnId();
+    dispatch({ type: 'replay-start', localId, answerId, now: Date.now(), mode: modeRef.current });
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const reread = () =>
+      fetchLatest(chatId).then(({ messages, oldestPage }) => dispatch({ type: 'replay-done', localId, chatId, messages, oldestPage }));
+
+    regenerateMessage(answer.serverId, { mode: modeRef.current, clientOperationId: newClientOperationId(), signal: controller.signal })
+      .then(reread)
+      .catch((err: unknown) => {
+        const error = isAuriaApiError(err) ? err : networkError(err);
+        // Already being handled, or stopped here: the server may still save the new version.
+        if (error.code === 'operation_already_sent' || error.code === 'operation_in_progress' || error.code === 'aborted') {
+          return reread().catch(() => dispatch({ type: 'replay-failed', localId, error: null }));
+        }
+        dispatch({ type: 'replay-failed', localId, error });
+        return undefined;
+      })
+      .finally(() => {
+        if (abortRef.current === controller) abortRef.current = null;
+      });
+    return true;
+  }, []);
+
   /** Stop the answer being written. What already arrived stays, marked as stopped. */
   const stop = useCallback(() => {
     const live = stateRef.current.live;
@@ -201,6 +239,7 @@ export function useAuriaConversation() {
     mode,
     setMode,
     send,
+    retry,
     stop,
     newChat,
     openChat,

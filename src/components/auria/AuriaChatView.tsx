@@ -23,8 +23,8 @@ type AuriaChatViewProps = {
   modelLabel?: string;
   /** Starts a new chat from a reply ("Branch in new chat"). */
   onBranch?: () => void;
-  /** Re-answers the turn a reply belongs to, optionally with thinking / web search. */
-  onRegenerate?: (messageId: string, mode: 'retry' | 'thinking' | 'search') => void;
+  /** "Retry": a new version of a saved answer (E19). */
+  onRetry?: (messageId: string) => void;
   /** Transient feedback from a message action (copied, reading aloud, …). */
   onActionFeedback?: (message: string) => void;
   /** Loading state of a saved chat's history. */
@@ -84,7 +84,7 @@ export function AuriaChatView({
   onOpenFiles,
   modelLabel,
   onBranch,
-  onRegenerate,
+  onRetry,
   onActionFeedback,
   history,
   onLoadEarlier,
@@ -209,7 +209,7 @@ export function AuriaChatView({
                     onOpenFiles={onOpenFiles}
                     modelLabel={modelLabel}
                     onBranch={onBranch}
-                    onRegenerate={onRegenerate}
+                    onRetry={onRetry}
                     onActionFeedback={onActionFeedback}
                   />
                 )}
@@ -234,7 +234,7 @@ function AssistantBubbleContent({
   onOpenFiles,
   modelLabel,
   onBranch,
-  onRegenerate,
+  onRetry,
   onActionFeedback,
 }: {
   message: AuriaChatMessage;
@@ -243,7 +243,7 @@ function AssistantBubbleContent({
   onOpenFiles?: () => void;
   modelLabel?: string;
   onBranch?: () => void;
-  onRegenerate?: (messageId: string, mode: 'retry' | 'thinking' | 'search') => void;
+  onRetry?: (messageId: string) => void;
   onActionFeedback?: (message: string) => void;
 }) {
   const live = !!message.live;
@@ -279,9 +279,8 @@ function AssistantBubbleContent({
           text={message.text}
           modelLabel={modelLabel}
           onBranch={onBranch}
-          onRetry={onRegenerate ? () => onRegenerate(message.id, 'retry') : undefined}
-          onUseThinking={onRegenerate ? () => onRegenerate(message.id, 'thinking') : undefined}
-          onSearchWeb={onRegenerate ? () => onRegenerate(message.id, 'search') : undefined}
+          // Only a saved answer has a version to replace.
+          onRetry={onRetry && message.serverId ? () => onRetry(message.id) : undefined}
           onFeedback={onActionFeedback}
         />
       ) : null}

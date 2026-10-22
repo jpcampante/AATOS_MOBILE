@@ -177,7 +177,7 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
 
 ## Fase 7 — História 6: Tentar de novo e editar (P2)
 
-- [ ] A029 [P] "Tentar de novo" → `regenerate` e recarga — E19 — RF-14
+- [x] A029 [P] "Tentar de novo" → `regenerate` e recarga — E19 — RF-14. Menu "•••" da resposta salva com **Retry**; o painel da A016 ocupa o lugar da resposta ("Writing the answer · Ns") até o servidor gravar a versão nova; falha devolve a resposta antiga com o aviso; Stop relê a conversa. `api/messages.ts`, ações `replay-*` no `conversationReducer`, `retry` no `useAuriaConversation`
 - [ ] A030 [P] Editar mensagem da pessoa (mantém o markdown dos anexos) → `edit` e recarga — E20 — RF-14
 - [ ] A031 Alternar versões `< 2/3 >` com `activate`; ligar o "Branch" atual a isso ou removê-lo — E21 — RF-14
 - [ ] A032 [P] Curtir resposta — E22 — RF-14

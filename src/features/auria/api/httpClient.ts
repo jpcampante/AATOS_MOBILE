@@ -12,6 +12,8 @@ type FetchLike = (url: string, init: RequestInit) => Promise<Response>;
 export type RequestOptions = {
   body?: unknown;
   signal?: AbortSignal;
+  /** Overrides the client's timeout for a request that is slow on purpose. */
+  timeoutMs?: number;
 };
 
 export type UploadFile = { uri: string; name: string; type: string };
@@ -47,7 +49,7 @@ export function createHttpClient({ baseUrl, tokens, timeoutMs, fetchImpl }: Clie
     const timer = setTimeout(() => {
       timedOut = true;
       controller.abort();
-    }, timeoutMs);
+    }, opts.timeoutMs ?? timeoutMs);
     const onCallerAbort = () => controller.abort();
     opts.signal?.addEventListener('abort', onCallerAbort);
 

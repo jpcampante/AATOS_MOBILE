@@ -378,6 +378,31 @@ Data: 2026-10-21
   histórico usa o mesmo componente e está coberto por testes (a conta de teste
   não tem conversa com raciocínio salvo, e o backend não deixa gravar um).
 
+### D-34 · "Tentar de novo" (A029)
+
+Data: 2026-10-22
+
+- **O `regenerate` é síncrono:** o servidor escreve a resposta inteira e só
+  então devolve a versão nova (201). Por isso essa chamada tem prazo próprio de
+  3 minutos (`AURIA_REPLAY_TIMEOUT_MS`, como a web), e o cliente HTTP passou a
+  aceitar prazo por pedido. Depois, a conversa é relida (ramo ativo).
+- **Na tela:** a resposta (e o que vem depois dela) dá lugar ao painel da A016,
+  que diz "Writing the answer" e conta os segundos. Falha → volta a resposta
+  antiga e o aviso diz o motivo; `operation_in_progress`/`already_sent` e
+  Stop → relê a conversa em silêncio (o servidor pode gravar mesmo assim).
+- **Mesma regra de créditos do envio** (D-08): sem créditos, nem chama o servidor.
+- Só **Retry** no menu: "Use Thinking" e "Search the web" do mock saíram do
+  `AuriaChatView` (a busca volta com a A034).
+- **Verificado no emulador** contra o backend real, com uma conversa de QA
+  criada sem IA ("App QA — retry test", **apagar pelo app**): menu, painel no
+  lugar da resposta e recusa real `402 insufficient_units / no_active_plan`
+  com a resposta antiga de volta. O caminho de sucesso está nos testes e depende
+  de conta com plano (P003).
+- **Notado, fica para depois:** com créditos bloqueados o aviso de créditos
+  esconde qualquer outro erro; o "Try again" do aviso de erro devolve a
+  pergunta ao composer (feito para envio, não para retry); a lista da barra
+  lateral só recarrega ao abrir o app.
+
 ---
 
 ## Pendências em aberto

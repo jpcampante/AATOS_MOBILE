@@ -83,6 +83,18 @@ describe('createHttpClient', () => {
     await expect(setup(['hang']).client.get('/x')).rejects.toMatchObject({ code: 'timeout' });
   });
 
+  it('lets a slow request wait longer than the client timeout', async () => {
+    const { client } = setup(['hang']);
+    let settled = false;
+    const slow = client.post('/regenerate', {}, { timeoutMs: 200 }).catch((e) => {
+      settled = true;
+      throw e;
+    });
+    await new Promise((r) => setTimeout(r, 100)); // past the client's 50 ms
+    expect(settled).toBe(false);
+    await expect(slow).rejects.toMatchObject({ code: 'timeout' });
+  });
+
   it('reports a caller abort as aborted', async () => {
     const { client } = setup(['hang']);
     const controller = new AbortController();

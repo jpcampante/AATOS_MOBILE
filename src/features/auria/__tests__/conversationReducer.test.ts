@@ -272,3 +272,71 @@ describe('conversationReducer — attachments', () => {
     expect(state.live).not.toBeNull();
   });
 });
+
+describe('conversationReducer — retry (E19)', () => {
+  const saved = (): ConversationState =>
+    apply([
+      { type: 'open', chatId: 'c-1', provider: 'auria_system' },
+      {
+        type: 'history-loaded',
+        chatId: 'c-1',
+        oldestPage: 1,
+        messages: [
+          { id: 'u-1', serverId: 'u-1', role: 'user', text: 'What are my tasks?' },
+          { id: 'a-1', serverId: 'a-1', role: 'assistant', text: 'Three tasks.' },
+          { id: 'u-2', serverId: 'u-2', role: 'user', text: 'And tomorrow?' },
+          { id: 'a-2', serverId: 'a-2', role: 'assistant', text: 'Two.' },
+        ],
+      },
+    ]);
+
+  it('sets the answer and what follows aside and shows the panel writing the new one', () => {
+    const state = conversationReducer(saved(), { type: 'replay-start', localId: 'r1', answerId: 'a-1', now: 0, mode: 'deep' });
+    expect(state.live?.replacing).toBe('a-1');
+    const shown = visibleMessages(state);
+    expect(shown.map((m) => m.id)).toEqual(['u-1', 'r1-a']);
+    expect(shown[1]).toMatchObject({
+      live: true,
+      work: expect.objectContaining({ title: 'What are my tasks?', mode: 'deep', status: 'writing' }),
+    });
+  });
+
+  it('takes the server copy when the new version is saved', () => {
+    const replaying = conversationReducer(saved(), { type: 'replay-start', localId: 'r1', answerId: 'a-2', now: 0 });
+    const done = conversationReducer(replaying, {
+      type: 'replay-done',
+      localId: 'r1',
+      chatId: 'c-1',
+      oldestPage: 1,
+      messages: [
+        { id: 'u-2', serverId: 'u-2', role: 'user', text: 'And tomorrow?' },
+        { id: 'a-3', serverId: 'a-3', role: 'assistant', text: 'Two, and a call.', version: { index: 2, count: 2, ids: ['a-2', 'a-3'] } },
+      ],
+    });
+    expect(done.live).toBeNull();
+    expect(visibleMessages(done).map((m) => m.text)).toEqual(['And tomorrow?', 'Two, and a call.']);
+  });
+
+  it('brings the old answer back, with the reason, when it fails', () => {
+    const error = new AuriaApiError({ status: 402, code: 'insufficient_units' });
+    const replaying = conversationReducer(saved(), { type: 'replay-start', localId: 'r1', answerId: 'a-2', now: 0 });
+    const failed = conversationReducer(replaying, { type: 'replay-failed', localId: 'r1', error });
+    expect(failed.live).toBeNull();
+    expect(failed.error).toBe(error);
+    expect(visibleMessages(failed).map((m) => m.id)).toEqual(['u-1', 'a-1', 'u-2', 'a-2']);
+  });
+
+  it('only retries a saved answer, one turn at a time', () => {
+    const state = saved();
+    expect(conversationReducer(state, { type: 'replay-start', localId: 'r1', answerId: 'u-1', now: 0 })).toBe(state);
+    expect(conversationReducer(state, { type: 'replay-start', localId: 'r1', answerId: 'nope', now: 0 })).toBe(state);
+    const busy = conversationReducer(state, { type: 'replay-start', localId: 'r1', answerId: 'a-1', now: 0 });
+    expect(conversationReducer(busy, { type: 'replay-start', localId: 'r2', answerId: 'a-2', now: 0 })).toBe(busy);
+    expect(conversationReducer(busy, { type: 'send', localId: 't9', text: 'hi', now: 0 })).toBe(busy);
+  });
+
+  it('ignores the end of a stale retry', () => {
+    const replaying = conversationReducer(saved(), { type: 'replay-start', localId: 'r1', answerId: 'a-1', now: 0 });
+    expect(conversationReducer(replaying, { type: 'replay-failed', localId: 'old', error: null })).toBe(replaying);
+  });
+});

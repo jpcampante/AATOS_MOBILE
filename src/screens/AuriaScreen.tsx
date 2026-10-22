@@ -234,6 +234,15 @@ export function AuriaScreen({
     return conversation.send(text, { attachments: files });
   };
 
+  /** "Retry" an answer: same credits rule as sending (D-08). */
+  const retryAnswer = (answerId: string) => {
+    if (credits.blocked) {
+      void credits.check();
+      return;
+    }
+    conversation.retry(answerId);
+  };
+
   // Deep link with a prompt: seed the composer once, then clear it.
   useEffect(() => {
     if (initialPrompt) {
@@ -556,6 +565,7 @@ export function AuriaScreen({
         onOpenFiles={() => transitionPanel('gallery')}
         modelLabel={`Auria · ${auriaModeLabel(conversation.mode)}`}
         onActionFeedback={showToast}
+        onRetry={conversation.canContinue ? retryAnswer : undefined}
         history={{
           loading: conversation.history.loading,
           hasEarlier: conversation.history.hasEarlier,

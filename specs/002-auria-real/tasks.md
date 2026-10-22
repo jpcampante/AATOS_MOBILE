@@ -17,6 +17,10 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
 
 > **Status:** aprovado em 2026-10-20 (D-05 a D-09 da spec).
 > **v1** = P1 + P2 (Fases 0–10 e o fechamento da v1). **v2** = P3 (Fases 12–14).
+>
+> **Andamento (2026-10-22):** Fases 1–6 (P1) concluídas, exceto P003 e V001. Fase 7 em curso:
+> A029 feita; próxima A030. Na `main` até a A029 (merge de 2026-10-22). Bloqueio: a conta
+> de teste não tem plano (402), então nenhuma resposta real da Auria foi vista ainda (P003).
 
 ## Fase 0 — Pré-requisitos e spikes (bloqueia tudo)
 
@@ -109,7 +113,7 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
   Arquivos: `src/features/auria/work/` (`workRun`, `workTools`, `workText`, hooks `useElapsed`, `useStepReveal`, `useAnnounceWhenFinished`) e `src/components/auria/work/` (`AuriaWorkPanel`, `AuriaWorkLiveLine`, `AuriaWorkDetails`, `AuriaWorkStepRow`, `AuriaServiceMark`) — RF-06, RNF-02
 - [x] A017 "Pensamento" salvo: mostrar `reasoning` das mensagens do histórico (E16), como a web: linha "Thinking ›" que abre o texto, em respostas do histórico e em turnos que pararam no meio; turno concluído na sessão fica com o painel da A016 — `AuriaThinkingDisclosure.tsx`, regra em `features/auria/thinking.ts` (o `AuriaReasoningBlock` é do mock e sai na A056) — RF-06
 
-**Checkpoint (emulador):** H2.1–H2.3 com uma pergunta que usa ferramentas (ex.: "quais minhas tarefas de hoje?").
+**Checkpoint (emulador):** H2.1–H2.3 com uma pergunta que usa ferramentas (ex.: "quais minhas tarefas de hoje?"). **Parcial em 2026-10-21:** painel ao vivo, logos, detalhe e "Thinking" de um turno parado vistos com um turno simulado no app (D-32, D-33). Falta repetir com uma resposta real (P003).
 
 ## Fase 4 — História 3: Histórico de conversas (P1)
 
@@ -150,7 +154,7 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
 
   Endpoint E26 — RF-11, RNF-04
 
-**Checkpoint (emulador):** H4.1–H4.4. Uma foto enviada pelo celular é descrita pela Auria (CS-03), e uma imagem enviada pela web aparece no celular.
+**Checkpoint (emulador):** H4.1–H4.4. Uma foto enviada pelo celular é descrita pela Auria (CS-03), e uma imagem enviada pela web aparece no celular. **Parcial em 2026-10-21:** upload de foto e arquivo, tipo recusado com aviso, imagem privada e arquivo abertos no app (D-31). Faltam a Auria descrever a foto (P003) e uma imagem enviada pela web (V001). As conversas de QA foram apagadas.
 
 ## Fase 6 — História 5: Erros, créditos e permissões (P1)
 
@@ -182,7 +186,7 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
 - [ ] A031 Alternar versões `< 2/3 >` com `activate`; ligar o "Branch" atual a isso ou removê-lo — E21 — RF-14
 - [ ] A032 [P] Curtir resposta — E22 — RF-14
 
-**Checkpoint (emulador):** H6.1–H6.4.
+**Checkpoint (emulador):** H6.1–H6.4. **H6.1 parcial em 2026-10-22:** Retry contra o backend real até a recusa 402 (D-34); a resposta nova depende de plano (P003). A conversa de QA foi apagada.
 
 ## Fase 8 — História 7: Busca na web e fontes (P2)
 

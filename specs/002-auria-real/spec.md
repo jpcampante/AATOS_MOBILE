@@ -4,7 +4,7 @@
 | --- | --- |
 | ID | `002-auria-real` |
 | Branch | `develop` (sem branch de feature; depois `develop` → `main`) |
-| Status | Aprovada (2026-10-20) — entrega em duas versões: v1 = P1 + P2, v2 = P3 |
+| Status | Aprovada (2026-10-20) — entrega em duas versões: v1 = P1 + P2, v2 = P3. **Em implementação** (2026-10-22): P1 feita (falta provar o streaming real, P003); P2 em curso (A029 feita). Ver [tasks](./tasks.md) |
 | Data | 2026-10-20 |
 | Substitui | RF-AUR-01, RF-AUR-02, RF-AUR-03, RF-AUR-04, RF-AUR-05, RF-AUR-06, RF-AUR-08, RF-AUR-09, RF-AUR-10 da [baseline](../000-baseline/spec.md) (item 004 do roadmap) |
 | Depende de | [001-login](../001-login/spec.md) (sessão real) mergeada na `develop` |

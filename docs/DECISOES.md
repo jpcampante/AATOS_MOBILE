@@ -394,7 +394,7 @@ Data: 2026-10-22
 - Só **Retry** no menu: "Use Thinking" e "Search the web" do mock saíram do
   `AuriaChatView` (a busca volta com a A034).
 - **Verificado no emulador** contra o backend real, com uma conversa de QA
-  criada sem IA ("App QA — retry test", **apagar pelo app**): menu, painel no
+  criada sem IA ("App QA — retry test", já apagada): menu, painel no
   lugar da resposta e recusa real `402 insufficient_units / no_active_plan`
   com a resposta antiga de volta. O caminho de sucesso está nos testes e depende
   de conta com plano (P003).
@@ -409,7 +409,9 @@ Data: 2026-10-22
 
 | Item | Onde |
 | --- | --- |
-| Spec 002: provar o streaming (P003) com uma conta que tenha plano; seguir pela A017 | [tasks 002](../specs/002-auria-real/tasks.md) |
+| Spec 002: provar o streaming (P003) com uma conta que tenha plano; seguir pela A030 | [tasks 002](../specs/002-auria-real/tasks.md) |
+| Com créditos bloqueados, o aviso de créditos esconde qualquer outro erro; o "Try again" do aviso devolve a pergunta ao composer também depois de um Retry (D-34) | `AuriaScreen` |
+| A lista de conversas da barra lateral só recarrega ao abrir o app (D-34) | `useAuriaChats` |
 | Trocar a `internalServiceKey` commitada em `Frontend_Myceo_Example_Authenticator/config.json` | backend |
 | Se a chave RSA do `.env.test` local do backend for usada em algum ambiente real, trocá-la (ela foi exibida por engano numa sessão) | backend |
 | Apagar as worktrees `_wt/mobile-code-login` e `_wt/main-mobile-code` e o SQLite de teste delas | máquina local |

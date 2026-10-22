@@ -4,7 +4,7 @@ import { useQuestionEditing } from '../useQuestionEditing';
 
 const question: AuriaChatMessage = { id: 'u-1', serverId: 'u-1', role: 'user', text: 'What are my tasks?' };
 
-function setup(saveEdit = jest.fn(() => true)) {
+function setup(saveEdit: jest.Mock = jest.fn(() => true)) {
   const setComposerText = jest.fn();
   const hook = renderHook(() => useQuestionEditing({ saveEdit, setComposerText }));
   return { ...hook, saveEdit, setComposerText };
@@ -19,15 +19,15 @@ describe('useQuestionEditing', () => {
     expect(result.current.menuFor).toBeNull();
   });
 
-  it('puts the question in the composer and saves the edit on send', () => {
+  it('puts the question in the composer and saves the edit on send', async () => {
     const { result, saveEdit, setComposerText } = setup();
     act(() => result.current.start(question));
     expect(result.current.editing).toBe(question);
     expect(setComposerText).toHaveBeenLastCalledWith('What are my tasks?');
 
     let saved = false;
-    act(() => {
-      saved = result.current.submit('What are my tasks this week?');
+    await act(async () => {
+      saved = await result.current.submit('What are my tasks this week?');
     });
     expect(saved).toBe(true);
     expect(saveEdit).toHaveBeenCalledWith('u-1', 'What are my tasks this week?');
@@ -35,12 +35,12 @@ describe('useQuestionEditing', () => {
     expect(setComposerText).toHaveBeenLastCalledWith('');
   });
 
-  it('keeps editing when the edit could not start (e.g. out of credits) or the text is empty', () => {
-    const { result, saveEdit } = setup(jest.fn(() => false));
+  it('keeps editing when the edit could not start (e.g. out of credits) or the text is empty', async () => {
+    const { result, saveEdit } = setup(jest.fn(async () => false));
     act(() => result.current.start(question));
-    act(() => {
-      result.current.submit('   ');
-      result.current.submit('New text');
+    await act(async () => {
+      await result.current.submit('   ');
+      await result.current.submit('New text');
     });
     expect(saveEdit).toHaveBeenCalledTimes(1);
     expect(result.current.editing).toBe(question);

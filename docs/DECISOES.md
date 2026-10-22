@@ -463,6 +463,29 @@ Data: 2026-10-22
   sem plano serve): curtir e descurtir ficam salvos depois de reiniciar o app,
   na conversa de QA "App QA — like test" (**apagar pelo app**).
 
+
+### D-38 · Preferência de busca na web (A033)
+
+Data: 2026-10-22
+
+- **Igual à web** (`useSearchPreference`): a escolha (`auto` / `off`) é por
+  pessoa **e por conversa**; o app nunca usa o padrão pessoal (a web também
+  não). Conversa nova: a escolha fica no aparelho e é salva com `revision: 0`
+  quando o stream devolve o `chat`. `revision_conflict` ou falha ao salvar:
+  relê e nunca reenvia sozinho.
+- **Antes de cada envio, Retry e edição** o app relê a escolha. Mudou ou não
+  deu para conferir → aquele turno vai **Off** e o app diz por quê. Na dúvida
+  (carregando, salvando, sem escolha, empresa desligou, servidor sem busca) →
+  Off. O `web_mode` vale por turno; o servidor ainda manda nos casos dele
+  (Off herdado num Retry, empresa desligada).
+- Sem a descoberta `/system_llm/scope` da web: o app sempre fala a política
+  v2, que a produção aceita.
+- **Descoberta:** em produção `GET /auria/web-search/settings` devolve
+  **`available: false`** (`company.enabled: true`, a conta de teste é
+  admin): a busca está **desligada na configuração do servidor** (provedor e
+  chave da busca). Com isso, as Fases A034–A036 só podem ser vistas no aparelho
+  no estado "indisponível"; o resto fica nos testes até a busca ser ligada.
+
 ---
 
 ## Pendências em aberto
@@ -474,6 +497,7 @@ Data: 2026-10-22
 | A lista de conversas da barra lateral só recarrega ao abrir o app (D-34) | `useAuriaChats` |
 | Edição que falha (ex.: 402) perde o texto editado; devolvê-lo ao composer (D-35) | `useQuestionEditing` |
 | Apagar a conversa de QA "App QA — like test" (D-37) | app |
+| Busca na web desligada no servidor de produção (`available: false`): ligar no aatos-system para testar A034–A036 de verdade (D-38) | backend / infra |
 | Trocar a `internalServiceKey` commitada em `Frontend_Myceo_Example_Authenticator/config.json` | backend |
 | Se a chave RSA do `.env.test` local do backend for usada em algum ambiente real, trocá-la (ela foi exibida por engano numa sessão) | backend |
 | Apagar as worktrees `_wt/mobile-code-login` e `_wt/main-mobile-code` e o SQLite de teste delas | máquina local |

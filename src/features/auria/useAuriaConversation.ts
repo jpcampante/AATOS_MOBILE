@@ -9,6 +9,7 @@ import { messageWithAttachments } from './attachments';
 import { absolutizeUrl, serverPath } from './mappers';
 import { AURIA_API_URL } from './api/config';
 import type { AuriaAttachment } from './types';
+import type { WebMode } from './api/webSearch';
 import type { ConversationAction } from './conversationReducer';
 import { newClientOperationId, type AuriaMode, type StreamChatRequest } from './api/streamChat';
 import { conversationReducer, initialConversation, visibleMessages } from './conversationReducer';
@@ -28,7 +29,9 @@ const nextTurnId = () => `t${(turnSeq += 1)}`;
 /** Chats get the first 40 characters as their title, like the web does. */
 const TITLE_LENGTH = 40;
 
-export type SendOptions = Pick<StreamChatRequest, 'create'> & {
+export type SendOptions = Pick<StreamChatRequest, 'create' | 'webMode'> & {
+  /** The server created the chat for this first message (e.g. to save the web search choice for it). */
+  onChatCreated?: (chatId: string) => void;
   /** Uploaded files (from `useAuriaAttachments`): their uuids go to Auria, their links into the message. */
   attachments?: { uuid: string; name: string; url: string; isImage: boolean }[];
 };
@@ -98,11 +101,15 @@ export function useAuriaConversation() {
         clientOperationId: newClientOperationId(),
         mode: modeRef.current,
         create: options.create,
+        webMode: options.webMode ?? 'off',
         attachmentUuids: attachments.map((a) => a.uuid),
       },
       {
         onEvent: (event) => {
-          if (event.type === 'chat') turnChatId = event.chatId;
+          if (event.type === 'chat') {
+            if (isNewChat && event.chatId && !turnChatId) options.onChatCreated?.(event.chatId);
+            turnChatId = event.chatId;
+          }
           dispatch({ type: 'run', localId, action: { type: 'event', event } });
         },
         signal: controller.signal,
@@ -145,7 +152,8 @@ export function useAuriaConversation() {
    */
   const runReplay = useCallback(
     (start: Omit<Extract<ConversationAction, { type: 'replay-start' }>, 'type' | 'localId' | 'now' | 'mode'>,
-     request: (options: ReplayOptions) => Promise<unknown>): boolean => {
+     request: (options: ReplayOptions) => Promise<unknown>,
+     webMode: WebMode = 'off'): boolean => {
       const chatId = stateRef.current.chatId;
       if (!chatId) return false;
       const localId = nextTurnId();
@@ -156,7 +164,7 @@ export function useAuriaConversation() {
       const reread = () =>
         fetchLatest(chatId).then(({ messages, oldestPage }) => dispatch({ type: 'replay-done', localId, chatId, messages, oldestPage }));
 
-      request({ mode: modeRef.current, clientOperationId: newClientOperationId(), signal: controller.signal })
+      request({ mode: modeRef.current, clientOperationId: newClientOperationId(), signal: controller.signal, webMode })
         .then(reread)
         .catch((err: unknown) => {
           const error = isAuriaApiError(err) ? err : networkError(err);
@@ -176,12 +184,12 @@ export function useAuriaConversation() {
 
   /** "Retry" an answer (E19). Returns false when it can't start (busy, or the answer isn't saved). */
   const retry = useCallback(
-    (answerId: string): boolean => {
+    (answerId: string, webMode: WebMode = 'off'): boolean => {
       const current = stateRef.current;
       const answer = current.messages.find((m) => m.id === answerId);
       if (current.live || !answer?.serverId || answer.role !== 'assistant' || !canContinueChat(current.provider)) return false;
       const uuid = answer.serverId;
-      return runReplay({ from: answerId }, (options) => regenerateMessage(uuid, options));
+      return runReplay({ from: answerId }, (options) => regenerateMessage(uuid, options), webMode);
     },
     [runReplay],
   );
@@ -191,7 +199,7 @@ export function useAuriaConversation() {
    * the server saves the text as is, so their markdown goes with it (like the web).
    */
   const edit = useCallback(
-    (questionId: string, text: string): boolean => {
+    (questionId: string, text: string, webMode: WebMode = 'off'): boolean => {
       const current = stateRef.current;
       const question = current.messages.find((m) => m.id === questionId);
       const clean = text.trim();
@@ -204,7 +212,11 @@ export function useAuriaConversation() {
         clean,
         files.map((f) => ({ name: f.name, url: serverPath(f.url, AURIA_API_URL), isImage: f.isImage })),
       );
-      return runReplay({ from: questionId, question: { text: clean, files } }, (options) => editMessage(uuid, content, options));
+      return runReplay(
+        { from: questionId, question: { text: clean, files } },
+        (options) => editMessage(uuid, content, options),
+        webMode,
+      );
     },
     [runReplay],
   );

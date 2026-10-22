@@ -79,3 +79,11 @@ describe('setLiked (E22)', () => {
     expect(post).toHaveBeenCalledWith('/auria/chat_importer/messages/a-1/like', { liked: true });
   });
 });
+
+describe('replay web search (A033)', () => {
+  it('sends the checked web search choice with a retry', async () => {
+    post.mockResolvedValue({ uuid: 'a-2', author_role: 'assistant', content_type: 'text', content: 'x' });
+    await regenerateMessage('a-1', { mode: 'fast', clientOperationId: 'op-123456789', webMode: 'auto' });
+    expect(post.mock.calls[post.mock.calls.length - 1][1]).toMatchObject({ web_mode: 'auto', web_policy_version: 2 });
+  });
+});

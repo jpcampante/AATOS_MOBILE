@@ -3,6 +3,7 @@ import { auriaHttp } from './http';
 import { auriaRoutes } from './routes';
 import type { AuriaMode } from './streamChat';
 import type { ApiMessage } from './types';
+import type { WebMode } from './webSearch';
 import { mapApiMessage } from '../mappers';
 import type { AuriaChatMessage } from '../types';
 
@@ -11,13 +12,15 @@ export type ReplayOptions = {
   /** Lets the server tell a resend from a new request (`operation_already_sent`). */
   clientOperationId: string;
   signal?: AbortSignal;
+  /** Web search for the new answer (from the person's choice, checked just before). Off by default. */
+  webMode?: WebMode;
 };
 
-/** What a retry or edit sends besides its own fields: the mode and, like a turn, web search off (A033 adds the choice). */
-const replayBody = ({ mode, clientOperationId }: ReplayOptions) => ({
+/** What a retry or edit sends besides its own fields: the mode and, like a turn, the web search choice. */
+const replayBody = ({ mode, clientOperationId, webMode }: ReplayOptions) => ({
   mode,
   client_operation_id: clientOperationId,
-  web_mode: 'off',
+  web_mode: webMode ?? 'off',
   web_policy_version: WEB_POLICY_VERSION,
 });
 

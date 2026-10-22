@@ -19,7 +19,7 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
 > **v1** = P1 + P2 (Fases 0–10 e o fechamento da v1). **v2** = P3 (Fases 12–14).
 >
 > **Andamento (2026-10-22):** Fases 1–6 (P1) concluídas, exceto P003 e V001. Fase 7 em curso:
-> Fase 7 (A029–A032) feita; próxima A033 (Fase 8, busca na web). Na `main` até a A029 (merge de 2026-10-22). Bloqueio: a conta
+> Fase 7 (A029–A032) feita. Fase 8 em curso: A033 feita; próxima A034. A busca na web está desligada no servidor de produção (D-38). Na `main` até a A029 (merge de 2026-10-22). Bloqueio: a conta
 > de teste não tem plano (402), então nenhuma resposta real da Auria foi vista ainda (P003).
 
 ## Fase 0 — Pré-requisitos e spikes (bloqueia tudo)
@@ -190,10 +190,11 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
 
 ## Fase 8 — História 7: Busca na web e fontes (P2)
 
-- [ ] A033 `useWebSearchPreference`:
+- [x] A033 `useWebSearchPreference`:
   - lê e grava a preferência por conversa;
   - `revision_conflict` → reler;
   - antes de cada envio, confere o estado e manda `web_mode`/`web_policy_version`.
+  - Feito como na web: escolha por conversa; conversa nova guarda a escolha no aparelho e salva quando o servidor a cria (`bind`); antes de envio, Retry e edição relê (mudou ou não deu para conferir → turno Off, com aviso); na dúvida, Off. `api/webSearch.ts`, `webSearchChoice.ts`, `useWebSearchPreference.ts`. **Produção hoje: `available: false`** (busca desligada no servidor, D-38).
 
   Endpoints E48, E49 — RF-15
 - [ ] A034 Botão de busca na web no composer ou no menu "+", no lugar do "Search the web" simulado; desabilitado com motivo quando a empresa desligou — RF-15

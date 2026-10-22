@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import * as Speech from 'expo-speech';
@@ -8,27 +8,21 @@ import { auriaTypography, MYCEO_CORNER_RADIUS, useTheme } from '../../theme';
 import { markdownToPlainText } from '../../features/auria/markdownBlocks';
 
 type MenuItem = {
-  id: 'branch' | 'retry' | 'thinking' | 'search';
+  id: 'retry';
   label: string;
   icon: AuriaIconName;
 };
 
-const MENU_ITEMS: MenuItem[] = [
-  { id: 'branch', label: 'Branch in new chat', icon: 'branch' },
-  { id: 'retry', label: 'Retry', icon: 'arrowPath' },
-  { id: 'thinking', label: 'Use Thinking', icon: 'bulb' },
-  { id: 'search', label: 'Search the web', icon: 'globe' },
-];
+const MENU_ITEMS: MenuItem[] = [{ id: 'retry', label: 'Retry', icon: 'arrowPath' }];
 
 type AuriaMessageActionsProps = {
   /** The reply text — copied, read aloud, or shared. */
   text: string;
   /** Model label shown in the menu footer (e.g. "Used Opus 4.8"). */
   modelLabel?: string;
-  onBranch?: () => void;
   onRetry?: () => void;
-  onUseThinking?: () => void;
-  onSearchWeb?: () => void;
+  /** Drawn first in the row (the version switcher `< 2/3 >`). */
+  leading?: ReactNode;
   /** Transient feedback ("Copied", "Speaking…") surfaced as a toast. */
   onFeedback?: (message: string) => void;
 };
@@ -43,18 +37,15 @@ function nowStamp(): string {
 
 /**
  * The action affordances under every finished Auria reply — copy, read aloud,
- * share, plus a "•••" menu (Branch in new chat, Retry, Use Thinking, Search the
- * web). Mirrors the ChatGPT message toolbar. Actions are functional where the
- * platform allows (clipboard / speech / native share on web), and degrade to a
- * toast otherwise.
+ * share, plus a "•••" menu (Retry) when the answer can be retried. Mirrors the
+ * ChatGPT message toolbar. Actions are functional where the platform allows
+ * (clipboard / speech / native share on web), and degrade to a toast otherwise.
  */
 export function AuriaMessageActions({
   text,
   modelLabel = 'Used Auria',
-  onBranch,
   onRetry,
-  onUseThinking,
-  onSearchWeb,
+  leading,
   onFeedback,
 }: AuriaMessageActionsProps) {
   const { ds, theme } = useTheme();
@@ -63,13 +54,8 @@ export function AuriaMessageActions({
   const [speaking, setSpeaking] = useState(false);
   // The answer is Markdown; copy, read aloud and share use it without the marks.
   const plain = useMemo(() => markdownToPlainText(text), [text]);
-  // Each menu item shows only when its action is wired (Retry and friends come with H6/H7).
-  const menuHandlers: Record<MenuItem['id'], (() => void) | undefined> = {
-    branch: onBranch,
-    retry: onRetry,
-    thinking: onUseThinking,
-    search: onSearchWeb,
-  };
+  // Each menu item shows only when its action is wired.
+  const menuHandlers: Record<MenuItem['id'], (() => void) | undefined> = { retry: onRetry };
   const menuItems = MENU_ITEMS.filter((item) => menuHandlers[item.id]);
 
   // Never leave speech running after this reply unmounts.
@@ -139,21 +125,13 @@ export function AuriaMessageActions({
 
   const runMenu = (id: MenuItem['id']) => {
     setMenuOpen(false);
-    if (id === 'branch') {
-      onBranch?.();
-      onFeedback?.('Branched to a new chat');
-    } else if (id === 'retry') {
-      onRetry?.();
-    } else if (id === 'thinking') {
-      onUseThinking?.();
-    } else if (id === 'search') {
-      onSearchWeb?.();
-    }
+    menuHandlers[id]?.();
   };
 
   return (
     <View style={styles.wrap}>
       <View style={styles.row}>
+        {leading}
         <ActionButton icon="copy" label="Copy" onPress={copy} styles={styles} color={ds.gray600} />
         <ActionButton
           icon="speaker"
@@ -185,23 +163,9 @@ export function AuriaMessageActions({
           />
           <View style={styles.menu}>
             <Text style={styles.menuStamp}>{nowStamp()}</Text>
-            {onBranch ? (
-              <>
-                <Pressable
-                  onPress={() => runMenu('branch')}
-                  style={({ pressed }) => [styles.menuItem, pressed && styles.menuItemPressed]}
-                  accessibilityRole="button"
-                  accessibilityLabel="Branch in new chat"
-                >
-                  <AuriaIcon name="branch" size={AURIA_ICON_SIZE.sm} color={ds.gray900} />
-                  <Text style={styles.menuLabel}>Branch in new chat</Text>
-                </Pressable>
-                <View style={styles.menuDivider} />
-              </>
-            ) : null}
             <Text style={styles.menuStamp}>{modelLabel}</Text>
 
-            {menuItems.filter((item) => item.id !== 'branch').map((item) => (
+            {menuItems.map((item) => (
               <Pressable
                 key={item.id}
                 onPress={() => runMenu(item.id)}
@@ -309,11 +273,6 @@ function createStyles(
       paddingHorizontal: 10,
       paddingTop: 6,
       paddingBottom: 4,
-    },
-    menuDivider: {
-      height: 1,
-      backgroundColor: theme.colors.divider,
-      marginVertical: 4,
     },
     menuItem: {
       flexDirection: 'row',

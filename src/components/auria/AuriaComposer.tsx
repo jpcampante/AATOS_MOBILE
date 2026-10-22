@@ -235,10 +235,12 @@ export const AuriaComposer = forwardRef<AuriaComposerHandle, AuriaComposerProps>
         <View style={styles.actionRow}>
           <Pressable
             onPress={onAttach}
+            disabled={!onAttach}
             accessibilityRole="button"
             accessibilityLabel="Open create menu"
+            accessibilityState={{ disabled: !onAttach }}
             hitSlop={8}
-            style={({ pressed }) => [styles.circleButton, pressed && styles.circleButtonPressed]}
+            style={({ pressed }) => [styles.circleButton, pressed && styles.circleButtonPressed, !onAttach && styles.circleButtonDisabled]}
           >
             <AuriaIcon
               name="plus"
@@ -420,6 +422,9 @@ function createStyles(
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: 'transparent',
+    },
+    circleButtonDisabled: {
+      opacity: 0.35,
     },
     circleButtonPressed: {
       backgroundColor: glass.pressed,

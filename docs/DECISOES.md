@@ -403,6 +403,52 @@ Data: 2026-10-22
   pergunta ao composer (feito para envio, não para retry); a lista da barra
   lateral só recarrega ao abrir o app.
 
+
+### D-35 · Editar a pergunta (A030)
+
+Data: 2026-10-22
+
+- **Segurar o dedo na pergunta** abre uma folha com **Copy** e **Edit** (padrão
+  do celular; a web edita dentro do balão). **Edit** leva o texto ao composer
+  com a faixa "Editing message ✕"; enviar salva a edição. Durante a edição o "+"
+  fica desativado: a edição mantém os anexos da pergunta, e anexo novo vai numa
+  mensagem nova.
+- **O `edit` também é síncrono** e grava o `content` exatamente como recebe,
+  então o app remonta o markdown dos anexos com o caminho do servidor
+  (`serverPath`), como a web. Usa o mesmo turno "replay" da A029,
+  generalizado: a pergunta editada e o painel ocupam o lugar do turno antigo.
+- **Componentes:** o menu da barra lateral virou o `AuriaActionSheet`
+  compartilhado (usado também pelo menu da pergunta); `AssistantBubbleContent`
+  saiu do `AuriaChatView` (422 → 340 linhas) para `AuriaAssistantContent`;
+  o "+" do composer sem ação aparece desativado, não morto.
+- **Testes:** o helper de teste passou a incluir o `SafeAreaProvider`.
+- **Verificado no emulador** contra o backend real com a conversa "App QA —
+  edit test" (já apagada): folha Copy/Edit, faixa de edição, composer
+  preenchido, "+" desativado, Cancel, e a recusa real `402 no_active_plan` com
+  a pergunta e a resposta originais de volta; menu da barra lateral igual.
+- **Notado:** se a edição falha, o texto editado se perde (a web faz igual);
+  melhor devolvê-lo ao composer — fica nas pendências.
+
+
+### D-36 · Versões `< 2/3 >` (A031)
+
+Data: 2026-10-22
+
+- **`AuriaVersionSwitcher`**: aparece quando a mensagem tem mais de uma
+  versão (`version_count`): sob a pergunta editada e no início da linha de
+  ações da resposta, como no ChatGPT. Tocar numa seta chama o `activate` (E21)
+  da versão vizinha (`versions`) e relê a conversa; enquanto troca, um
+  indicador ocupa o número; falha → "Couldn't switch versions." e nada muda.
+  Não troca durante uma resposta. A web não usa esse endpoint; o app usa.
+- **"Branch in new chat" removido**, como a A031 permitia: não tem backend e a
+  tela nunca o ligava. Saíram também "Use Thinking" e "Search the web" do menu
+  "•••" (sobras do mock); a busca volta pela A034 no lugar certo. O menu fica
+  só com **Retry**.
+- **Verificado no emulador** com versões simuladas na conversa de QA (só
+  versões reais nascem de um Retry/Edit bem-sucedido, que depende de plano):
+  os dois seletores, setas desativadas nas pontas e a recusa real do
+  `activate` com o aviso.
+
 ---
 
 ## Pendências em aberto
@@ -412,6 +458,7 @@ Data: 2026-10-22
 | Spec 002: provar o streaming (P003) com uma conta que tenha plano; seguir pela A030 | [tasks 002](../specs/002-auria-real/tasks.md) |
 | Com créditos bloqueados, o aviso de créditos esconde qualquer outro erro; o "Try again" do aviso devolve a pergunta ao composer também depois de um Retry (D-34) | `AuriaScreen` |
 | A lista de conversas da barra lateral só recarrega ao abrir o app (D-34) | `useAuriaChats` |
+| Edição que falha (ex.: 402) perde o texto editado; devolvê-lo ao composer (D-35) | `useQuestionEditing` |
 | Trocar a `internalServiceKey` commitada em `Frontend_Myceo_Example_Authenticator/config.json` | backend |
 | Se a chave RSA do `.env.test` local do backend for usada em algum ambiente real, trocá-la (ela foi exibida por engano numa sessão) | backend |
 | Apagar as worktrees `_wt/mobile-code-login` e `_wt/main-mobile-code` e o SQLite de teste delas | máquina local |

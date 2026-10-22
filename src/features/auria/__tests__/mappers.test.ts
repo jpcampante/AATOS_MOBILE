@@ -1,5 +1,5 @@
 import type { ApiChat, ApiMessage, ApiPage } from '../api/types';
-import { absolutizeUrl, mapApiChat, mapApiMessage, mapApiPage } from '../mappers';
+import { absolutizeUrl, mapApiChat, mapApiMessage, mapApiPage, serverPath } from '../mappers';
 
 const BASE = 'https://pilarone.mydailyceo.com';
 
@@ -171,5 +171,13 @@ describe('absolutizeUrl', () => {
       `${BASE}/auria/chat/attachments/x`,
     );
     expect(absolutizeUrl('http://other.test/a.png', BASE)).toBe('http://other.test/a.png');
+  });
+});
+
+describe('serverPath', () => {
+  it('turns a link to the API host back into the server path, and leaves the rest', () => {
+    expect(serverPath(`${BASE}/auria/chat/attachments/x`, BASE)).toBe('/auria/chat/attachments/x');
+    expect(serverPath('https://cdn.test/a.png', BASE)).toBe('https://cdn.test/a.png');
+    expect(serverPath(`${BASE}.evil.test/a`, BASE)).toBe(`${BASE}.evil.test/a`);
   });
 });

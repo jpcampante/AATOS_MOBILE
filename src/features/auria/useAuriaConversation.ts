@@ -3,12 +3,13 @@ import { isAuriaApiError, networkError } from './api/errors';
 import { auriaHttp, streamChat } from './api/http';
 import { auriaRoutes } from './api/routes';
 import { listMessages, MESSAGE_PAGE_SIZE } from './api/chats';
-import { regenerateMessage } from './api/messages';
+import { activateVersion, editMessage, regenerateMessage, type ReplayOptions } from './api/messages';
 import { canContinueChat, latestPages } from './chatList';
 import { messageWithAttachments } from './attachments';
-import { absolutizeUrl } from './mappers';
+import { absolutizeUrl, serverPath } from './mappers';
 import { AURIA_API_URL } from './api/config';
 import type { AuriaAttachment } from './types';
+import type { ConversationAction } from './conversationReducer';
 import { newClientOperationId, type AuriaMode, type StreamChatRequest } from './api/streamChat';
 import { conversationReducer, initialConversation, visibleMessages } from './conversationReducer';
 import { DEFAULT_MODE, loadMode, saveMode } from './prefs';
@@ -43,6 +44,8 @@ export function useAuriaConversation() {
   const abortRef = useRef<AbortController | null>(null);
 
   const [mode, setModeState] = useState<AuriaMode>(DEFAULT_MODE);
+  /** The message whose version is switching (E21), for the switcher's spinner. */
+  const [switchingVersionOf, setSwitchingVersionOf] = useState<string | null>(null);
   const modeRef = useRef(mode);
   modeRef.current = mode;
 
@@ -136,40 +139,97 @@ export function useAuriaConversation() {
   }, []);
 
   /**
-   * "Retry" an answer (E19): the server writes a new version and keeps the old
-   * one; then the chat is re-read (its active branch). Returns false when it
-   * can't start (an answer is running, or the answer isn't saved yet).
+   * Runs a retry or an edit: the server writes the new version (and keeps the
+   * old one), then the chat is re-read (its active branch). Stopped, or already
+   * being handled: re-read quietly, since the server may still save it.
    */
-  const retry = useCallback((answerId: string): boolean => {
-    const current = stateRef.current;
-    const answer = current.messages.find((m) => m.id === answerId);
-    const chatId = current.chatId;
-    if (current.live || !chatId || !answer?.serverId || answer.role !== 'assistant' || !canContinueChat(current.provider)) {
+  const runReplay = useCallback(
+    (start: Omit<Extract<ConversationAction, { type: 'replay-start' }>, 'type' | 'localId' | 'now' | 'mode'>,
+     request: (options: ReplayOptions) => Promise<unknown>): boolean => {
+      const chatId = stateRef.current.chatId;
+      if (!chatId) return false;
+      const localId = nextTurnId();
+      // The callers check what the reducer checks, so this always starts.
+      dispatch({ type: 'replay-start', localId, now: Date.now(), mode: modeRef.current, ...start });
+      const controller = new AbortController();
+      abortRef.current = controller;
+      const reread = () =>
+        fetchLatest(chatId).then(({ messages, oldestPage }) => dispatch({ type: 'replay-done', localId, chatId, messages, oldestPage }));
+
+      request({ mode: modeRef.current, clientOperationId: newClientOperationId(), signal: controller.signal })
+        .then(reread)
+        .catch((err: unknown) => {
+          const error = isAuriaApiError(err) ? err : networkError(err);
+          if (error.code === 'operation_already_sent' || error.code === 'operation_in_progress' || error.code === 'aborted') {
+            return reread().catch(() => dispatch({ type: 'replay-failed', localId, error: null }));
+          }
+          dispatch({ type: 'replay-failed', localId, error });
+          return undefined;
+        })
+        .finally(() => {
+          if (abortRef.current === controller) abortRef.current = null;
+        });
+      return true;
+    },
+    [],
+  );
+
+  /** "Retry" an answer (E19). Returns false when it can't start (busy, or the answer isn't saved). */
+  const retry = useCallback(
+    (answerId: string): boolean => {
+      const current = stateRef.current;
+      const answer = current.messages.find((m) => m.id === answerId);
+      if (current.live || !answer?.serverId || answer.role !== 'assistant' || !canContinueChat(current.provider)) return false;
+      const uuid = answer.serverId;
+      return runReplay({ from: answerId }, (options) => regenerateMessage(uuid, options));
+    },
+    [runReplay],
+  );
+
+  /**
+   * Edit the person's question (E20) and get a new answer. Its attachments stay:
+   * the server saves the text as is, so their markdown goes with it (like the web).
+   */
+  const edit = useCallback(
+    (questionId: string, text: string): boolean => {
+      const current = stateRef.current;
+      const question = current.messages.find((m) => m.id === questionId);
+      const clean = text.trim();
+      if (current.live || !clean || !question?.serverId || question.role !== 'user' || !canContinueChat(current.provider)) {
+        return false;
+      }
+      const uuid = question.serverId;
+      const files = question.files ?? [];
+      const content = messageWithAttachments(
+        clean,
+        files.map((f) => ({ name: f.name, url: serverPath(f.url, AURIA_API_URL), isImage: f.isImage })),
+      );
+      return runReplay({ from: questionId, question: { text: clean, files } }, (options) => editMessage(uuid, content, options));
+    },
+    [runReplay],
+  );
+
+  /**
+   * Show the previous (-1) or next (1) version of a message: it becomes the
+   * active branch on the server, then the chat is re-read. Resolves false when
+   * it couldn't switch (the screen says so); nothing changes on screen then.
+   */
+  const switchVersion = useCallback(async (messageId: string, direction: -1 | 1): Promise<boolean> => {
+    const { chatId, live, messages } = stateRef.current;
+    const message = messages.find((m) => m.id === messageId);
+    const target = message?.version?.ids[message.version.index - 1 + direction];
+    if (!chatId || live || !target) return false;
+    setSwitchingVersionOf(messageId);
+    try {
+      await activateVersion(target);
+      const { messages: branch, oldestPage } = await fetchLatest(chatId);
+      dispatch({ type: 'branch-loaded', chatId, messages: branch, oldestPage });
+      return true;
+    } catch {
       return false;
+    } finally {
+      setSwitchingVersionOf(null);
     }
-    const localId = nextTurnId();
-    dispatch({ type: 'replay-start', localId, answerId, now: Date.now(), mode: modeRef.current });
-
-    const controller = new AbortController();
-    abortRef.current = controller;
-    const reread = () =>
-      fetchLatest(chatId).then(({ messages, oldestPage }) => dispatch({ type: 'replay-done', localId, chatId, messages, oldestPage }));
-
-    regenerateMessage(answer.serverId, { mode: modeRef.current, clientOperationId: newClientOperationId(), signal: controller.signal })
-      .then(reread)
-      .catch((err: unknown) => {
-        const error = isAuriaApiError(err) ? err : networkError(err);
-        // Already being handled, or stopped here: the server may still save the new version.
-        if (error.code === 'operation_already_sent' || error.code === 'operation_in_progress' || error.code === 'aborted') {
-          return reread().catch(() => dispatch({ type: 'replay-failed', localId, error: null }));
-        }
-        dispatch({ type: 'replay-failed', localId, error });
-        return undefined;
-      })
-      .finally(() => {
-        if (abortRef.current === controller) abortRef.current = null;
-      });
-    return true;
   }, []);
 
   /** Stop the answer being written. What already arrived stays, marked as stopped. */
@@ -240,6 +300,9 @@ export function useAuriaConversation() {
     setMode,
     send,
     retry,
+    edit,
+    switchVersion,
+    switchingVersionOf,
     stop,
     newChat,
     openChat,

@@ -291,8 +291,8 @@ describe('conversationReducer — retry (E19)', () => {
     ]);
 
   it('sets the answer and what follows aside and shows the panel writing the new one', () => {
-    const state = conversationReducer(saved(), { type: 'replay-start', localId: 'r1', answerId: 'a-1', now: 0, mode: 'deep' });
-    expect(state.live?.replacing).toBe('a-1');
+    const state = conversationReducer(saved(), { type: 'replay-start', localId: 'r1', from: 'a-1', now: 0, mode: 'deep' });
+    expect(state.live?.replay?.from).toBe('a-1');
     const shown = visibleMessages(state);
     expect(shown.map((m) => m.id)).toEqual(['u-1', 'r1-a']);
     expect(shown[1]).toMatchObject({
@@ -302,7 +302,7 @@ describe('conversationReducer — retry (E19)', () => {
   });
 
   it('takes the server copy when the new version is saved', () => {
-    const replaying = conversationReducer(saved(), { type: 'replay-start', localId: 'r1', answerId: 'a-2', now: 0 });
+    const replaying = conversationReducer(saved(), { type: 'replay-start', localId: 'r1', from: 'a-2', now: 0 });
     const done = conversationReducer(replaying, {
       type: 'replay-done',
       localId: 'r1',
@@ -319,7 +319,7 @@ describe('conversationReducer — retry (E19)', () => {
 
   it('brings the old answer back, with the reason, when it fails', () => {
     const error = new AuriaApiError({ status: 402, code: 'insufficient_units' });
-    const replaying = conversationReducer(saved(), { type: 'replay-start', localId: 'r1', answerId: 'a-2', now: 0 });
+    const replaying = conversationReducer(saved(), { type: 'replay-start', localId: 'r1', from: 'a-2', now: 0 });
     const failed = conversationReducer(replaying, { type: 'replay-failed', localId: 'r1', error });
     expect(failed.live).toBeNull();
     expect(failed.error).toBe(error);
@@ -328,15 +328,85 @@ describe('conversationReducer — retry (E19)', () => {
 
   it('only retries a saved answer, one turn at a time', () => {
     const state = saved();
-    expect(conversationReducer(state, { type: 'replay-start', localId: 'r1', answerId: 'u-1', now: 0 })).toBe(state);
-    expect(conversationReducer(state, { type: 'replay-start', localId: 'r1', answerId: 'nope', now: 0 })).toBe(state);
-    const busy = conversationReducer(state, { type: 'replay-start', localId: 'r1', answerId: 'a-1', now: 0 });
-    expect(conversationReducer(busy, { type: 'replay-start', localId: 'r2', answerId: 'a-2', now: 0 })).toBe(busy);
+    expect(conversationReducer(state, { type: 'replay-start', localId: 'r1', from: 'u-1', now: 0 })).toBe(state);
+    expect(conversationReducer(state, { type: 'replay-start', localId: 'r1', from: 'nope', now: 0 })).toBe(state);
+    const busy = conversationReducer(state, { type: 'replay-start', localId: 'r1', from: 'a-1', now: 0 });
+    expect(conversationReducer(busy, { type: 'replay-start', localId: 'r2', from: 'a-2', now: 0 })).toBe(busy);
     expect(conversationReducer(busy, { type: 'send', localId: 't9', text: 'hi', now: 0 })).toBe(busy);
   });
 
   it('ignores the end of a stale retry', () => {
-    const replaying = conversationReducer(saved(), { type: 'replay-start', localId: 'r1', answerId: 'a-1', now: 0 });
+    const replaying = conversationReducer(saved(), { type: 'replay-start', localId: 'r1', from: 'a-1', now: 0 });
     expect(conversationReducer(replaying, { type: 'replay-failed', localId: 'old', error: null })).toBe(replaying);
+  });
+});
+
+describe('conversationReducer — edit (E20)', () => {
+  const photo = { id: 'p-1', name: 'a.png', url: 'https://api.test/auria/chat/attachments/p-1', isImage: true, private: true };
+  const saved = (): ConversationState =>
+    apply([
+      { type: 'open', chatId: 'c-1', provider: 'auria_system' },
+      {
+        type: 'history-loaded',
+        chatId: 'c-1',
+        oldestPage: 1,
+        messages: [
+          { id: 'u-1', serverId: 'u-1', role: 'user', text: 'What are my tasks?', files: [photo] },
+          { id: 'a-1', serverId: 'a-1', role: 'assistant', text: 'Three tasks.' },
+          { id: 'u-2', serverId: 'u-2', role: 'user', text: 'And tomorrow?' },
+          { id: 'a-2', serverId: 'a-2', role: 'assistant', text: 'Two.' },
+        ],
+      },
+    ]);
+
+  it('shows the edited question, with its attachments, and the panel in place of the old turn', () => {
+    const state = conversationReducer(saved(), {
+      type: 'replay-start',
+      localId: 'e1',
+      from: 'u-1',
+      now: 0,
+      question: { text: '  What are my tasks this week?  ', files: [photo] },
+    });
+    const shown = visibleMessages(state);
+    expect(shown.map((m) => m.id)).toEqual(['e1-u', 'e1-a']);
+    expect(shown[0]).toEqual({ id: 'e1-u', role: 'user', text: 'What are my tasks this week?', files: [photo] });
+    expect(shown[1].work).toMatchObject({ title: 'What are my tasks this week?', status: 'writing' });
+  });
+
+  it('brings the original question back when it fails', () => {
+    const editing = conversationReducer(saved(), { type: 'replay-start', localId: 'e1', from: 'u-2', now: 0, question: { text: 'And Friday?' } });
+    const failed = conversationReducer(editing, { type: 'replay-failed', localId: 'e1', error: null });
+    expect(visibleMessages(failed).map((m) => m.text)).toEqual(['What are my tasks?', 'Three tasks.', 'And tomorrow?', 'Two.']);
+  });
+
+  it('only edits a saved question, and never to an empty text', () => {
+    const state = saved();
+    expect(conversationReducer(state, { type: 'replay-start', localId: 'e1', from: 'a-1', now: 0, question: { text: 'x' } })).toBe(state);
+    expect(conversationReducer(state, { type: 'replay-start', localId: 'e1', from: 'u-1', now: 0, question: { text: '   ' } })).toBe(state);
+  });
+});
+
+describe('conversationReducer — versions (E21)', () => {
+  const opened = apply([
+    { type: 'open', chatId: 'c-1', provider: 'auria_system' },
+    { type: 'history-loaded', chatId: 'c-1', oldestPage: 1, messages: [{ id: 'a-2', serverId: 'a-2', role: 'assistant', text: 'B' }] },
+  ]);
+
+  it('shows the branch the server made active', () => {
+    const state = conversationReducer(opened, {
+      type: 'branch-loaded',
+      chatId: 'c-1',
+      oldestPage: 2,
+      messages: [{ id: 'a-1', serverId: 'a-1', role: 'assistant', text: 'A' }],
+    });
+    expect(state.messages.map((m) => m.text)).toEqual(['A']);
+    expect(state.history.hasEarlier).toBe(true);
+  });
+
+  it('ignores a branch of another chat or during a turn', () => {
+    const other = conversationReducer(opened, { type: 'branch-loaded', chatId: 'c-9', oldestPage: 1, messages: [] });
+    expect(other).toBe(opened);
+    const busy = conversationReducer(opened, { type: 'send', localId: 't1', text: 'hi', now: 0 });
+    expect(conversationReducer(busy, { type: 'branch-loaded', chatId: 'c-1', oldestPage: 1, messages: [] })).toBe(busy);
   });
 });

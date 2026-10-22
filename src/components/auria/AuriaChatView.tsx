@@ -3,17 +3,9 @@ import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View
 import { AURIA_CHAT_SCROLL_END_PADDING, AURIA_CONTENT_HORIZONTAL_INSET } from './auriaLayout';
 import { auriaTypography, liquidGlassBorder, liquidGlassTokens, useTheme } from '../../theme';
 import type { AuriaChatMessage } from '../../features/auria/types';
-import { savedThinking } from '../../features/auria/thinking';
-import { AuriaDocumentArtifact } from './AuriaDocumentArtifact';
-import { AuriaImageArtifact } from './AuriaImageArtifact';
-import { AuriaMarkdown } from './AuriaMarkdown';
+import { AuriaAssistantContent } from './AuriaAssistantContent';
 import { AuriaMessageFiles } from './AuriaMessageFiles';
-import { AuriaMessageActions } from './AuriaMessageActions';
-import { AuriaReasoningBlock } from './AuriaReasoningBlock';
-import { AuriaSourceChips } from './AuriaSourceChips';
-import { AuriaThinkingDisclosure } from './AuriaThinkingDisclosure';
-import { AuriaTypingCursor } from './AuriaTypingCursor';
-import { AuriaWorkPanel } from './work/AuriaWorkPanel';
+import { AuriaVersionSwitcher } from './AuriaVersionSwitcher';
 
 type AuriaChatViewProps = {
   messages: AuriaChatMessage[];
@@ -21,10 +13,14 @@ type AuriaChatViewProps = {
   onOpenFiles?: () => void;
   /** Model label shown in a reply's "•••" menu (e.g. "Used Opus 4.8"). */
   modelLabel?: string;
-  /** Starts a new chat from a reply ("Branch in new chat"). */
-  onBranch?: () => void;
   /** "Retry": a new version of a saved answer (E19). */
   onRetry?: (messageId: string) => void;
+  /** Show another version of a message (`< 2/3 >`, E21). */
+  onSwitchVersion?: (messageId: string, direction: -1 | 1) => void;
+  /** The message whose version is switching right now. */
+  switchingVersionOf?: string | null;
+  /** Long press on one of the person's messages (copy, edit). */
+  onQuestionLongPress?: (message: AuriaChatMessage) => void;
   /** Transient feedback from a message action (copied, reading aloud, …). */
   onActionFeedback?: (message: string) => void;
   /** Loading state of a saved chat's history. */
@@ -83,14 +79,26 @@ export function AuriaChatView({
   messages,
   onOpenFiles,
   modelLabel,
-  onBranch,
   onRetry,
+  onSwitchVersion,
+  switchingVersionOf = null,
+  onQuestionLongPress,
   onActionFeedback,
   history,
   onLoadEarlier,
   onRetryHistory,
 }: AuriaChatViewProps) {
   const { ds, theme } = useTheme();
+  /** `< 2/3 >` for a message with other versions (retried answers, edited questions). */
+  const versionSwitcher = (message: AuriaChatMessage) =>
+    message.version && message.version.count > 1 ? (
+      <AuriaVersionSwitcher
+        index={message.version.index}
+        count={message.version.count}
+        onSwitch={onSwitchVersion && message.serverId ? (direction) => onSwitchVersion(message.id, direction) : undefined}
+        busy={switchingVersionOf === message.id}
+      />
+    ) : null;
   const styles = useMemo(() => createStyles(ds, theme), [ds, theme]);
   const scrollRef = useRef<ScrollView>(null);
 
@@ -189,7 +197,18 @@ export function AuriaChatView({
               <AuriaMessageFiles files={message.files} onOpenFailed={onActionFeedback} />
             ) : null}
 
-            {hasBubbleContent ? (
+            {hasBubbleContent && isUser && onQuestionLongPress ? (
+              <Pressable
+                onLongPress={() => onQuestionLongPress(message)}
+                delayLongPress={350}
+                style={({ pressed }) => [styles.bubble, styles.bubbleUser, pressed && styles.bubblePressed]}
+                accessibilityHint="Double tap and hold for options"
+                accessibilityActions={[{ name: 'longpress', label: 'Options' }]}
+                onAccessibilityAction={(e) => e.nativeEvent.actionName === 'longpress' && onQuestionLongPress(message)}
+              >
+                <Text style={[styles.text, styles.textUser]}>{message.text}</Text>
+              </Pressable>
+            ) : hasBubbleContent ? (
               <View
                 style={[
                   styles.bubble,
@@ -202,89 +221,22 @@ export function AuriaChatView({
                     <Text style={[styles.text, styles.textUser]}>{message.text}</Text>
                   ) : null
                 ) : (
-                  <AssistantBubbleContent
+                  <AuriaAssistantContent
                     message={message}
-                    styles={styles}
-                    cursorColor={ds.gray500}
                     onOpenFiles={onOpenFiles}
                     modelLabel={modelLabel}
-                    onBranch={onBranch}
+                    versionSwitcher={versionSwitcher(message)}
                     onRetry={onRetry}
                     onActionFeedback={onActionFeedback}
                   />
                 )}
               </View>
             ) : null}
+            {isUser ? versionSwitcher(message) : null}
           </View>
         );
       })}
     </ScrollView>
-  );
-}
-
-/**
- * Renders an assistant reply across every response mode (text, reasoning,
- * sources, document/image artifacts). The live answer grows as the stream
- * arrives, with a cursor; sources, artifacts and actions show once it settles.
- */
-function AssistantBubbleContent({
-  message,
-  styles,
-  cursorColor,
-  onOpenFiles,
-  modelLabel,
-  onBranch,
-  onRetry,
-  onActionFeedback,
-}: {
-  message: AuriaChatMessage;
-  styles: ReturnType<typeof createStyles>;
-  cursorColor: string;
-  onOpenFiles?: () => void;
-  modelLabel?: string;
-  onBranch?: () => void;
-  onRetry?: (messageId: string) => void;
-  onActionFeedback?: (message: string) => void;
-}) {
-  const live = !!message.live;
-  // Hold the trailing content back until the answer is settled.
-  const revealRest = !live;
-  const thinking = savedThinking(message);
-
-  return (
-    <>
-      {/* What the Auria is doing / did in this turn ("Working for 6s" → "Reasoned for 8 seconds"). */}
-      {message.work ? <AuriaWorkPanel run={message.work} /> : null}
-      {/* Saved reasoning: answers from the history, or a turn that stopped midway. */}
-      {thinking ? <AuriaThinkingDisclosure text={thinking} /> : null}
-      {message.reasoning ? (
-        <AuriaReasoningBlock reasoning={message.reasoning} onOpenFiles={onOpenFiles} />
-      ) : null}
-      {message.text ? <AuriaMarkdown text={message.text} live={live} /> : null}
-      {live && message.text ? <AuriaTypingCursor color={cursorColor} style={styles.text} /> : null}
-      {message.status ? (
-        <Text style={styles.statusNote}>{message.status === 'stopped' ? 'Stopped' : 'Interrupted'}</Text>
-      ) : null}
-      {revealRest && message.sources && message.sources.length > 0 ? (
-        <AuriaSourceChips sources={message.sources} onOpenFiles={onOpenFiles} />
-      ) : null}
-      {revealRest && message.artifact?.kind === 'document' ? (
-        <AuriaDocumentArtifact artifact={message.artifact} />
-      ) : null}
-      {revealRest && message.artifact?.kind === 'image' ? (
-        <AuriaImageArtifact artifact={message.artifact} />
-      ) : null}
-      {revealRest && message.text ? (
-        <AuriaMessageActions
-          text={message.text}
-          modelLabel={modelLabel}
-          onBranch={onBranch}
-          // Only a saved answer has a version to replace.
-          onRetry={onRetry && message.serverId ? () => onRetry(message.id) : undefined}
-          onFeedback={onActionFeedback}
-        />
-      ) : null}
-    </>
   );
 }
 
@@ -379,6 +331,9 @@ function createStyles(
       paddingHorizontal: 16,
       borderRadius: 22,
     },
+    bubblePressed: {
+      opacity: 0.8,
+    },
     historyButtonPressed: {
       backgroundColor: ds.gray100,
     },
@@ -395,11 +350,6 @@ function createStyles(
     historyAction: {
       color: ds.auriaBlue,
       fontWeight: theme.typography.fontWeight.semibold,
-    },
-    statusNote: {
-      ...auriaTypography.body,
-      color: ds.gray500,
-      fontSize: 12,
     },
   });
 }

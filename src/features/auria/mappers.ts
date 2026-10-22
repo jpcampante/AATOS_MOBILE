@@ -13,6 +13,11 @@ export function absolutizeUrl(url: string, baseUrl: string): string {
   return `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
 }
 
+/** The inverse of `absolutizeUrl` for the API host: `https://api/auria/…` → `/auria/…` (how the web stores links). */
+export function serverPath(url: string, baseUrl: string): string {
+  return url.startsWith(`${baseUrl}/`) ? url.slice(baseUrl.length) : url;
+}
+
 const IMAGE_EXT = /\.(png|jpe?g|gif|webp|heic|heif|bmp)$/i;
 const ATTACHMENT_PATH = /\/auria\/(?:chat|canvas\/[^/]+)\/attachments\/([0-9a-f-]{8,})/i;
 

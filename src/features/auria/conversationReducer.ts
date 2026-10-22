@@ -22,13 +22,17 @@ export type ConversationState = {
   messages: AuriaChatMessage[];
   /**
    * One answer at a time. `localId` ties stream events to the turn that started them.
-   * `replacing`: a retry is writing a new version of this answer (it and what follows step aside).
+   * A retry or an edit (`replay`) sets aside the message `from` and what follows,
+   * showing the edited question (if any) and the answer being written instead.
    */
-  live: { localId: string; run: AuriaRun; replacing?: string } | null;
+  live: { localId: string; run: AuriaRun; replay?: Replay } | null;
   /** Why the last answer failed, for the notice above the composer. */
   error: AuriaApiError | null;
   history: HistoryState;
 };
+
+/** What a retry or an edit puts on screen while the server writes. */
+type Replay = { from: string; question?: AuriaChatMessage };
 
 export type ConversationAction =
   | { type: 'new-chat' }
@@ -44,11 +48,23 @@ export type ConversationAction =
   | { type: 'run'; localId: string; action: AuriaRunAction }
   /** The turn ended (finished, stopped or failed): the live answer becomes a message. */
   | { type: 'settle'; localId: string }
-  /** Retry (E19): a new version of `answerId` is being written on the server. */
-  | { type: 'replay-start'; localId: string; answerId: string; now: number; mode?: AuriaMode }
+  /**
+   * The server is writing a new version: of the answer `from` (retry, E19), or of the
+   * question `from` with its new text (edit, E20, `question` given).
+   */
+  | {
+      type: 'replay-start';
+      localId: string;
+      from: string;
+      now: number;
+      mode?: AuriaMode;
+      question?: { text: string; files?: AuriaAttachment[] };
+    }
   /** The new version is saved: the chat as the server has it now (its active branch). */
   | { type: 'replay-done'; localId: string; chatId: string; messages: AuriaChatMessage[]; oldestPage: number }
-  /** The retry didn't happen: the old answer comes back, with the reason (or none when stopped). */
+  /** Another version became active (E21): the chat as the server has it now. Ignored during a turn. */
+  | { type: 'branch-loaded'; chatId: string; messages: AuriaChatMessage[]; oldestPage: number }
+  /** It didn't happen: the old messages come back, with the reason (or none when stopped). */
   | { type: 'replay-failed'; localId: string; error: AuriaApiError | null }
   | { type: 'clear-error' };
 
@@ -179,14 +195,23 @@ export function conversationReducer(state: ConversationState, action: Conversati
 
     case 'replay-start': {
       if (state.live || !state.chatId) return state;
-      const at = state.messages.findIndex((m) => m.id === action.answerId);
-      const answer = state.messages[at];
-      if (!answer || answer.role !== 'assistant' || !answer.serverId) return state;
-      const question = [...state.messages.slice(0, at)].reverse().find((m) => m.role === 'user');
-      const run = createRun(action.now, state.chatId, { prompt: question?.text ?? '', mode: action.mode ?? 'fast' });
+      const at = state.messages.findIndex((m) => m.id === action.from);
+      const target = state.messages[at];
+      // A retry starts from a saved answer; an edit from a saved question with non-empty new text.
+      const editing = action.question !== undefined;
+      if (!target?.serverId || target.role !== (editing ? 'user' : 'assistant')) return state;
+      if (editing && !action.question?.text.trim()) return state;
+
+      let question: AuriaChatMessage | undefined;
+      if (action.question) {
+        question = { id: `${action.localId}-u`, role: 'user', text: action.question.text.trim() };
+        if (action.question.files?.length) question.files = action.question.files;
+      }
+      const prompt = question?.text ?? [...state.messages.slice(0, at)].reverse().find((m) => m.role === 'user')?.text ?? '';
+      const run = createRun(action.now, state.chatId, { prompt, mode: action.mode ?? 'fast' });
       // No stream comes back: the server is writing the answer, and the panel says just that.
       run.work = applyWorkEvent(run.work, { type: 'answer' });
-      return { ...state, error: null, live: { localId: action.localId, run, replacing: action.answerId } };
+      return { ...state, error: null, live: { localId: action.localId, run, replay: { from: action.from, question } } };
     }
 
     case 'replay-done':
@@ -202,6 +227,14 @@ export function conversationReducer(state: ConversationState, action: Conversati
       if (state.live?.localId !== action.localId) return state;
       return { ...state, live: null, error: action.error };
 
+    case 'branch-loaded':
+      if (state.chatId !== action.chatId || state.live) return state;
+      return {
+        ...state,
+        messages: action.messages,
+        history: { loading: false, oldestPage: action.oldestPage, hasEarlier: action.oldestPage > 1, error: null },
+      };
+
     case 'clear-error':
       return state.error ? { ...state, error: null } : state;
   }
@@ -210,8 +243,9 @@ export function conversationReducer(state: ConversationState, action: Conversati
 /** Saved messages plus the live answer, in the order the chat shows them. */
 export function visibleMessages(state: ConversationState): AuriaChatMessage[] {
   if (!state.live) return state.messages;
-  const { localId, run, replacing } = state.live;
-  const at = replacing ? state.messages.findIndex((m) => m.id === replacing) : -1;
+  const { localId, run, replay } = state.live;
+  const at = replay ? state.messages.findIndex((m) => m.id === replay.from) : -1;
   const kept = at >= 0 ? state.messages.slice(0, at) : state.messages;
-  return [...kept, { id: `${localId}-a`, role: 'assistant', text: run.text, live: true, work: run.work }];
+  const question = replay?.question ? [replay.question] : [];
+  return [...kept, ...question, { id: `${localId}-a`, role: 'assistant', text: run.text, live: true, work: run.work }];
 }

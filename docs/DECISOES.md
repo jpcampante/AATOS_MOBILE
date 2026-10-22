@@ -423,7 +423,7 @@ Data: 2026-10-22
   o "+" do composer sem ação aparece desativado, não morto.
 - **Testes:** o helper de teste passou a incluir o `SafeAreaProvider`.
 - **Verificado no emulador** contra o backend real com a conversa "App QA —
-  edit test" (**apagar pelo app**): folha Copy/Edit, faixa de edição, composer
+  edit test" (já apagada): folha Copy/Edit, faixa de edição, composer
   preenchido, "+" desativado, Cancel, e a recusa real `402 no_active_plan` com
   a pergunta e a resposta originais de volta; menu da barra lateral igual.
 - **Notado:** se a edição falha, o texto editado se perde (a web faz igual);
@@ -459,7 +459,6 @@ Data: 2026-10-22
 | Com créditos bloqueados, o aviso de créditos esconde qualquer outro erro; o "Try again" do aviso devolve a pergunta ao composer também depois de um Retry (D-34) | `AuriaScreen` |
 | A lista de conversas da barra lateral só recarrega ao abrir o app (D-34) | `useAuriaChats` |
 | Edição que falha (ex.: 402) perde o texto editado; devolvê-lo ao composer (D-35) | `useQuestionEditing` |
-| Apagar a conversa de QA "App QA — edit test" (D-35) | app |
 | Trocar a `internalServiceKey` commitada em `Frontend_Myceo_Example_Authenticator/config.json` | backend |
 | Se a chave RSA do `.env.test` local do backend for usada em algum ambiente real, trocá-la (ela foi exibida por engano numa sessão) | backend |
 | Apagar as worktrees `_wt/mobile-code-login` e `_wt/main-mobile-code` e o SQLite de teste delas | máquina local |

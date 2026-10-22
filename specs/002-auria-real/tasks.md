@@ -186,7 +186,7 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
 - [x] A031 Alternar versões `< 2/3 >` com `activate`; ligar o "Branch" atual a isso ou removê-lo — E21 — RF-14. `AuriaVersionSwitcher` sob a pergunta editada e no início da linha de ações da resposta; troca → `activate` e releitura (`branch-loaded`), falha → aviso curto. O "Branch in new chat" (sem backend) foi **removido**, junto com "Use Thinking" e "Search the web" do menu do mock
 - [ ] A032 [P] Curtir resposta — E22 — RF-14
 
-**Checkpoint (emulador):** H6.1–H6.4. **H6.1 e H6.2 parciais em 2026-10-22:** Retry e Edit contra o backend real até a recusa 402 (D-34, D-35); a resposta nova depende de plano (P003). **H6.3 parcial:** seletor de versões visto com versões simuladas e recusa real do `activate` (D-36); trocar entre versões reais depende de criar uma (P003). Conversas de QA: "App QA — retry test" apagada; "App QA — edit test" a apagar.
+**Checkpoint (emulador):** H6.1–H6.4. **H6.1 e H6.2 parciais em 2026-10-22:** Retry e Edit contra o backend real até a recusa 402 (D-34, D-35); a resposta nova depende de plano (P003). **H6.3 parcial:** seletor de versões visto com versões simuladas e recusa real do `activate` (D-36); trocar entre versões reais depende de criar uma (P003). Conversas de QA ("App QA — retry test" e "App QA — edit test") apagadas.
 
 ## Fase 8 — História 7: Busca na web e fontes (P2)
 

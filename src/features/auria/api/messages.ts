@@ -59,3 +59,9 @@ export async function editMessage(
 export async function activateVersion(messageUuid: string, signal?: AbortSignal): Promise<void> {
   await auriaHttp.post(auriaRoutes.activateVersion(messageUuid), undefined, { signal });
 }
+
+/** Like or unlike an answer (E22). Sends the value (not a toggle) and returns what the server saved. */
+export async function setLiked(messageUuid: string, liked: boolean): Promise<boolean> {
+  const saved = await auriaHttp.post<{ uuid: string; liked: boolean }>(auriaRoutes.likeMessage(messageUuid), { liked });
+  return saved.liked;
+}

@@ -18,6 +18,8 @@ type AuriaAssistantContentProps = {
   onOpenFiles?: () => void;
   modelLabel?: string;
   onRetry?: (messageId: string) => void;
+  /** Like / unlike a saved answer (E22). */
+  onToggleLike?: (messageId: string) => void;
   /** The version switcher `< 2/3 >`, drawn at the start of the actions row. */
   versionSwitcher?: ReactNode;
   onActionFeedback?: (message: string) => void;
@@ -33,6 +35,7 @@ export function AuriaAssistantContent({
   onOpenFiles,
   modelLabel,
   onRetry,
+  onToggleLike,
   versionSwitcher,
   onActionFeedback,
 }: AuriaAssistantContentProps) {
@@ -66,6 +69,8 @@ export function AuriaAssistantContent({
           leading={versionSwitcher}
           // Only a saved answer has a version to replace.
           onRetry={onRetry && message.serverId ? () => onRetry(message.id) : undefined}
+          liked={!!message.liked}
+          onToggleLike={onToggleLike && message.serverId ? () => onToggleLike(message.id) : undefined}
           onFeedback={onActionFeedback}
         />
       ) : null}

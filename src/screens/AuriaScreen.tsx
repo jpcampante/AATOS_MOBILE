@@ -599,6 +599,11 @@ export function AuriaScreen({
                 })
         }
         switchingVersionOf={conversation.switchingVersionOf}
+        onToggleLike={(id) =>
+          void conversation.toggleLike(id).then((ok) => {
+            if (!ok) showToast("Couldn't save your like.");
+          })
+        }
         history={{
           loading: conversation.history.loading,
           hasEarlier: conversation.history.hasEarlier,

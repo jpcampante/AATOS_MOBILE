@@ -21,6 +21,10 @@ type AuriaMessageActionsProps = {
   /** Model label shown in the menu footer (e.g. "Used Opus 4.8"). */
   modelLabel?: string;
   onRetry?: () => void;
+  /** The answer is liked (E22). */
+  liked?: boolean;
+  /** Like / unlike. Without it there is no thumb (an answer not saved yet). */
+  onToggleLike?: () => void;
   /** Drawn first in the row (the version switcher `< 2/3 >`). */
   leading?: ReactNode;
   /** Transient feedback ("Copied", "Speaking…") surfaced as a toast. */
@@ -45,6 +49,8 @@ export function AuriaMessageActions({
   text,
   modelLabel = 'Used Auria',
   onRetry,
+  liked = false,
+  onToggleLike,
   leading,
   onFeedback,
 }: AuriaMessageActionsProps) {
@@ -141,6 +147,16 @@ export function AuriaMessageActions({
           color={speaking ? ds.auriaBlue : ds.gray600}
         />
         <ActionButton icon="upload" label="Share" onPress={share} styles={styles} color={ds.gray600} />
+        {onToggleLike ? (
+          <ActionButton
+            icon="thumbUp"
+            label={liked ? 'Remove like' : 'Like'}
+            onPress={onToggleLike}
+            styles={styles}
+            color={liked ? ds.auriaBlue : ds.gray600}
+            selected={liked}
+          />
+        ) : null}
         {menuItems.length > 0 ? (
           <ActionButton
             icon="moreHorizontal"
@@ -190,12 +206,15 @@ function ActionButton({
   onPress,
   styles,
   color,
+  selected,
 }: {
   icon: AuriaIconName;
   label: string;
   onPress: () => void;
   styles: ReturnType<typeof createStyles>;
   color: string;
+  /** A toggle that is on (e.g. liked). */
+  selected?: boolean;
 }) {
   return (
     <Pressable
@@ -203,6 +222,7 @@ function ActionButton({
       hitSlop={8}
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityState={selected === undefined ? undefined : { selected }}
       style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}
     >
       <AuriaIcon name={icon} size={AURIA_ICON_SIZE.sm} color={color} strokeWidth={1.8} />

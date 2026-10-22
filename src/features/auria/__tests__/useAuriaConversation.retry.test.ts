@@ -6,7 +6,7 @@ import type { AuriaChatMessage } from '../types';
 import { useAuriaConversation } from '../useAuriaConversation';
 
 jest.mock('../api/http', () => ({ auriaHttp: { patch: jest.fn() }, streamChat: jest.fn() }));
-jest.mock('../api/messages', () => ({ regenerateMessage: jest.fn() }));
+jest.mock('../api/messages', () => ({ regenerateMessage: jest.fn(), editMessage: jest.fn() }));
 jest.mock('../api/chats', () => ({ listMessages: jest.fn(), MESSAGE_PAGE_SIZE: 20 }));
 jest.mock('../prefs', () => ({ DEFAULT_MODE: 'fast', loadMode: jest.fn(async () => 'deep'), saveMode: jest.fn() }));
 

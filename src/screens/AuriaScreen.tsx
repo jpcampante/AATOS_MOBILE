@@ -52,6 +52,10 @@ import type { SendOptions } from '../features/auria/useAuriaConversation';
 import { creditsMessage, resetHint } from '../features/auria/credits';
 import type { AuriaConversation } from '../features/auria/types';
 import { AuriaConversationMenu } from '../components/auria/AuriaConversationMenu';
+import { AuriaEditingBanner } from '../components/auria/AuriaEditingBanner';
+import { AuriaQuestionMenu } from '../components/auria/AuriaQuestionMenu';
+import { useQuestionEditing } from '../features/auria/useQuestionEditing';
+import * as Clipboard from 'expo-clipboard';
 import { AuriaReadOnlyNotice } from '../components/auria/AuriaReadOnlyNotice';
 import { AuriaErrorNotice } from '../components/auria/AuriaErrorNotice';
 
@@ -242,6 +246,20 @@ export function AuriaScreen({
     }
     conversation.retry(answerId);
   };
+
+  // Long press on a question: copy it, or edit it in the composer (E20, same credits rule).
+  const questions = useQuestionEditing({
+    saveEdit: (questionId, text) => {
+      if (credits.blocked) {
+        void credits.check();
+        return false;
+      }
+      return conversation.edit(questionId, text);
+    },
+    setComposerText: workspace.setComposerText,
+  });
+  // Another chat (or a new one): the edit belonged to the old one.
+  useEffect(() => questions.cancel(), [conversation.chatId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Deep link with a prompt: seed the composer once, then clear it.
   useEffect(() => {
@@ -441,6 +459,10 @@ export function AuriaScreen({
 
   const handleSend = () => {
     const text = workspace.composerText.trim();
+    if (questions.editing) {
+      if (questions.submit(text)) dismissKeyboard();
+      return;
+    }
     if (imageMode) {
       if (!text) return;
       if (!sendToAuria(`Create an image with aspect ratio ${imageRatio}. Image brief: ${text}`)) return;
@@ -566,6 +588,7 @@ export function AuriaScreen({
         modelLabel={`Auria · ${auriaModeLabel(conversation.mode)}`}
         onActionFeedback={showToast}
         onRetry={conversation.canContinue ? retryAnswer : undefined}
+        onQuestionLongPress={questions.openMenu}
         history={{
           loading: conversation.history.loading,
           hasEarlier: conversation.history.hasEarlier,
@@ -597,6 +620,16 @@ export function AuriaScreen({
         hasMoreConversations={chats.hasMore}
         onLoadMoreConversations={chats.loadMore}
         onConversationMenu={setMenuChat}
+      />
+
+      <AuriaQuestionMenu
+        message={questions.menuFor}
+        onClose={questions.closeMenu}
+        onCopy={(message) => {
+          void Clipboard.setStringAsync(message.text);
+          showToast('Copied');
+        }}
+        onEdit={conversation.canContinue && !conversation.isBusy ? questions.start : undefined}
       />
 
       <AuriaConversationMenu
@@ -667,6 +700,9 @@ export function AuriaScreen({
                   <AuriaPromptSuggestions onSelect={handleSuggestion} />
                 ) : null}
                 {renderErrorNotice()}
+                {questions.editing ? (
+                  <AuriaEditingBanner original={questions.editing.text} onCancel={questions.cancel} />
+                ) : null}
                 {!conversation.canContinue ? (
                   <AuriaReadOnlyNotice
                     origin={providerLabel(conversation.provider) ?? 'another app'}
@@ -680,7 +716,8 @@ export function AuriaScreen({
                   onChangeText={workspace.setComposerText}
                   onSend={handleSend}
                   onStop={conversation.stop}
-                  onAttach={openCreateMenu}
+                  // An edit keeps the question's attachments; new ones go in a new message.
+                  onAttach={questions.editing ? undefined : openCreateMenu}
                   bottomInset={keyboardInset}
                   isResponding={conversation.isBusy}
                   selectedModelName={auriaModeLabel(conversation.mode)}

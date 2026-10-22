@@ -33,3 +33,24 @@ export async function regenerateMessage(messageUuid: string, options: ReplayOpti
   });
   return mapApiMessage(saved, AURIA_API_URL);
 }
+
+/**
+ * Edit the person's message (E20): the server answers the new text in a new
+ * branch (the old version stays) and returns both messages once written.
+ * `content` is saved as is, so it must carry the attachments' markdown.
+ */
+export async function editMessage(
+  messageUuid: string,
+  content: string,
+  options: ReplayOptions,
+): Promise<{ question: AuriaChatMessage | null; answer: AuriaChatMessage | null }> {
+  const saved = await auriaHttp.patch<{ user_message: ApiMessage; assistant_message: ApiMessage }>(
+    auriaRoutes.editMessage(messageUuid),
+    { content, ...replayBody(options) },
+    { signal: options.signal, timeoutMs: AURIA_REPLAY_TIMEOUT_MS },
+  );
+  return {
+    question: mapApiMessage(saved.user_message, AURIA_API_URL),
+    answer: mapApiMessage(saved.assistant_message, AURIA_API_URL),
+  };
+}

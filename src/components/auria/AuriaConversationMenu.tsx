@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { auriaTypography, myceoCornerStyle, useTheme } from '../../theme';
-import { AuriaIcon, AURIA_ICON_SIZE, type AuriaIconName } from '../icons';
-import { AURIA_SCRIM } from './auriaLayout';
+import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { auriaTypography, useTheme } from '../../theme';
 import type { AuriaConversation } from '../../features/auria/types';
+import { AuriaActionSheet } from './AuriaActionSheet';
 
 type AuriaConversationMenuProps = {
   conversation: AuriaConversation | null;
@@ -17,8 +15,7 @@ type AuriaConversationMenuProps = {
 /** Long-press sheet for a sidebar conversation: rename, pin/unpin, delete (with confirmation). */
 export function AuriaConversationMenu({ conversation, onClose, onRename, onSetPinned, onDelete }: AuriaConversationMenuProps) {
   const { theme, ds } = useTheme();
-  const safe = useSafeAreaInsets();
-  const styles = useMemo(() => createStyles(theme, safe.bottom), [theme, safe.bottom]);
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const [renaming, setRenaming] = useState(false);
   const [title, setTitle] = useState('');
 
@@ -50,152 +47,61 @@ export function AuriaConversationMenu({ conversation, onClose, onRename, onSetPi
   };
 
   return (
-    <Modal visible transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <Pressable style={styles.backdrop} onPress={onClose} accessibilityRole="button" accessibilityLabel="Close" />
-        <View style={styles.sheet}>
-          <View style={styles.grabber} />
-          <Text style={styles.title} numberOfLines={2} accessibilityRole="header">
-            {conversation.title}
-          </Text>
-
-          {renaming ? (
-            <View style={styles.renameBox}>
-              <TextInput
-                value={title}
-                onChangeText={setTitle}
-                autoFocus
-                maxLength={120}
-                returnKeyType="done"
-                onSubmitEditing={saveTitle}
-                style={styles.input}
-                placeholder="Chat name"
-                placeholderTextColor={ds.gray400}
-                accessibilityLabel="Chat name"
-              />
-              <View style={styles.renameActions}>
-                <Pressable
-                  onPress={() => setRenaming(false)}
-                  style={({ pressed }) => [styles.textButton, pressed && styles.pressed]}
-                  accessibilityRole="button"
-                >
-                  <Text style={styles.textButtonLabel}>Cancel</Text>
-                </Pressable>
-                <Pressable
-                  onPress={saveTitle}
-                  disabled={!title.trim()}
-                  style={({ pressed }) => [styles.textButton, pressed && styles.pressed]}
-                  accessibilityRole="button"
-                >
-                  <Text style={[styles.textButtonLabel, styles.textButtonPrimary]}>Save</Text>
-                </Pressable>
-              </View>
-            </View>
-          ) : (
-            <View style={styles.card}>
-              <MenuRow icon="squarePen" label="Rename" onPress={() => setRenaming(true)} styles={styles} color={ds.gray900} />
-              <MenuRow
-                icon="pin"
-                label={conversation.isPinned ? 'Unpin' : 'Pin'}
-                onPress={() => {
-                  onSetPinned(conversation.id, !conversation.isPinned);
-                  onClose();
-                }}
-                styles={styles}
-                color={ds.gray900}
-                divider
-              />
-              <MenuRow icon="trash" label="Delete" onPress={confirmDelete} styles={styles} color={ds.danger} divider danger />
-            </View>
-          )}
-        </View>
-      </View>
-    </Modal>
-  );
-}
-
-function MenuRow({
-  icon,
-  label,
-  onPress,
-  styles,
-  color,
-  divider,
-  danger,
-}: {
-  icon: AuriaIconName;
-  label: string;
-  onPress: () => void;
-  styles: ReturnType<typeof createStyles>;
-  color: string;
-  divider?: boolean;
-  danger?: boolean;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [styles.row, divider && styles.rowDivider, pressed && styles.rowPressed]}
-      accessibilityRole="button"
-      accessibilityLabel={label}
+    <AuriaActionSheet
+      title={conversation.title}
+      onClose={onClose}
+      actions={[
+        { icon: 'squarePen', label: 'Rename', onPress: () => setRenaming(true) },
+        {
+          icon: 'pin',
+          label: conversation.isPinned ? 'Unpin' : 'Pin',
+          onPress: () => {
+            onSetPinned(conversation.id, !conversation.isPinned);
+            onClose();
+          },
+        },
+        { icon: 'trash', label: 'Delete', onPress: confirmDelete, danger: true },
+      ]}
     >
-      <AuriaIcon name={icon} size={AURIA_ICON_SIZE.sm} color={color} strokeWidth={1.8} />
-      <Text style={[styles.rowLabel, danger && { color }]}>{label}</Text>
-    </Pressable>
+      {renaming ? (
+        <View style={styles.renameBox}>
+          <TextInput
+            value={title}
+            onChangeText={setTitle}
+            autoFocus
+            maxLength={120}
+            returnKeyType="done"
+            onSubmitEditing={saveTitle}
+            style={styles.input}
+            placeholder="Chat name"
+            placeholderTextColor={ds.gray400}
+            accessibilityLabel="Chat name"
+          />
+          <View style={styles.renameActions}>
+            <Pressable
+              onPress={() => setRenaming(false)}
+              style={({ pressed }) => [styles.textButton, pressed && styles.pressed]}
+              accessibilityRole="button"
+            >
+              <Text style={styles.textButtonLabel}>Cancel</Text>
+            </Pressable>
+            <Pressable
+              onPress={saveTitle}
+              disabled={!title.trim()}
+              style={({ pressed }) => [styles.textButton, pressed && styles.pressed]}
+              accessibilityRole="button"
+            >
+              <Text style={[styles.textButtonLabel, styles.textButtonPrimary]}>Save</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : undefined}
+    </AuriaActionSheet>
   );
 }
 
-function createStyles(theme: ReturnType<typeof useTheme>['theme'], safeBottom: number) {
+function createStyles(theme: ReturnType<typeof useTheme>['theme']) {
   return StyleSheet.create({
-    overlay: { flex: 1, justifyContent: 'flex-end' },
-    backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: AURIA_SCRIM },
-    sheet: {
-      backgroundColor: theme.colors.surface,
-      borderTopLeftRadius: 24,
-      borderTopRightRadius: 24,
-      borderCurve: 'continuous',
-      paddingTop: 10,
-      paddingHorizontal: 14,
-      paddingBottom: Math.max(safeBottom, 12) + 6,
-    },
-    grabber: {
-      alignSelf: 'center',
-      width: 38,
-      height: 5,
-      borderRadius: 3,
-      backgroundColor: theme.colors.divider,
-      marginBottom: 12,
-    },
-    title: {
-      ...auriaTypography.title,
-      fontSize: 16,
-      fontWeight: theme.typography.fontWeight.bold,
-      color: theme.colors.text,
-      textAlign: 'center',
-      paddingBottom: 14,
-      paddingHorizontal: 12,
-    },
-    card: {
-      backgroundColor: theme.colors.input,
-      overflow: 'hidden',
-      ...myceoCornerStyle('inset'),
-    },
-    row: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 12,
-      paddingHorizontal: 14,
-      minHeight: 52,
-    },
-    rowDivider: {
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: theme.colors.divider,
-    },
-    rowPressed: { backgroundColor: theme.colors.hover },
-    rowLabel: {
-      ...auriaTypography.body,
-      fontSize: 15.5,
-      color: theme.colors.text,
-    },
     renameBox: { gap: 10 },
     input: {
       ...auriaTypography.body,

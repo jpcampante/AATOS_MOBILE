@@ -25,6 +25,7 @@ import {
 } from '../../theme';
 import { AuriaIcon, AuriaIconName, AURIA_ICON_SIZE } from '../icons';
 import { LiquidGlassSurface } from '../ui/LiquidGlassSurface';
+import type { PickedFile } from '../../features/auria/attachments';
 
 type CreateMode = 'home' | 'tools' | 'teammate' | 'websearch' | 'research';
 type CreateActionId =
@@ -43,8 +44,8 @@ type AuriaCreateMenuProps = {
   onSendRequest: (request: string) => void;
   /** Opens the full-screen custom camera (rendered at the screen level). */
   onOpenCamera: () => void;
-  /** Adds picked photo URIs as composer attachments. */
-  onAddPhotos: (uris: string[]) => void;
+  /** Adds picked photos and files to the composer (they upload right away). */
+  onAddFiles: (files: PickedFile[]) => void;
   /** Enters image-generation mode in the main composer (prompt + aspect ratio). */
   onCreateImage: () => void;
   /** Opens the document-templates picker. */
@@ -83,7 +84,7 @@ export function AuriaCreateMenu({
   onClose,
   onSendRequest,
   onOpenCamera,
-  onAddPhotos,
+  onAddFiles,
   onCreateImage,
   onCreateDocument,
   bottomOffset,
@@ -130,8 +131,8 @@ export function AuriaCreateMenu({
         copyToCacheDirectory: true,
       });
       if (result.canceled) return;
-      const names = result.assets.map((asset) => asset.name).join(', ');
-      finish(`Analyze the attached files: ${names}. Ask me what outcome I need before starting.`);
+      onAddFiles(result.assets.map((asset) => ({ uri: asset.uri, name: asset.name, mimeType: asset.mimeType, size: asset.size })));
+      onClose();
     } catch {
       // Permission denied / IO error — fail closed rather than crash.
       onClose();
@@ -146,7 +147,9 @@ export function AuriaCreateMenu({
         selectionLimit: 10,
       });
       if (result.canceled) return;
-      onAddPhotos(result.assets.map((asset) => asset.uri));
+      onAddFiles(
+        result.assets.map((asset) => ({ uri: asset.uri, name: asset.fileName, mimeType: asset.mimeType, size: asset.fileSize })),
+      );
       onClose();
     } catch {
       onClose();

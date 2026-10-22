@@ -165,4 +165,11 @@ describe('absolutizeUrl', () => {
     expect(absolutizeUrl('/media/a.png', BASE)).toBe(`${BASE}/media/a.png`);
     expect(absolutizeUrl('https://cdn.test/a.png', BASE)).toBe('https://cdn.test/a.png');
   });
+
+  it('upgrades http links to the API host to the API scheme (the token must not go in clear)', () => {
+    expect(absolutizeUrl('http://pilarone.mydailyceo.com/auria/chat/attachments/x', BASE)).toBe(
+      `${BASE}/auria/chat/attachments/x`,
+    );
+    expect(absolutizeUrl('http://other.test/a.png', BASE)).toBe('http://other.test/a.png');
+  });
 });

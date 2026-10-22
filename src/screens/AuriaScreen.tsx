@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
+  AppState,
   GestureResponderEvent,
   Keyboard,
   LayoutChangeEvent,
+  Linking,
   PanResponder,
   StyleSheet,
   useWindowDimensions,
@@ -27,6 +29,7 @@ import {
 } from '../components/auria/AuriaPanels';
 import {
   getAuriaComposerOverlayHeight,
+  getChatBottomReserve,
   getContentMaxWidth,
   getSidebarWidth,
   getWelcomeContentTopPadding,
@@ -41,6 +44,21 @@ import { APP_SHELL_BOTTOM_INSET } from '../components/navigation/AppShell';
 import { AuriaPanel } from '../data/auriaMockData';
 import { useAuriaWorkspace } from '../features/auria/useAuriaWorkspace';
 import { useAuriaConversation } from '../features/auria/useAuriaConversation';
+import { useAuriaChats } from '../features/auria/useAuriaChats';
+import { useAuriaCredits } from '../features/auria/useAuriaCredits';
+import { useAuriaAttachments } from '../features/auria/useAuriaAttachments';
+import type { PickedFile } from '../features/auria/attachments';
+import type { SendOptions } from '../features/auria/useAuriaConversation';
+import { creditsMessage, resetHint } from '../features/auria/credits';
+import type { AuriaConversation } from '../features/auria/types';
+import { AuriaConversationMenu } from '../components/auria/AuriaConversationMenu';
+import { AuriaReadOnlyNotice } from '../components/auria/AuriaReadOnlyNotice';
+import { AuriaErrorNotice } from '../components/auria/AuriaErrorNotice';
+
+/** The AATOS web app, where plans and credits are managed. */
+const AATOS_WEB_URL = 'https://aatos.mydailyceo.com';
+import { providerLabel } from '../features/auria/chatList';
+import { loadLastChatId, saveLastChatId } from '../features/auria/prefs';
 import { describeAuriaError } from '../features/auria/api/errors';
 import { useAuriaToast } from '../features/auria/useAuriaToast';
 import { AuriaActionToast } from '../components/auria/AuriaActionToast';
@@ -71,19 +89,158 @@ export function AuriaScreen({
   const composerRef = useRef<AuriaComposerHandle>(null);
   const workspace = useAuriaWorkspace();
   const conversation = useAuriaConversation();
+  const chats = useAuriaChats();
+  const credits = useAuriaCredits();
+  const [menuChat, setMenuChat] = useState<AuriaConversation | null>(null);
+
+  // Reopen the last chat once the list has loaded (it tells the chat's origin).
+  const restored = useRef(false);
+  useEffect(() => {
+    if (restored.current || !chats.loaded) return;
+    restored.current = true;
+    void loadLastChatId().then((chatId) => {
+      if (!chatId || conversation.chatId || conversation.isBusy) return;
+      const chat = chats.chats.find((c) => c.id === chatId);
+      void conversation.openChat(chatId, chat?.provider ?? null);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chats.loaded]);
+
+  // Remember the open chat; a new chat clears it.
+  useEffect(() => {
+    if (restored.current) void saveLastChatId(conversation.chatId);
+  }, [conversation.chatId]);
+
+  // The remembered chat is gone (deleted, or access lost): start fresh.
+  useEffect(() => {
+    const status = conversation.history.error?.status;
+    if (conversation.messages.length === 0 && (status === 404 || status === 403)) {
+      void saveLastChatId(null);
+      conversation.newChat();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversation.history.error]);
+
+  // Back from the background: re-read the open chat (an answer may have finished meanwhile).
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (next) => {
+      if (next === 'active') conversation.reload();
+    });
+    return () => sub.remove();
+  }, [conversation.reload]);
+
+  // A rename, pin or delete the server refused was rolled back; say why.
+  useEffect(() => {
+    if (chats.error && chats.loaded) {
+      showToast(describeAuriaError(chats.error).message);
+      chats.clearError();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chats.error]);
+
+  // When a turn ends, put its chat on top of the sidebar (a new chat appears
+  // with its first message as the title, like the web).
+  const wasBusy = useRef(false);
+  useEffect(() => {
+    if (wasBusy.current && !conversation.isBusy) {
+      if (conversation.chatId) {
+        const firstUser = conversation.messages.find((m) => m.role === 'user');
+        chats.touch(conversation.chatId, firstUser?.text.slice(0, 40) ?? '');
+      }
+      // Each answer spends credits: re-check before the next one.
+      void credits.check();
+    }
+    wasBusy.current = conversation.isBusy;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversation.isBusy, conversation.chatId]);
   const isWelcomeHome = workspace.panel === 'chat' && conversation.messages.length === 0;
   const { toast, showToast } = useAuriaToast();
 
-  // Until the notice above the composer lands (A027), a failed answer shows a toast.
+  // Auria refused for credits (402): show it as the credits notice, which also blocks sending.
   useEffect(() => {
-    if (conversation.error) showToast(describeAuriaError(conversation.error).message);
+    if (conversation.error?.code === 'insufficient_units') {
+      credits.markRefused(conversation.error.reasonCode);
+      conversation.clearError();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversation.error]);
 
+  /** Why Auria can't answer, shown above the composer with what to do next. */
+  const renderErrorNotice = () => {
+    if (credits.state.status === 'blocked') {
+      const blocked = credits.state;
+      const action =
+        blocked.reason === 'check_failed'
+          ? { label: 'Try again', run: () => void credits.check() }
+          : blocked.canManageBilling
+            ? { label: 'See plans on the web', run: () => void Linking.openURL(AATOS_WEB_URL) }
+            : null;
+      return (
+        <AuriaErrorNotice
+          message={creditsMessage(blocked)}
+          detail={
+            blocked.reason === 'check_failed'
+              ? null
+              : resetHint(blocked.nextResetAt) ?? (blocked.canManageBilling ? null : 'Ask your workspace owner for credits.')
+          }
+          actionLabel={action?.label}
+          onAction={action?.run}
+        />
+      );
+    }
+    const error = conversation.error;
+    if (!error) return null;
+    const copy = describeAuriaError(error, { canManageBilling: false });
+    const lastQuestion = [...conversation.messages].reverse().find((m) => m.role === 'user')?.text ?? '';
+    const actions: Partial<Record<typeof copy.action, { label: string; run: () => void }>> = {
+      // Puts the question back in the composer: resending never duplicates a saved message.
+      retry: {
+        label: 'Try again',
+        run: () => {
+          workspace.setComposerText(lastQuestion);
+          conversation.clearError();
+          composerRef.current?.focus();
+        },
+      },
+      new_chat: { label: 'New chat', run: handleNewChat },
+      reload: {
+        label: 'Reload chat',
+        run: () => {
+          conversation.clearError();
+          conversation.reload();
+        },
+      },
+      see_plans: { label: 'See plans on the web', run: () => void Linking.openURL(AATOS_WEB_URL) },
+    };
+    const action = actions[copy.action];
+    return (
+      <AuriaErrorNotice
+        message={copy.message}
+        actionLabel={action?.label}
+        onAction={action?.run}
+        onDismiss={conversation.clearError}
+      />
+    );
+  };
+
   /** Sends to the real Auria from any entry point (composer, suggestion, article…). */
-  const sendToAuria = (text: string) => {
+  const sendToAuria = (text: string, files: SendOptions['attachments'] = []) => {
     if (workspace.panel !== 'chat') workspace.openPanel('chat');
-    return conversation.send(text);
+    // Out of credits (or the check failed): block before calling Auria (D-08). The notice says why.
+    if (credits.blocked) {
+      void credits.check();
+      return false;
+    }
+    return conversation.send(text, { attachments: files });
+  };
+
+  /** "Retry" an answer: same credits rule as sending (D-08). */
+  const retryAnswer = (answerId: string) => {
+    if (credits.blocked) {
+      void credits.check();
+      return;
+    }
+    conversation.retry(answerId);
   };
 
   // Deep link with a prompt: seed the composer once, then clear it.
@@ -99,7 +256,7 @@ export function AuriaScreen({
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
-  const [attachments, setAttachments] = useState<string[]>([]);
+  const attachments = useAuriaAttachments();
   const [imageMode, setImageMode] = useState(false);
   const [imageRatio, setImageRatio] = useState('1:1');
   const [docTemplatesOpen, setDocTemplatesOpen] = useState(false);
@@ -136,6 +293,8 @@ export function AuriaScreen({
   const sidebarWidth = useMemo(() => getSidebarWidth(screenWidth), [screenWidth]);
   const contentMaxWidth = useMemo(() => getContentMaxWidth(screenWidth), [screenWidth]);
   const composerOverlayHeight = getAuriaComposerOverlayHeight(keyboardInset);
+  // The welcome layout is designed around the composer alone; a conversation must clear the whole overlay.
+  const contentBottomReserve = isWelcomeHome ? composerOverlayHeight : getChatBottomReserve(composerHeight, keyboardInset);
   const welcomeTopPadding = useMemo(
     () =>
       getWelcomeContentTopPadding(
@@ -254,7 +413,7 @@ export function AuriaScreen({
     conversation.newChat();
     workspace.openPanel('chat');
     workspace.setComposerText('');
-    setAttachments([]);
+    attachments.clear();
     setImageMode(false);
     setPanelKey((key) => key + 1);
     panelAnim.setValue(1);
@@ -264,7 +423,7 @@ export function AuriaScreen({
   const handleSuggestion = (text: string) => {
     dismissKeyboard();
     sendToAuria(text);
-    setAttachments([]);
+    attachments.clear();
     setImageMode(false);
   };
 
@@ -276,7 +435,7 @@ export function AuriaScreen({
     sendToAuria(
       `About the article "${article.title}" (${article.sourceName} — ${article.url}): ${question}`,
     );
-    setAttachments([]);
+    attachments.clear();
     setImageMode(false);
   };
 
@@ -290,13 +449,22 @@ export function AuriaScreen({
       dismissKeyboard();
       return;
     }
-    if (attachments.length > 0) {
-      // Uploading photos and files arrives with A024/A025; keep them in the composer until then.
-      showToast('Sending photos and files is coming in the next update.');
+    if (attachments.uploading) {
+      showToast('Wait for the files to finish uploading.');
+      return;
     }
-    if (!text || !sendToAuria(text)) return;
+    const ready = attachments.readyForMessage;
+    if (!text && ready.length === 0) return;
+    if (!sendToAuria(text, ready)) return;
     workspace.setComposerText('');
+    attachments.clear();
     dismissKeyboard();
+  };
+
+  /** Picked photos and files upload right away; refused ones (type or size) are explained. */
+  const addAttachments = (picked: PickedFile[]) => {
+    const refused = attachments.add(picked, conversation.chatId);
+    if (refused.length) showToast(`${refused[0].name}: ${refused[0].reason}`);
   };
 
   const openNewProjectModal = () => {
@@ -317,7 +485,7 @@ export function AuriaScreen({
 
   const handleCreateRequest = (request: string) => {
     sendToAuria(request);
-    setAttachments([]);
+    attachments.clear();
     setImageMode(false);
     setPanelKey((key) => key + 1);
     panelAnim.setValue(1);
@@ -340,9 +508,14 @@ export function AuriaScreen({
   const handleConversation = (id: string) => {
     dismissKeyboard();
     closeSidebar();
-    // Saved chats load from the server in A020 (the sidebar list is wired in A019).
-    void id;
-    showToast('Opening saved chats is coming in the next update.');
+    attachments.clear();
+    setImageMode(false);
+    workspace.setComposerText('');
+    if (workspace.panel !== 'chat') workspace.openPanel('chat');
+    setPanelKey((key) => key + 1);
+    panelAnim.setValue(1);
+    const chat = chats.chats.find((c) => c.id === id);
+    void conversation.openChat(id, chat?.provider ?? null);
   };
 
   const panelTranslateX = panelAnim.interpolate({
@@ -389,10 +562,17 @@ export function AuriaScreen({
     return (
       <AuriaChatView
         messages={conversation.messages}
-        isResponding={conversation.run !== null && !conversation.run.text}
         onOpenFiles={() => transitionPanel('gallery')}
         modelLabel={`Auria · ${auriaModeLabel(conversation.mode)}`}
         onActionFeedback={showToast}
+        onRetry={conversation.canContinue ? retryAnswer : undefined}
+        history={{
+          loading: conversation.history.loading,
+          hasEarlier: conversation.history.hasEarlier,
+          failed: conversation.history.error !== null,
+        }}
+        onLoadEarlier={() => void conversation.loadEarlier()}
+        onRetryHistory={conversation.reload}
       />
     );
   };
@@ -411,6 +591,23 @@ export function AuriaScreen({
         onSelectPanel={handleSelectSidebarPanel}
         onCreateProject={openNewProjectModal}
         onSelectConversation={handleConversation}
+        conversations={chats.chats}
+        conversationsLoaded={chats.loaded}
+        conversationsLoading={chats.loading}
+        hasMoreConversations={chats.hasMore}
+        onLoadMoreConversations={chats.loadMore}
+        onConversationMenu={setMenuChat}
+      />
+
+      <AuriaConversationMenu
+        conversation={menuChat}
+        onClose={() => setMenuChat(null)}
+        onRename={(id, title) => void chats.rename(id, title)}
+        onSetPinned={(id, pinned) => void chats.setPinned(id, pinned)}
+        onDelete={(id) => {
+          void chats.remove(id);
+          if (conversation.chatId === id) handleNewChat();
+        }}
       />
 
       <Animated.View
@@ -456,7 +653,7 @@ export function AuriaScreen({
                 key={panelKey}
                 style={[
                   styles.content,
-                  workspace.showComposer ? { paddingBottom: composerOverlayHeight } : null,
+                  workspace.showComposer ? { paddingBottom: contentBottomReserve } : null,
                   { transform: [{ translateX: panelTranslateX }] },
                 ]}
               >
@@ -469,6 +666,14 @@ export function AuriaScreen({
                 {isWelcomeHome ? (
                   <AuriaPromptSuggestions onSelect={handleSuggestion} />
                 ) : null}
+                {renderErrorNotice()}
+                {!conversation.canContinue ? (
+                  <AuriaReadOnlyNotice
+                    origin={providerLabel(conversation.provider) ?? 'another app'}
+                    onNewChat={handleNewChat}
+                    bottomInset={keyboardInset}
+                  />
+                ) : (
                 <AuriaComposer
                   ref={composerRef}
                   value={workspace.composerText}
@@ -484,15 +689,14 @@ export function AuriaScreen({
                     dismissKeyboard();
                     setModelPickerOpen(true);
                   }}
-                  attachments={attachments}
-                  onRemoveAttachment={(uri) =>
-                    setAttachments((current) => current.filter((item) => item !== uri))
-                  }
+                  attachments={attachments.items}
+                  onRemoveAttachment={attachments.remove}
                   imageMode={imageMode}
                   imageRatio={imageRatio}
                   onSelectRatio={setImageRatio}
                   onExitImageMode={() => setImageMode(false)}
                 />
+                )}
               </View>
             ) : null}
 
@@ -504,7 +708,7 @@ export function AuriaScreen({
                 setCreateMenuOpen(false);
                 setCameraOpen(true);
               }}
-              onAddPhotos={(uris) => setAttachments((current) => [...current, ...uris])}
+              onAddFiles={addAttachments}
               onCreateImage={() => {
                 setCreateMenuOpen(false);
                 setImageMode(true);
@@ -544,7 +748,7 @@ export function AuriaScreen({
         onClose={() => setCameraOpen(false)}
         onCapture={(uri) => {
           setCameraOpen(false);
-          setAttachments((current) => [...current, uri]);
+          addAttachments([{ uri }]);
         }}
       />
 

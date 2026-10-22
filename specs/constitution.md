@@ -1,9 +1,10 @@
 # Constituição — AATOS Mobile
 
-Versão 2.0.0 · Ratificada em 2026-10-15
+Versão 2.1.0 · Ratificada em 2026-10-15 · Emendada em 2026-10-21
 
 | Versão | Mudança |
 | --- | --- |
+| 2.1.0 | Princípio VI ganha testes de funcionalidade e "uma tarefa por vez"; princípio VIII (componentes pequenos e reutilizados, boas práticas de React Native) |
 | 2.0.0 | Princípio II redefinido: de "multiplataforma" para "Android primeiro"; iOS fora do escopo, web só para desenvolvimento |
 | 1.0.0 | Versão inicial |
 
@@ -65,6 +66,13 @@ O produto é **só Android** (decisão de 2026-10-15). O app precisa abrir no
   tem teste unitário.
 - Cada critério de aceite da spec é verificado: por teste automatizado ou por
   um passo manual descrito em `tasks.md`.
+- Toda funcionalidade nova tem **teste de funcionalidade**: além das regras
+  puras, os componentes e hooks da tarefa são testados pelo que a pessoa vê e
+  faz (React Native Testing Library: renderizar, achar por texto ou
+  `accessibilityLabel`, tocar e conferir o resultado). Serviços que falam com
+  o aparelho ou a rede são testados com os módulos nativos simulados (mocks).
+- **Uma tarefa por vez:** implementar → testes → typecheck → conferir no
+  emulador → commit → só então a próxima.
 - Uma tarefa só é marcada `[x]` depois de verificada.
 
 ## VII. Simplicidade
@@ -73,6 +81,26 @@ O produto é **só Android** (decisão de 2026-10-15). O app precisa abrir no
   dependência. Toda dependência nova é justificada no plano.
 - Sem abstração especulativa: só generalizar quando houver o segundo uso real.
 - Componentes acima de ~400 linhas são candidatos a divisão.
+
+## VIII. Componentes pequenos e reutilizados
+
+- **Um componente por arquivo.** Subcomponentes que crescem (mais de ~40
+  linhas ou com estado próprio) saem para o seu arquivo; nada de juntar várias
+  telas ou peças num arquivo só.
+- **Reutilizar antes de criar:** procurar em `src/components/ui` e na área
+  (`src/components/<area>`) um componente que já resolva; quando a mesma peça
+  aparece em dois lugares, ela vira um componente compartilhado.
+- **Lógica fora do componente:** regras e acesso a dados em hooks e serviços de
+  `src/features/<area>`; o componente só desenha e repassa eventos.
+- **Boas práticas de React Native:**
+  - estilos com `StyleSheet.create` a partir do tema (sem objetos de estilo
+    recriados a cada render quando der para evitar);
+  - listas longas com `FlatList`/`SectionList`, com `key` estável;
+  - efeitos com limpeza (cancelar assinatura, ignorar resposta de um componente
+    que já saiu) e dependências corretas;
+  - `Pressable` com `accessibilityRole`/`accessibilityLabel` e alvo ≥ 44 pt;
+  - nada de trabalho pesado no render; `useMemo`/`useCallback`/`memo` só
+    onde medir ou a lista justificar.
 
 ## Governança
 

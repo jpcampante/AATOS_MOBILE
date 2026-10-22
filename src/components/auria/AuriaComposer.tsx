@@ -1,6 +1,5 @@
 import { forwardRef, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import {
-  Image,
   Keyboard,
   Platform,
   Pressable,
@@ -11,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { LiquidGlassSurface } from '../ui/LiquidGlassSurface';
+import { AuriaComposerAttachment, type ComposerAttachmentView } from './AuriaComposerAttachment';
 import { AuriaIcon, AURIA_ICON_SIZE, AURIA_ICON_STROKE_SEND, AURIA_ICON_STROKE_STRONG } from '../icons';
 import { auriaTypography, liquidGlassTokens, MYCEO_CORNER_RADIUS, useTheme } from '../../theme';
 import {
@@ -20,6 +20,8 @@ import {
   AURIA_COMPOSER_TOOLBAR_HEIGHT,
   AURIA_CONTENT_HORIZONTAL_INSET,
 } from './auriaLayout';
+
+export type { ComposerAttachmentView } from './AuriaComposerAttachment';
 
 export type AuriaComposerHandle = {
   blur: () => void;
@@ -48,10 +50,10 @@ type AuriaComposerProps = {
   selectedModelEffort?: string | null;
   /** Opens the answer-mode sheet. */
   onOpenModelPicker?: () => void;
-  /** Image attachment URIs shown as thumbnails above the input. */
-  attachments?: string[];
-  /** Removes an attachment by its URI. */
-  onRemoveAttachment?: (uri: string) => void;
+  /** Files in the queue: images as thumbnails, other files as name chips, with upload state. */
+  attachments?: ComposerAttachmentView[];
+  /** Removes an attachment by its id. */
+  onRemoveAttachment?: (id: string) => void;
   /** Image-generation mode: show aspect-ratio chips and prompt for an image. */
   imageMode?: boolean;
   /** Currently selected aspect ratio (e.g. "1:1"). */
@@ -110,7 +112,10 @@ export const AuriaComposer = forwardRef<AuriaComposerHandle, AuriaComposerProps>
     const setText = onChangeText ?? setDraft;
     const hasText = text.trim().length > 0;
     const hasAttachments = attachments.length > 0;
-    const canSend = (imageMode ? hasText : hasText || hasAttachments) && !isResponding;
+    const hasReadyFile = attachments.some((a) => a.status === 'ready');
+    // Wait for every upload to finish, so the message carries all the files.
+    const uploading = attachments.some((a) => a.status === 'uploading');
+    const canSend = (imageMode ? hasText : hasText || hasReadyFile) && !isResponding && !uploading;
 
     useImperativeHandle(ref, () => ({
       blur: () => {
@@ -161,19 +166,8 @@ export const AuriaComposer = forwardRef<AuriaComposerHandle, AuriaComposerProps>
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={styles.attachmentRow}
           >
-            {attachments.map((uri) => (
-              <View key={uri} style={styles.thumbWrap}>
-                <Image source={{ uri }} style={styles.thumb} />
-                <Pressable
-                  onPress={() => onRemoveAttachment?.(uri)}
-                  style={styles.removeButton}
-                  hitSlop={8}
-                  accessibilityRole="button"
-                  accessibilityLabel="Remove attachment"
-                >
-                  <AuriaIcon name="close" size={12} color={ds.gray900} strokeWidth={2.5} />
-                </Pressable>
-              </View>
+            {attachments.map((item) => (
+              <AuriaComposerAttachment key={item.id} item={item} onRemove={onRemoveAttachment} />
             ))}
           </ScrollView>
         ) : null}
@@ -357,27 +351,6 @@ function createStyles(
     attachmentRow: {
       gap: 8,
       paddingBottom: 2,
-    },
-    thumbWrap: {
-      width: 64,
-      height: 64,
-    },
-    thumb: {
-      width: 64,
-      height: 64,
-      borderRadius: 12,
-      backgroundColor: ds.gray200,
-    },
-    removeButton: {
-      position: 'absolute',
-      top: 4,
-      right: 4,
-      width: 20,
-      height: 20,
-      borderRadius: 10,
-      backgroundColor: ds.white,
-      alignItems: 'center',
-      justifyContent: 'center',
     },
     imageBar: {
       flexDirection: 'row',

@@ -4,6 +4,7 @@ import Svg, { Path } from 'react-native-svg';
 import { AuriaIcon, AuriaIconName, AURIA_ICON_SIZE } from '../components/icons';
 import { AuriaTopicChips } from '../components/auria/AuriaTopicChips';
 import { cycleDiscoverTopic, useDiscoverPrefs } from '../features/auria/discoverPrefsStore';
+import { clearAuriaPrefs } from '../features/auria/prefs';
 import { useAuth } from '../features/auth';
 import { auriaTypography, useTheme, type ThemePreference } from '../theme';
 
@@ -91,7 +92,8 @@ export function ProfileScreen() {
 
       <Pressable
         style={({ pressed }) => [styles.logout, pressed && styles.pressed]}
-        onPress={() => void signOut()}
+        // The next account must not reopen this account's last chat.
+        onPress={() => void clearAuriaPrefs().finally(() => signOut())}
         accessibilityRole="button"
         accessibilityLabel="Log out"
       >

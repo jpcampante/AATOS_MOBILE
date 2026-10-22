@@ -1,7 +1,17 @@
 import { useMemo, type ReactNode } from 'react';
-import { Animated, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
-  auriaConversations,
+  ActivityIndicator,
+  Animated,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+} from 'react-native';
+import {
   auriaProjects,
   auriaSidebarProjects,
   auriaSidebarTopItems,
@@ -19,6 +29,8 @@ import {
 import { auriaTypography, liquidGlassBorder, liquidGlassTokens, useTheme } from '../../theme';
 import { AuriaBloomMark } from './AuriaBloomMark';
 import { useCurrentUser } from '../../features/auth';
+import { providerLabel } from '../../features/auria/chatList';
+import type { AuriaConversation } from '../../features/auria/types';
 
 type AuriaSidebarProps = {
   open?: boolean;
@@ -33,7 +45,19 @@ type AuriaSidebarProps = {
   onSelectConversation: (id: string) => void;
   onSelectProject?: (id: string) => void;
   onCreateProject?: () => void;
+  /** The person's conversations from the server, pinned first. */
+  conversations: AuriaConversation[];
+  /** The first page arrived (an empty list really is empty). */
+  conversationsLoaded: boolean;
+  conversationsLoading: boolean;
+  hasMoreConversations: boolean;
+  onLoadMoreConversations: () => void;
+  /** Long-press on a conversation: rename, pin, delete. */
+  onConversationMenu?: (conversation: AuriaConversation) => void;
 };
+
+/** Loads the next page when the list is this close to its end. */
+const LOAD_MORE_DISTANCE = 240;
 
 const SIDEBAR_WIDTH = 320;
 
@@ -47,18 +71,22 @@ function SidebarRow({
   label,
   active,
   onPress,
+  onLongPress,
   icon,
   trailing,
   styles,
   accessibilityLabel,
+  accessibilityHint,
 }: {
   label: string;
   active?: boolean;
   onPress: () => void;
+  onLongPress?: () => void;
   icon?: ReactNode;
   trailing?: ReactNode;
   styles: SidebarStyles;
   accessibilityLabel?: string;
+  accessibilityHint?: string;
 }) {
   return (
     <Pressable
@@ -68,8 +96,10 @@ function SidebarRow({
         pressed && styles.rowPressed,
       ]}
       onPress={onPress}
+      onLongPress={onLongPress}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
+      accessibilityHint={accessibilityHint}
       accessibilityState={{ selected: active }}
     >
       {icon ? <View style={styles.rowIconSlot}>{icon}</View> : null}
@@ -139,14 +169,50 @@ export function AuriaSidebar({
   onSelectConversation,
   onSelectProject,
   onCreateProject,
+  conversations,
+  conversationsLoaded,
+  conversationsLoading,
+  hasMoreConversations,
+  onLoadMoreConversations,
+  onConversationMenu,
 }: AuriaSidebarProps) {
   const { ds, theme } = useTheme();
   const user = useCurrentUser();
   const styles = useMemo(() => createStyles(ds, theme, width), [ds, theme, width]);
   const projectMeta = useMemo(() => projectMetaById(projects), [projects]);
 
-  const pinnedChats = auriaConversations.filter((chat) => chat.pinned);
-  const recentChats = auriaConversations.filter((chat) => !chat.pinned);
+  const pinnedChats = conversations.filter((chat) => chat.isPinned);
+  const recentChats = conversations.filter((chat) => !chat.isPinned);
+
+  const handleScroll = ({ nativeEvent }: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+    const nearEnd = layoutMeasurement.height + contentOffset.y >= contentSize.height - LOAD_MORE_DISTANCE;
+    if (nearEnd && hasMoreConversations && !conversationsLoading) onLoadMoreConversations();
+  };
+
+  const renderConversation = (chat: AuriaConversation, pinned: boolean) => {
+    const origin = providerLabel(chat.provider);
+    return (
+      <SidebarRow
+        key={chat.id}
+        label={chat.title}
+        active={activeConversationId === chat.id}
+        onPress={() => onSelectConversation(chat.id)}
+        onLongPress={onConversationMenu ? () => onConversationMenu(chat) : undefined}
+        accessibilityLabel={`${chat.title}${pinned ? ', pinned' : ''}${origin ? `, from ${origin}` : ''}`}
+        accessibilityHint={onConversationMenu ? 'Long press for rename, pin and delete' : undefined}
+        styles={styles}
+        trailing={
+          <>
+            {origin ? <Text style={styles.originBadge}>{origin}</Text> : null}
+            {pinned ? (
+              <AuriaIcon name="pin" size={AURIA_ICON_SIZE.sm} color={ds.gray400} strokeWidth={AURIA_ICON_STROKE_NAV} />
+            ) : null}
+          </>
+        }
+      />
+    );
+  };
 
   const handleTopItem = (id: (typeof auriaSidebarTopItems)[number]['id']) => {
     onSelectPanel(id);
@@ -218,6 +284,8 @@ export function AuriaSidebar({
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        onScroll={handleScroll}
+        scrollEventThrottle={200}
       >
         <SidebarRow
           label="New chat"
@@ -327,36 +395,22 @@ export function AuriaSidebar({
         {pinnedChats.length > 0 ? (
           <>
             <SidebarSection title="Pinned" styles={styles} />
-            {pinnedChats.map((chat) => (
-              <SidebarRow
-                key={chat.id}
-                label={chat.title}
-                active={activeConversationId === chat.id}
-                onPress={() => onSelectConversation(chat.id)}
-                styles={styles}
-                trailing={
-                  <AuriaIcon
-                    name="pin"
-                    size={AURIA_ICON_SIZE.sm}
-                    color={ds.gray400}
-                    strokeWidth={AURIA_ICON_STROKE_NAV}
-                  />
-                }
-              />
-            ))}
+            {pinnedChats.map((chat) => renderConversation(chat, true))}
           </>
         ) : null}
 
-        <SidebarSection title="Recents" styles={styles} />
-        {recentChats.map((chat) => (
-          <SidebarRow
-            key={chat.id}
-            label={chat.title}
-            active={activeConversationId === chat.id}
-            onPress={() => onSelectConversation(chat.id)}
-            styles={styles}
-          />
-        ))}
+        {recentChats.length > 0 || (conversationsLoaded && conversations.length === 0) ? (
+          <SidebarSection title="Recents" styles={styles} />
+        ) : null}
+        {recentChats.map((chat) => renderConversation(chat, false))}
+        {conversationsLoaded && conversations.length === 0 ? (
+          <Text style={styles.emptyNote}>No conversations yet. Ask Auria anything to start one.</Text>
+        ) : null}
+        {conversationsLoading ? (
+          <View style={styles.listSpinner} accessibilityLabel="Loading conversations">
+            <ActivityIndicator size="small" color={ds.gray500} />
+          </View>
+        ) : null}
       </ScrollView>
 
       </View>
@@ -465,6 +519,27 @@ function createStyles(
     scrollContent: {
       paddingHorizontal: theme.spacing.sm,
       paddingBottom: theme.spacing.xl,
+    },
+    originBadge: {
+      ...auriaTypography.label,
+      fontSize: 10.5,
+      color: ds.gray500,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 6,
+      backgroundColor: ds.gray100,
+      overflow: 'hidden',
+    },
+    emptyNote: {
+      ...auriaTypography.body,
+      fontSize: 13,
+      color: ds.gray500,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
+    },
+    listSpinner: {
+      paddingVertical: theme.spacing.md,
+      alignItems: 'center',
     },
     sectionTitle: {
       ...auriaTypography.label,

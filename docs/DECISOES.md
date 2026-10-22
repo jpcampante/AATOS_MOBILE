@@ -301,13 +301,115 @@ Spec, plano e tarefas: [specs/001-login/](../specs/001-login/spec.md).
   **Falta** ver uma resposta real em streaming (P003), que precisa de uma
   conta com plano ativo.
 
+### D-30 · Testes de funcionalidade, componentes pequenos, uma tarefa por vez
+
+Data: 2026-10-21 · Constituição 2.1.0
+
+- Toda tarefa entrega **teste de funcionalidade**: lógica com Jest e
+  componentes com **React Native Testing Library**
+  (`@testing-library/react-native`), testando o que aparece e os toques.
+- **Um componente por arquivo, reutilizar antes de criar**, lógica em hooks e
+  serviços, boas práticas de React Native (princípio VIII da constituição).
+- **Uma tarefa por vez:** implementar, testar, conferir no emulador e
+  commitar antes de ir para a próxima.
+
+### D-31 · Anexos privados no Android (A026)
+
+Data: 2026-10-21
+
+- **Sem cookies nas chamadas que escrevem.** Com um cookie de sessão no
+  aparelho, o backend autentica pelo cookie, ignora o Bearer e recusa o envio
+  de origem não confiável (403 "Valid MyCEO access token required"). O upload
+  (XHR) usa `withCredentials = false` e o streaming `credentials: 'omit'`.
+- **Links `http://` do backend.** Atrás do proxy o backend monta URLs
+  absolutas com `http://`; o app troca para o esquema da API (`https`) os
+  links do próprio host, para o token nunca ir sem criptografia.
+- **O `Image` do Android ignora `headers`** (o servidor recebia sem o token:
+  401). Imagens privadas são baixadas com Bearer para o cache
+  (`expo-file-system`) e mostradas da cópia local; o mesmo cache serve para
+  abrir arquivos no menu de compartilhar (`expo-sharing`). Um download por
+  arquivo, com uma nova tentativa após renovar o token.
+- **Testes de componente** com `@testing-library/react-native` 13.3 e
+  `react-test-renderer` 19.1.0; `jest.setup.ts` simula o
+  `expo-glass-effect` (só iOS).
+- **Verificado no emulador:** imagem privada aparece; o arquivo abre no menu de
+  compartilhar com o nome original; arquivo de tipo não aceito é recusado com
+  aviso; o chip do composer mostra e remove o arquivo.
+
+### D-32 · Painel de trabalho da Auria (A016)
+
+Data: 2026-10-21
+
+- **Mesmo modelo e mesmas palavras da web** (`thinking/workRun.ts`,
+  `auriaThinkingTools.ts`, `AuriaWorkPanel.tsx`): seções plano / pesquisa /
+  criação / entrega, etapas vindas dos eventos reais do stream, "Working for
+  6s" ao vivo e "Reasoned for 8 seconds · Fast" no fim. O antigo balão
+  "Auria is thinking" saiu: o painel aparece no instante do envio.
+- **Logos dos serviços** (Gmail, Outlook, Google Calendar, Teams, OneDrive,
+  Meet, Drive) copiados da web e desenhados com `SvgXml`; as cores
+  `rgb(x%,y%,z%)` dos SVGs viraram hex porque o `react-native-svg` não as lê.
+  Família sem fornecedor conhecido usa um ícone neutro (cores em
+  `src/theme/serviceColors.ts`).
+- **Raciocínio ao vivo:** como na web, o painel não mostra o texto do
+  raciocínio; ele continua sendo guardado e aparece no "Pensamento" (A017).
+- **Acessibilidade:** a linha ao vivo não é região "live"; só o fim é anunciado.
+- **Verificado no emulador** com um turno simulado (a conta de teste não tem
+  plano): linha ao vivo, logos, detalhe com etapa que falhou.
+- **Bug encontrado (anterior à A016):** o aviso de erro/créditos acima do
+  composer cobre o fim da conversa, e o último trecho da resposta e os botões
+  dela não podem ser alcançados rolando. **Corrigido** logo depois: a conversa
+  reserva embaixo a altura medida de tudo o que fica sobre ela (composer,
+  avisos, anexos na fila), nunca menos que a do composer; a tela de boas-vindas
+  continua com a medida fixa.
+
+### D-33 · "Pensamento" salvo (A017)
+
+Data: 2026-10-21
+
+- **Como a web** (`ThinkingDisclosure`): uma linha "Thinking ›", fechada,
+  que abre o raciocínio salvo ali mesmo, com uma barra à esquerda. Aparece em
+  respostas do histórico e em turnos que pararam ou falharam no meio; um turno
+  concluído nesta sessão já conta tudo no painel da A016.
+- O `AuriaReasoningBlock`/`AuriaThinkingSheet` (folha com etapas e fontes)
+  é do mock e não serve para o texto salvo; sai com os mocks na A056.
+- **Testes:** Jest passa a transformar `marked` (ESM) e simula o
+  `expo/fetch` no setup, para testar telas inteiras como o `AuriaChatView`.
+- **Verificado no emulador** com um turno parado no meio; o caminho do
+  histórico usa o mesmo componente e está coberto por testes (a conta de teste
+  não tem conversa com raciocínio salvo, e o backend não deixa gravar um).
+
+### D-34 · "Tentar de novo" (A029)
+
+Data: 2026-10-22
+
+- **O `regenerate` é síncrono:** o servidor escreve a resposta inteira e só
+  então devolve a versão nova (201). Por isso essa chamada tem prazo próprio de
+  3 minutos (`AURIA_REPLAY_TIMEOUT_MS`, como a web), e o cliente HTTP passou a
+  aceitar prazo por pedido. Depois, a conversa é relida (ramo ativo).
+- **Na tela:** a resposta (e o que vem depois dela) dá lugar ao painel da A016,
+  que diz "Writing the answer" e conta os segundos. Falha → volta a resposta
+  antiga e o aviso diz o motivo; `operation_in_progress`/`already_sent` e
+  Stop → relê a conversa em silêncio (o servidor pode gravar mesmo assim).
+- **Mesma regra de créditos do envio** (D-08): sem créditos, nem chama o servidor.
+- Só **Retry** no menu: "Use Thinking" e "Search the web" do mock saíram do
+  `AuriaChatView` (a busca volta com a A034).
+- **Verificado no emulador** contra o backend real, com uma conversa de QA
+  criada sem IA ("App QA — retry test", **apagar pelo app**): menu, painel no
+  lugar da resposta e recusa real `402 insufficient_units / no_active_plan`
+  com a resposta antiga de volta. O caminho de sucesso está nos testes e depende
+  de conta com plano (P003).
+- **Notado, fica para depois:** com créditos bloqueados o aviso de créditos
+  esconde qualquer outro erro; o "Try again" do aviso de erro devolve a
+  pergunta ao composer (feito para envio, não para retry); a lista da barra
+  lateral só recarrega ao abrir o app.
+
 ---
 
 ## Pendências em aberto
 
 | Item | Onde |
 | --- | --- |
-| Spec 002: provar o streaming (P003) com uma conta que tenha plano; seguir pela Fase 3 (A016) | [tasks 002](../specs/002-auria-real/tasks.md) |
+| Spec 002: provar o streaming (P003) com uma conta que tenha plano; seguir pela A017 | [tasks 002](../specs/002-auria-real/tasks.md) |
 | Trocar a `internalServiceKey` commitada em `Frontend_Myceo_Example_Authenticator/config.json` | backend |
 | Se a chave RSA do `.env.test` local do backend for usada em algum ambiente real, trocá-la (ela foi exibida por engano numa sessão) | backend |
 | Apagar as worktrees `_wt/mobile-code-login` e `_wt/main-mobile-code` e o SQLite de teste delas | máquina local |

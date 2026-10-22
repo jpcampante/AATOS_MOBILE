@@ -100,49 +100,53 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
 
 ## Fase 3 — História 2: Ver o trabalho da Auria (P1)
 
-- [ ] A016 Painel "Trabalhando há Ns":
-  - estado, rodada, etapas de ferramenta com rótulo e ícone do `service`, raciocínio ao vivo;
+- [x] A016 Painel "Working for Ns" (igual à web):
+  - linha ao vivo com a etapa atual, a anterior e os segundos; fechado vira "Reasoned for 8 seconds · Fast" com os logos dos serviços usados e abre o detalhe (narrativa por seção e cada etapa);
+  - etapas vindas dos eventos reais (`status`, `tool` com `service`, `delta`, `canvas`, `done`/parada/erro), rótulos e logos da tabela da web;
   - leitor de tela só anuncia o fim.
+  - Raciocínio: como na web, o painel mostra as etapas; o texto do raciocínio fica em `reasoningText` e aparece pelo "Pensamento" (A017).
 
-  Arquivos: `src/components/auria/AuriaWorkPanel.tsx` (adapta `AuriaReasoningBlock`/`AuriaThinkingSheet`) — RF-06, RNF-02
-- [ ] A017 "Pensamento" salvo: mostrar `reasoning` das mensagens do histórico (E16) — `AuriaReasoningBlock.tsx` — RF-06
+  Arquivos: `src/features/auria/work/` (`workRun`, `workTools`, `workText`, hooks `useElapsed`, `useStepReveal`, `useAnnounceWhenFinished`) e `src/components/auria/work/` (`AuriaWorkPanel`, `AuriaWorkLiveLine`, `AuriaWorkDetails`, `AuriaWorkStepRow`, `AuriaServiceMark`) — RF-06, RNF-02
+- [x] A017 "Pensamento" salvo: mostrar `reasoning` das mensagens do histórico (E16), como a web: linha "Thinking ›" que abre o texto, em respostas do histórico e em turnos que pararam no meio; turno concluído na sessão fica com o painel da A016 — `AuriaThinkingDisclosure.tsx`, regra em `features/auria/thinking.ts` (o `AuriaReasoningBlock` é do mock e sai na A056) — RF-06
 
 **Checkpoint (emulador):** H2.1–H2.3 com uma pergunta que usa ferramentas (ex.: "quais minhas tarefas de hoje?").
 
 ## Fase 4 — História 3: Histórico de conversas (P1)
 
-- [ ] A018 `useAuriaChats`:
+- [x] A018 `useAuriaChats`:
   - paginação de 30;
   - 404 vira lista vazia;
   - fixadas primeiro;
   - recarregar.
 
   Arquivo: `src/features/auria/useAuriaChats.ts`. Endpoint E07 — RF-07
-- [ ] A019 Barra lateral com conversas reais, rolagem infinita e estado vazio; sem import de `src/data/auriaMockData` — `AuriaSidebar.tsx` — RF-07, RNF-05
-- [ ] A020 Abrir conversa:
+- [x] A019 Barra lateral com conversas reais, rolagem infinita e estado vazio; sem import de `src/data/auriaMockData` — `AuriaSidebar.tsx` — RF-07, RNF-05
+- [x] A020 Abrir conversa:
   - página 1 para saber o `count`, depois as duas últimas;
   - "Carregar anteriores";
   - abrir por id salvo.
 
   Endpoints E10, E16 — RF-07
-- [ ] A021 [P] Renomear, fixar/desafixar e apagar (com confirmação), de forma otimista com rollback — `useAuriaChats.ts`, menu da conversa na barra lateral. Endpoints E11, E12, E13 — RF-08
-- [ ] A022 Lembrar a última conversa (`prefs`). Recarregar a conversa ao voltar do segundo plano. Conversa importada (ChatGPT/Claude) abre só para leitura, com selo de origem — RF-09, casos de borda
+- [x] A021 [P] Renomear, fixar/desafixar e apagar (com confirmação), de forma otimista com rollback — `useAuriaChats.ts`, menu da conversa na barra lateral. Endpoints E11, E12, E13 — RF-08
+- [x] A022 Lembrar a última conversa (`prefs`). Recarregar a conversa ao voltar do segundo plano. Conversa importada (ChatGPT/Claude) abre só para leitura, com selo de origem — RF-09, casos de borda
 
-**Checkpoint (emulador):** H3.1–H3.6, conferindo renomear, fixar e apagar também na web.
+**Checkpoint (emulador):** H3.1–H3.6, conferindo renomear, fixar e apagar também na web. **Feito em 2026-10-20** com uma conversa de teste de 25 mensagens criada sem IA: lista real, estado vazio, abrir, rolar até a primeira mensagem, renomear, fixar, apagar (com confirmação) e voltar à última conversa depois de reiniciar. Conferência na web e o aviso de chat importado ficam para a V001 (a conta de teste não tem chats da web).
 
 ## Fase 5 — História 4: Anexos (P1)
 
-- [ ] A023 [P] Plugins e permissões Android de câmera e fotos no `app.json` (tarefa T005 da baseline, se ainda aberta) — `app.json` — RF-10
-- [ ] A024 Testes da validação (20 MB, tipos), depois o serviço de anexos: upload com progresso e remoção. Endpoints E24, E27 — `src/features/auria/api/attachments.ts`, `useAuriaAttachments.ts` — RF-10
-- [ ] A025 Fila de anexos no composer (galeria, câmera, arquivos):
+- [x] A023 [P] Plugins e permissões Android de câmera e fotos no `app.json` (tarefa T005 da baseline, se ainda aberta) — `app.json` — RF-10
+- [x] A024 Testes da validação (20 MB, tipos), depois o serviço de anexos: upload com progresso e remoção. Endpoints E24, E27 — `src/features/auria/api/attachments.ts`, `useAuriaAttachments.ts` — RF-10
+- [x] A025 Fila de anexos no composer (galeria, câmera, arquivos):
   - envia `attachment_uuids` + markdown do anexo, como o web;
   - só anexo, sem texto: grava a mensagem sem IA;
   - criar conversa antes do primeiro anexo, se preciso.
 
   Arquivos: `AuriaComposer.tsx`, `AuriaCreateMenu.tsx`, `AuriaScreen.tsx`. Endpoints E09, E17, E24 — RF-10
-- [ ] A026 Exibir anexos privados:
-  - imagens com `headers` de Bearer;
-  - arquivos baixados com Bearer e abertos/compartilhados (dependências `expo-file-system` + `expo-sharing`).
+- [x] A026 Exibir anexos privados:
+  - imagens baixadas com Bearer para o cache do aparelho e mostradas da cópia local (o `Image` do Android ignora `headers`: 401);
+  - arquivos baixados com Bearer e abertos/compartilhados com o nome original (dependências `expo-file-system` + `expo-sharing`);
+  - componentes `AuriaMessageFiles`, `AuriaAttachmentImage`, `AuriaFileChip` (compartilhado com o composer) e `AuriaComposerAttachment`; hook `useAttachmentOpener`.
+  - Testes: `attachmentFiles`, `useAttachmentOpener`, os quatro componentes, upload sem cookie e stream sem cookie.
 
   Endpoint E26 — RF-11, RNF-04
 
@@ -150,17 +154,17 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
 
 ## Fase 6 — História 5: Erros, créditos e permissões (P1)
 
-- [ ] A027 `AuriaErrorNotice` acima do composer:
+- [x] A027 `AuriaErrorNotice` acima do composer:
   - mensagem e ação por código: tentar de novo, nova conversa, ver planos na web, pedir ao responsável;
   - composer desabilitado em conversa só leitura e sem rede.
 
   Arquivo: `src/components/auria/AuriaErrorNotice.tsx` — RF-12, RF-13, CS-04
-- [ ] A028 Resposta interrompida (parar, `connection_lost`, `error` com parcial):
+- [x] A028 Resposta interrompida (parar, `connection_lost`, `error` com parcial):
   - o texto fica com a marca "interrompida";
   - depois do erro, a conversa é relida do servidor para pegar o aviso que ele salvou.
 
   Requisito: RF-04, RF-12
-- [ ] A044 Bloqueio por créditos (D-08), movido para a P1:
+- [x] A044 Bloqueio por créditos (D-08), movido para a P1:
   - testes da regra, depois `billing.ts` + `useAuriaCredits`: restante = `(spendable_units ?? available_units) × tokens_per_unit`; bloqueia se ≤ 0, abaixo de `turn_estimates.auria`, plano inativo ou erro na consulta;
   - consulta ao abrir a Auria e depois de cada resposta;
   - composer bloqueado com aviso em inglês ("You're out of credits…") e a ação conforme `can_manage_billing`: "Buy credits on the web" ou "Ask your workspace owner"; mostra a data de renovação (`next_reset_at`) quando houver;
@@ -173,7 +177,7 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
 
 ## Fase 7 — História 6: Tentar de novo e editar (P2)
 
-- [ ] A029 [P] "Tentar de novo" → `regenerate` e recarga — E19 — RF-14
+- [x] A029 [P] "Tentar de novo" → `regenerate` e recarga — E19 — RF-14. Menu "•••" da resposta salva com **Retry**; o painel da A016 ocupa o lugar da resposta ("Writing the answer · Ns") até o servidor gravar a versão nova; falha devolve a resposta antiga com o aviso; Stop relê a conversa. `api/messages.ts`, ações `replay-*` no `conversationReducer`, `retry` no `useAuriaConversation`
 - [ ] A030 [P] Editar mensagem da pessoa (mantém o markdown dos anexos) → `edit` e recarga — E20 — RF-14
 - [ ] A031 Alternar versões `< 2/3 >` com `activate`; ligar o "Branch" atual a isso ou removê-lo — E21 — RF-14
 - [ ] A032 [P] Curtir resposta — E22 — RF-14

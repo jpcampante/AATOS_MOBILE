@@ -12,6 +12,8 @@ type FetchLike = (url: string, init: RequestInit) => Promise<Response>;
 export type RequestOptions = {
   body?: unknown;
   signal?: AbortSignal;
+  /** Overrides the client's timeout for a request that is slow on purpose. */
+  timeoutMs?: number;
 };
 
 export type UploadFile = { uri: string; name: string; type: string };
@@ -47,7 +49,7 @@ export function createHttpClient({ baseUrl, tokens, timeoutMs, fetchImpl }: Clie
     const timer = setTimeout(() => {
       timedOut = true;
       controller.abort();
-    }, timeoutMs);
+    }, opts.timeoutMs ?? timeoutMs);
     const onCallerAbort = () => controller.abort();
     opts.signal?.addEventListener('abort', onCallerAbort);
 
@@ -89,6 +91,9 @@ export function createHttpClient({ baseUrl, tokens, timeoutMs, fetchImpl }: Clie
         if (opts.signal?.aborted) return reject(abortedError());
         const xhr = new XMLHttpRequest();
         xhr.open('POST', url(path));
+        // Never send the device's cookies: with a session cookie the backend authenticates by
+        // cookie and refuses writes from an untrusted Origin (403), ignoring the Bearer token.
+        xhr.withCredentials = false;
         if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
         xhr.setRequestHeader('Accept', 'application/json');
         xhr.upload.onprogress = (e) => {

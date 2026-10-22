@@ -34,7 +34,7 @@ function jsonError(status: number, body: unknown) {
 const REQ: StreamChatRequest = { message: 'Hi', chatId: null, clientOperationId: 'op-12345678', mode: 'fast' };
 
 function setup(responses: unknown[], tokens: Partial<TokenSource> = {}) {
-  const calls: { url: string; init: { headers: Record<string, string>; body: string } }[] = [];
+  const calls: { url: string; init: { headers: Record<string, string>; body: string; credentials?: string } }[] = [];
   const queue = [...responses];
   const streamChat = createStreamChat({
     baseUrl: 'https://api.test',
@@ -66,6 +66,8 @@ describe('streamChat', () => {
     expect(calls[0].url).toBe('https://api.test/auria/system_llm/chat?stream=1');
     expect(calls[0].init.headers.Authorization).toBe('Bearer t1');
     expect(calls[0].init.headers.Accept).toBeUndefined();
+    // Bearer only: a device cookie would make the backend refuse the write (403).
+    expect(calls[0].init.credentials).toBe('omit');
     expect(JSON.parse(calls[0].init.body)).toMatchObject({ message: 'Hi', chat_id: null, mode: 'fast', web_mode: 'off' });
   });
 

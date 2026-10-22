@@ -1,6 +1,7 @@
 import type { AuriaApiError } from './api/errors';
 import type { AuriaStreamEvent } from './api/streamEvents';
 import type { ApiCanvasDocument } from './api/types';
+import { applyWorkEvent, startWorkRun, type WorkEvent, type WorkMode, type WorkRun } from './work/workRun';
 
 /** Where one streamed answer is. `starting` until the server says it is thinking. */
 export type AuriaRunStatus = 'starting' | 'thinking' | 'streaming' | 'done' | 'error' | 'stopped';
@@ -36,16 +37,22 @@ export type AuriaRun = {
   error: AuriaApiError | null;
   /** Source of the last reasoning chunk: `model` chunks join, others start a new line. */
   lastReasoningSource: string | null;
+  /** The "Working for 6s" panel: the steps of this turn. */
+  work: WorkRun;
 };
 
+/** `at` is when it happened (the panel's clock stops there); defaults to now. */
 export type AuriaRunAction =
-  | { type: 'event'; event: AuriaStreamEvent }
+  | { type: 'event'; event: AuriaStreamEvent; at?: number }
   /** The person tapped Stop. */
-  | { type: 'stop' }
+  | { type: 'stop'; at?: number }
   /** The request failed outside an `error` event (HTTP error, connection lost). */
-  | { type: 'fail'; error: AuriaApiError };
+  | { type: 'fail'; error: AuriaApiError; at?: number };
 
-export function createRun(now: number, chatId: string | null): AuriaRun {
+/** What the panel needs to know about the turn: the question and the mode it was sent in. */
+export type RunRequest = { prompt: string; mode: WorkMode };
+
+export function createRun(now: number, chatId: string | null, request: RunRequest = { prompt: '', mode: 'fast' }): AuriaRun {
   return {
     status: 'starting',
     startedAt: now,
@@ -62,6 +69,7 @@ export function createRun(now: number, chatId: string | null): AuriaRun {
     saved: false,
     error: null,
     lastReasoningSource: null,
+    work: startWorkRun(request.prompt, request.mode, now),
   };
 }
 
@@ -168,13 +176,42 @@ function applyEvent(run: AuriaRun, event: AuriaStreamEvent): AuriaRun {
   }
 }
 
+/** The panel step a stream event stands for, if any. */
+function workEventFor(event: AuriaStreamEvent, at: number): WorkEvent | null {
+  switch (event.type) {
+    case 'status':
+      return { type: 'status', phase: event.phase, round: event.round, mode: event.mode };
+    case 'tool':
+      return { type: 'tool', name: event.name, status: event.status, ok: event.ok, service: event.service };
+    case 'reasoning':
+      return { type: 'reasoning', content: event.content, source: event.source };
+    case 'delta':
+      return event.content ? { type: 'answer' } : null;
+    case 'delta_reset':
+      return { type: 'answer_retracted' };
+    case 'canvas':
+      return { type: 'canvas', name: event.document.title };
+    case 'done':
+      return { type: 'complete', at };
+    case 'error':
+      return { type: 'failed', at };
+    default:
+      return null;
+  }
+}
+
+function withWork(run: AuriaRun, event: WorkEvent | null): AuriaRun {
+  return event ? { ...run, work: applyWorkEvent(run.work, event) } : run;
+}
+
 export function runReducer(run: AuriaRun, action: AuriaRunAction): AuriaRun {
+  const at = action.at ?? Date.now();
   switch (action.type) {
     case 'event':
-      return applyEvent(run, action.event);
+      return withWork(applyEvent(run, action.event), workEventFor(action.event, at));
     case 'stop':
-      return finished(run) ? run : { ...run, status: 'stopped' };
+      return finished(run) ? run : withWork({ ...run, status: 'stopped' }, { type: 'stopped', at });
     case 'fail':
-      return finished(run) ? run : { ...run, status: 'error', error: action.error };
+      return finished(run) ? run : withWork({ ...run, status: 'error', error: action.error }, { type: 'failed', at });
   }
 }

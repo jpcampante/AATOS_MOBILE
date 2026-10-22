@@ -87,6 +87,15 @@ docs/                   guias de ambiente (emulador Android)
   "Generated with Claude Code" ou qualquer outra atribuição a ferramenta de IA
   em mensagens de commit ou descrições de PR. Isso vale para todos os commits.
 - Código e identificadores em inglês; documentação de specs em português.
+- **Um componente por arquivo e reutilizar antes de criar** (constituição,
+  princípio VIII): procure em `src/components/ui` e na área antes de escrever
+  um componente novo; peça usada em dois lugares vira componente compartilhado.
+- **Teste de funcionalidade em toda tarefa** (princípio VI): lógica pura com
+  Jest; componentes com React Native Testing Library
+  (`@testing-library/react-native`), testando pelo que aparece na tela e pelos
+  toques. Testes ficam em `__tests__/` ao lado do código.
+- **Uma tarefa por vez:** implementar → testar → `npm run typecheck` e
+  `npm test` → conferir no emulador → commit → próxima.
 
 ## Branches
 

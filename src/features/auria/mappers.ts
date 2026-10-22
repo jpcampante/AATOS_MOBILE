@@ -3,7 +3,13 @@ import type { AuriaAttachment, AuriaChatMessage, AuriaConversation, AuriaPage } 
 
 /** Server paths (`/media/…`, `/auria/…`) → absolute URLs on the API host. */
 export function absolutizeUrl(url: string, baseUrl: string): string {
-  if (/^https?:\/\//i.test(url)) return url;
+  if (/^https?:\/\//i.test(url)) {
+    // Behind its proxy the backend builds `http://` links to itself. Fetching those would send
+    // the Bearer token in clear: a link to the API host always uses the API's own scheme.
+    const host = (u: string) => u.replace(/^https?:\/\//i, '').split('/')[0].toLowerCase();
+    if (host(url) === host(baseUrl)) return `${baseUrl}${url.replace(/^https?:\/\/[^/]+/i, '')}`;
+    return url;
+  }
   return `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
 }
 

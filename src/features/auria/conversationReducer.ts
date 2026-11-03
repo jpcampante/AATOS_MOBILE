@@ -2,6 +2,7 @@ import type { AuriaApiError } from './api/errors';
 import type { AuriaMode } from './api/streamChat';
 import { createRun, runReducer, type AuriaRun, type AuriaRunAction } from './runReducer';
 import type { AuriaAttachment, AuriaChatMessage } from './types';
+import { parseWebResult } from './webResult';
 import { applyWorkEvent } from './work/workRun';
 
 /** Loading state of a saved chat's history (oldest-first pages on the server). */
@@ -94,6 +95,8 @@ function settledAnswer(localId: string, run: AuriaRun): AuriaChatMessage | null 
   if (run.status === 'stopped') message.status = 'stopped';
   if (run.status === 'error') message.status = 'error';
   message.work = run.work; // the panel stays above the answer, closed ("Reasoned for 8 seconds")
+  const web = parseWebResult(run.web);
+  if (web) message.web = web;
   return message;
 }
 
@@ -256,5 +259,10 @@ export function visibleMessages(state: ConversationState): AuriaChatMessage[] {
   const at = replay ? state.messages.findIndex((m) => m.id === replay.from) : -1;
   const kept = at >= 0 ? state.messages.slice(0, at) : state.messages;
   const question = replay?.question ? [replay.question] : [];
-  return [...kept, ...question, { id: `${localId}-a`, role: 'assistant', text: run.text, live: true, work: run.work }];
+  const web = parseWebResult(run.web);
+  return [
+    ...kept,
+    ...question,
+    { id: `${localId}-a`, role: 'assistant', text: run.text, live: true, work: run.work, ...(web ? { web } : null) },
+  ];
 }

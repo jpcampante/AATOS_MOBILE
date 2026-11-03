@@ -10,6 +10,7 @@ import { AuriaMessageActions } from './AuriaMessageActions';
 import { AuriaReasoningBlock } from './AuriaReasoningBlock';
 import { AuriaSourceChips } from './AuriaSourceChips';
 import { AuriaThinkingDisclosure } from './AuriaThinkingDisclosure';
+import { AuriaWebEvidence } from './AuriaWebEvidence';
 import { AuriaTypingCursor } from './AuriaTypingCursor';
 import { AuriaWorkPanel } from './work/AuriaWorkPanel';
 
@@ -52,11 +53,15 @@ export function AuriaAssistantContent({
       {/* Saved reasoning: answers from the history, or a turn that stopped midway. */}
       {thinking ? <AuriaThinkingDisclosure text={thinking} /> : null}
       {message.reasoning ? <AuriaReasoningBlock reasoning={message.reasoning} onOpenFiles={onOpenFiles} /> : null}
-      {message.text ? <AuriaMarkdown text={message.text} live={live} /> : null}
+      {message.text ? (
+        <AuriaMarkdown text={message.text} live={live} sources={message.web?.sources ?? []} />
+      ) : null}
       {live && message.text ? <AuriaTypingCursor color={ds.gray500} style={styles.cursor} /> : null}
       {message.status ? (
         <Text style={[styles.statusNote, { color: ds.gray500 }]}>{message.status === 'stopped' ? 'Stopped' : 'Interrupted'}</Text>
       ) : null}
+      {/* What the web search did for this turn: progress while it runs, then the sources. */}
+      {message.web ? <AuriaWebEvidence result={message.web} /> : null}
       {revealRest && message.sources && message.sources.length > 0 ? (
         <AuriaSourceChips sources={message.sources} onOpenFiles={onOpenFiles} />
       ) : null}

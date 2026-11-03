@@ -41,3 +41,6 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Código temporário de QA (spikes), nunca versionado
+src/features/auria/spike/

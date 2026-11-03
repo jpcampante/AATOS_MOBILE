@@ -488,13 +488,39 @@ Data: 2026-10-22
 
 ---
 
+### D-39 · Botão "Web" no composer (A034)
+
+Data: 2026-11-03
+
+- O controle da busca na web fica **no composer**, como na web (`SearchPreferenceControl`,
+  ao lado de Create e Sources), e não no menu "+": é uma escolha por conversa
+  que a pessoa confere antes de escrever, não uma ação de criação.
+- Um botão só, em forma de pílula com o ícone de globo, entre o "+" e a pílula
+  de modo: mostra **"Web"** quando Off e **"Web · On"** quando ligado, com o
+  fundo azul da Auria no estado ligado. A web usa um switch; no aparelho a
+  pílula cabe na barra de ações e segue o mesmo padrão do seletor Rápido/Profundo.
+- O On/Off é a **preferência para as próximas mensagens**; o modo de cada turno
+  continua a ser decidido no `preflight` da A033.
+- **Bloqueado com motivo:** empresa desligou → "Disabled for this company.";
+  servidor sem busca → "Search is unavailable." (o caso de hoje em produção,
+  D-38). Em vez de um botão morto e silencioso, o toque mostra o motivo no
+  toast. Enquanto a escolha está sendo salva, o toque não faz nada (não há o
+  que dizer). Uma escolha já ligada pode sempre ser desligada.
+- **Falha ao carregar** as configurações → o botão vira **"Web · Retry"** e o
+  toque relê (como o "Retry" da web), para ninguém ficar preso.
+- Os avisos da escolha (recarregada, não salva) passaram a aparecer no toast,
+  além do estado do botão.
+- Regra do estado em `webSearchButtonView` (`webSearchChoice.ts`), fora do
+  componente; o `AuriaComposer` só recebe o botão como slot, sem lógica de busca.
+
+---
+
 ## Pendências em aberto
 
 | Item | Onde |
 | --- | --- |
-| Spec 002: seguir pela A034 (Fase 8); provar o streaming (P003) com uma conta que tenha plano | [tasks 002](../specs/002-auria-real/tasks.md) |
+| Spec 002: seguir pela A035 (Fase 8); provar o streaming (P003) com uma conta que tenha plano | [tasks 002](../specs/002-auria-real/tasks.md) |
 | Conta de teste com plano ativo: destrava P003 e o sucesso real de Retry, edição e versões no aparelho | conta / billing |
-| Push e merge na `main` do commit da A033 (`be1dfbe`) e da atualização dos documentos | git |
 | O toast de erro ("Couldn't switch versions.", "Couldn't save your like.") usa o ícone de "check" | `AuriaActionToast` |
 | Com créditos bloqueados, o aviso de créditos esconde qualquer outro erro; o "Try again" do aviso devolve a pergunta ao composer também depois de um Retry (D-34) | `AuriaScreen` |
 | A lista de conversas da barra lateral só recarrega ao abrir o app (D-34) | `useAuriaChats` |

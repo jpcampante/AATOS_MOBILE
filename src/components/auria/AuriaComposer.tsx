@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { forwardRef, useImperativeHandle, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   Keyboard,
   Platform,
@@ -62,6 +62,8 @@ type AuriaComposerProps = {
   onSelectRatio?: (ratio: string) => void;
   /** Leaves image-generation mode. */
   onExitImageMode?: () => void;
+  /** The web search button (A034), shown in the action row beside the answer mode. */
+  webSearch?: ReactNode;
 };
 
 /** Aspect ratios offered when generating an image, straight in the composer. */
@@ -100,6 +102,7 @@ export const AuriaComposer = forwardRef<AuriaComposerHandle, AuriaComposerProps>
       imageRatio = '1:1',
       onSelectRatio,
       onExitImageMode,
+      webSearch,
     },
     ref,
   ) {
@@ -272,6 +275,8 @@ export const AuriaComposer = forwardRef<AuriaComposerHandle, AuriaComposerProps>
               strokeWidth={1.5}
             />
           </Pressable>
+
+          {webSearch}
 
           <View style={styles.spacer} />
 

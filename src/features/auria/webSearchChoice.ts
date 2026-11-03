@@ -53,3 +53,39 @@ export function webSearchUnavailableReason(state: WebSearchState): string | null
   if (!state.available) return WEB_SEARCH_TEXT.unavailable;
   return null;
 }
+
+/** What the composer's "Web" button shows and does, derived from the choice's state. */
+export type WebSearchButtonView = {
+  /** The preference for the next messages (what the button shows as On/Off). */
+  on: boolean;
+  /** Pressing it only says why: the choice is busy, or it can't be turned on. */
+  blocked: boolean;
+  /** Why it can't be turned on (or what went wrong), null when nothing to say. */
+  reason: string | null;
+  /** Loading the settings failed: pressing it reads them again. */
+  retry: boolean;
+  accessibilityLabel: string;
+};
+
+/**
+ * The button's state, like the web's `SearchPreferenceControl`: On/Off is the
+ * preference for the next messages (the effective mode of each turn comes from
+ * `turnWebMode`). A company that turned search off, or a server without it,
+ * leaves the button Off and says why instead of failing silently; a failure to
+ * load the settings leaves a Retry, so nobody gets stuck.
+ */
+export function webSearchButtonView(state: WebSearchState): WebSearchButtonView {
+  const on = state.mode === 'auto';
+  const retry = state.status === 'error';
+  // Availability is only known once the settings were read.
+  const known = state.status === 'ready' || state.status === 'saving';
+  const unavailable = known ? webSearchUnavailableReason(state) : null;
+  const busy = state.status === 'loading' || state.status === 'saving';
+  return {
+    on,
+    blocked: !retry && (busy || (unavailable !== null && !on)),
+    reason: retry ? state.notice ?? WEB_SEARCH_TEXT.notLoaded : unavailable,
+    retry,
+    accessibilityLabel: retry ? 'Retry web search settings' : `Web search: ${on ? 'On' : 'Off'}`,
+  };
+}

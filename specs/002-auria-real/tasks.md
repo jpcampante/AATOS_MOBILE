@@ -20,8 +20,8 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
 
 ## Andamento (2026-11-03)
 
-**Próxima tarefa: A034** (botão "Web" no composer). Branch `develop`; a `main`
-recebeu merge até a A032 (o commit da A033 ainda precisa de push e merge).
+**Próxima tarefa: A035** (andamento, cartões de fonte e citações `[n]`). Branch
+`develop`; a `main` recebeu merge até a A033 e os documentos.
 
 **Feito** (cada uma com commit próprio e decisão no [registro](../../docs/DECISOES.md)):
 
@@ -35,7 +35,7 @@ recebeu merge até a A032 (o commit da A033 ainda precisa de push e merge).
 | 5 | A023–A026 | anexos: permissões, envio com progresso, imagens e arquivos privados | D-31 |
 | 6 | A027, A028, A044 | avisos de erro, releitura após falha, bloqueio sem créditos | D-29 |
 | 7 | A029–A032 | Retry, editar pergunta, versões `< 2/3 >`, curtir | D-34 a D-37 |
-| 8 | A033 | preferência de busca por conversa, conferida antes de cada turno | D-38 |
+| 8 | A033, A034 | preferência de busca por conversa, conferida antes de cada turno; botão "Web" no composer | D-38, D-39 |
 | — | fix | aviso de erro não cobre mais o fim da conversa | D-32 |
 
 A015 foi removida (spec 003). A042 está fora do escopo.
@@ -43,7 +43,7 @@ A015 foi removida (spec 003). A042 está fora do escopo.
 **Falta na v1:**
 - P003: ver uma resposta real em streaming no aparelho. Depende de uma conta com plano.
 - V001: roteiro manual da P1.
-- Fase 8: A034 (botão "Web"), A035 (andamento, cartões de fonte e citações `[n]`), A036 (imagens das fontes).
+- Fase 8: A035 (andamento, cartões de fonte e citações `[n]`), A036 (imagens das fontes).
 - Fase 9: A037, A038 (criar imagem e mostrá-la).
 - Fase 10: A039, A040, A041, A043 (documentos, propostas, criar pelo "+").
 - A056: limpar os mocks e ocultar o que é da v2.
@@ -56,7 +56,7 @@ A015 foi removida (spec 003). A042 está fora do escopo.
   - O sucesso do envio, do Retry, da edição e da troca de versões está coberto só por testes.
   - No aparelho, cada fluxo foi conferido até a recusa real do servidor, ou com um turno simulado.
 - **A busca na web está desligada no servidor de produção**: `GET /auria/web-search/settings` devolve `available: false` (D-38).
-  - A A034 só pode ser vista no estado "indisponível".
+  - A A034 só pôde ser vista no estado "indisponível" (o botão fica Off e o toque diz "Search is unavailable.").
   - A A035 e a A036 ficam nos testes até a busca ser ligada.
 - **Como foi verificado sem plano.** Nada disso é commitado: tudo fica em `src/features/auria/spike/`, que não é versionado.
   - Turnos simulados: `workDemo.ts`, ligado de forma temporária no `http.ts` para mensagens que começam com `/demo`.
@@ -241,7 +241,8 @@ A015 foi removida (spec 003). A042 está fora do escopo.
   - Feito como na web: escolha por conversa; conversa nova guarda a escolha no aparelho e salva quando o servidor a cria (`bind`); antes de envio, Retry e edição relê (mudou ou não deu para conferir → turno Off, com aviso); na dúvida, Off. `api/webSearch.ts`, `webSearchChoice.ts`, `useWebSearchPreference.ts`. **Produção hoje: `available: false`** (busca desligada no servidor, D-38).
 
   Endpoints E48, E49 — RF-15
-- [ ] A034 Botão de busca na web no composer ou no menu "+", no lugar do "Search the web" simulado; desabilitado com motivo quando a empresa desligou — RF-15
+- [x] A034 Botão de busca na web no composer ou no menu "+", no lugar do "Search the web" simulado; desabilitado com motivo quando a empresa desligou — RF-15
+  - Feito no composer, como na web: pílula "Web" / "Web · On" entre o "+" e a pílula de modo. Bloqueado com motivo no toast (empresa desligou, busca indisponível) e "Web · Retry" quando as configurações não carregam. A regra fica em `webSearchButtonView` (`webSearchChoice.ts`); o componente é o `AuriaWebSearchToggle` e o `AuriaComposer` só o recebe como slot (D-39).
 - [ ] A035 Evento `web_status` e o resultado de `done.web`/`web_result`: andamento, até 4 cartões de fonte, lista expandível e chips de citação `[n]` — `AuriaWebEvidence.tsx`, `AuriaCitationChip.tsx` — RF-15
 - [ ] A036 Imagens dos cartões de fonte via `web-image` autenticado — E28 — RF-15
 

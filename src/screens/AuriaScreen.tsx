@@ -55,6 +55,8 @@ import { AuriaConversationMenu } from '../components/auria/AuriaConversationMenu
 import { AuriaEditingBanner } from '../components/auria/AuriaEditingBanner';
 import { AuriaQuestionMenu } from '../components/auria/AuriaQuestionMenu';
 import { useQuestionEditing } from '../features/auria/useQuestionEditing';
+import { AuriaDocumentReader } from '../components/auria/AuriaDocumentReader';
+import type { AuriaDocument } from '../features/auria/documents';
 import { useChatDocuments } from '../features/auria/useChatDocuments';
 import { useWebSearchPreference } from '../features/auria/useWebSearchPreference';
 import { webSearchButtonView } from '../features/auria/webSearchChoice';
@@ -230,6 +232,9 @@ export function AuriaScreen({
       />
     );
   };
+
+  /** The document being read (A040); documents are read only on the phone (D-07). */
+  const [readingDocument, setReadingDocument] = useState<AuriaDocument | null>(null);
 
   // Documents the Auria wrote in this chat (E29), re-read when a turn writes one.
   const chatDocuments = useChatDocuments(conversation.chatId);
@@ -660,6 +665,7 @@ export function AuriaScreen({
         onLoadEarlier={() => void conversation.loadEarlier()}
         onRetryHistory={conversation.reload}
         chatDocuments={chatDocuments.documents}
+        onOpenDocument={setReadingDocument}
       />
     );
   };
@@ -861,6 +867,7 @@ export function AuriaScreen({
         }}
       />
 
+      <AuriaDocumentReader document={readingDocument} onClose={() => setReadingDocument(null)} />
       <AuriaActionToast message={toast} />
     </View>
   );

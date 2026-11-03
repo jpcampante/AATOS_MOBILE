@@ -1,3 +1,4 @@
+import { parseWebResult } from './webResult';
 import type { ApiChat, ApiMessage, ApiMultimodalContent, ApiPage } from './api/types';
 import type { AuriaAttachment, AuriaChatMessage, AuriaConversation, AuriaPage } from './types';
 
@@ -101,6 +102,8 @@ export function mapApiMessage(msg: ApiMessage, baseUrl: string): AuriaChatMessag
   const mapped: AuriaChatMessage = { id: msg.uuid, serverId: msg.uuid, role, text };
   if (msg.created_time) mapped.createdAt = msg.created_time;
   if (msg.reasoning?.trim()) mapped.reasoningText = msg.reasoning.trim();
+  const web = role === 'assistant' ? parseWebResult(msg.web_result) : undefined;
+  if (web) mapped.web = web;
   if (typeof msg.liked === 'boolean') mapped.liked = msg.liked;
   if (msg.version_count && msg.version_count > 1) {
     mapped.version = { index: msg.version_index ?? 1, count: msg.version_count, ids: msg.versions ?? [] };

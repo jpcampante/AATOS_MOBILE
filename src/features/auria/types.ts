@@ -1,3 +1,4 @@
+import type { WebResult } from './webResult';
 import type { WorkRun } from './work/workRun';
 
 export type AuriaDocumentArtifact = {
@@ -131,4 +132,6 @@ export type AuriaChatMessage = {
   artifact?: AuriaArtifact;
   reasoning?: AuriaReasoning;
   sources?: AuriaSource[];
+  /** This turn's web search: progress, sources and the `[n]` behind the citations. */
+  web?: WebResult;
 };

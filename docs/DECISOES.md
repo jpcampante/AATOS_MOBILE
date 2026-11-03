@@ -515,11 +515,41 @@ Data: 2026-11-03
 
 ---
 
+### D-40 · Andamento, fontes e citações da busca (A035)
+
+Data: 2026-11-03
+
+- O `web_status` e o `done.web` do servidor são lidos em `webResult.ts`, com os
+  **dois formatos** do contrato (commit 6567791): o snapshot **v2** do motor de
+  busca (o que a produção fala) e o resultado **v1** de turnos antigos. O que
+  não couber no contrato é descartado inteiro — o chat nunca mostra uma fonte
+  que o servidor não mandou. Snapshot novo só substitui o anterior da mesma
+  execução quando o `seq` cresce.
+- **Imagem só pela rota assinada** do servidor (`/auria/web-image/?…&s=…`):
+  qualquer outra URL de imagem é ignorada. As imagens em si ficam para a A036;
+  por enquanto o cartão mostra a inicial do site numa cor estável
+  (`AuriaSiteBadge`).
+- A apresentação segue a web (`WebEvidence`): até **4 cartões** de fonte, o
+  resto na lista "N sources · M search attempts", que abre e fecha. Mesmos
+  textos de estado e de falha, em inglês.
+- **Citações `[n]`:** a web reescreve a árvore do remark; aqui o texto é
+  reescrito antes do `react-native-marked` (`linkCitations`), trocando cada
+  `[n]` que tem fonte por um link com o esquema **`auriacite:`** — sem hífen,
+  porque o renderizador só trata `esquema:` como URL quando são só letras. Um
+  `[n]` sem fonte, dentro de código ou que já é link fica como está. O
+  `AuriaMarkdown` desenha esses links como `AuriaCitationChip`.
+- Conferido no emulador com um turno simulado (spike, não versionado): o painel
+  mostra "Searched the web", os chips aparecem no meio do texto, os cartões
+  listam as fontes e o toque abre a página. A busca real continua desligada em
+  produção (D-38).
+
+---
+
 ## Pendências em aberto
 
 | Item | Onde |
 | --- | --- |
-| Spec 002: seguir pela A035 (Fase 8); provar o streaming (P003) com uma conta que tenha plano | [tasks 002](../specs/002-auria-real/tasks.md) |
+| Spec 002: seguir pela A036 (Fase 8); provar o streaming (P003) com uma conta que tenha plano | [tasks 002](../specs/002-auria-real/tasks.md) |
 | Conta de teste com plano ativo: destrava P003 e o sucesso real de Retry, edição e versões no aparelho | conta / billing |
 | O toast de erro ("Couldn't switch versions.", "Couldn't save your like.") usa o ícone de "check" | `AuriaActionToast` |
 | Com créditos bloqueados, o aviso de créditos esconde qualquer outro erro; o "Try again" do aviso devolve a pergunta ao composer também depois de um Retry (D-34) | `AuriaScreen` |

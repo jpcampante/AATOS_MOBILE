@@ -69,6 +69,8 @@ export type ConversationAction =
   | { type: 'branch-loaded'; chatId: string; messages: AuriaChatMessage[]; oldestPage: number }
   /** It didn't happen: the old messages come back, with the reason (or none when stopped). */
   | { type: 'replay-failed'; localId: string; error: AuriaApiError | null }
+  /** Something outside a turn failed (generating an image, say). */
+  | { type: 'failed'; error: AuriaApiError }
   | { type: 'clear-error' };
 
 const idleHistory: HistoryState = { loading: false, oldestPage: 1, hasEarlier: false, error: null };
@@ -246,6 +248,9 @@ export function conversationReducer(state: ConversationState, action: Conversati
         messages: action.messages,
         history: { loading: false, oldestPage: action.oldestPage, hasEarlier: action.oldestPage > 1, error: null },
       };
+
+    case 'failed':
+      return { ...state, error: action.error };
 
     case 'clear-error':
       return state.error ? { ...state, error: null } : state;

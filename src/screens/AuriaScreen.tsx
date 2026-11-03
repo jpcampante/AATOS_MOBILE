@@ -498,10 +498,16 @@ export function AuriaScreen({
     }
     if (imageMode) {
       if (!text) return;
-      if (!(await sendToAuria(`Create an image with aspect ratio ${imageRatio}. Image brief: ${text}`))) return;
+      // Creating an image is its own endpoint (E06), not a turn of the chat.
+      if (credits.blocked) {
+        void credits.check();
+        return;
+      }
       workspace.setComposerText('');
       setImageMode(false);
       dismissKeyboard();
+      if (workspace.panel !== 'chat') workspace.openPanel('chat');
+      if (!(await conversation.generateImage(text, imageRatio))) workspace.setComposerText(text);
       return;
     }
     if (attachments.uploading) {

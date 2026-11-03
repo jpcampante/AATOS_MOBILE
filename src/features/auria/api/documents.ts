@@ -2,6 +2,7 @@ import { auriaHttp } from './http';
 import { auriaRoutes } from './routes';
 import { isAuriaApiError } from './errors';
 import { mapApiDocument, mapApiDocuments, type AuriaDocument } from '../documents';
+import { mapApiProposals, type AuriaProposal } from '../proposals';
 
 type ApiDocumentsResponse = { documents?: unknown[] };
 type ApiDocumentResponse = { document?: unknown };
@@ -26,4 +27,31 @@ export async function getChatDocument(chatId: string, documentId: string, signal
   const document = mapApiDocument(data.document);
   if (!document) throw new Error('The server did not return the document.');
   return document;
+}
+
+type ApiProposalsResponse = { proposals?: unknown };
+
+/** The proposals of this chat still waiting for the person (E34). */
+export async function listChatProposals(chatId: string, signal?: AbortSignal): Promise<AuriaProposal[]> {
+  try {
+    const data = await auriaHttp.get<ApiProposalsResponse>(auriaRoutes.chatProposals(chatId), { signal });
+    return mapApiProposals(data.proposals);
+  } catch (err) {
+    if (isAuriaApiError(err) && err.status === 404) return [];
+    throw err;
+  }
+}
+
+/**
+ * Applies or rejects a proposal (E35). The revision the person saw goes with
+ * it, so the server refuses (409) when the proposal or the document changed
+ * meanwhile — then the caller re-reads instead of saving over it.
+ */
+export async function decideProposal(
+  proposal: AuriaProposal,
+  decision: 'apply' | 'reject',
+): Promise<void> {
+  await auriaHttp.post(auriaRoutes.proposalDecision(proposal.documentId, proposal.id, decision), {
+    revision: proposal.revision,
+  });
 }

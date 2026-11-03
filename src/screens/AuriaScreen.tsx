@@ -58,6 +58,7 @@ import { useQuestionEditing } from '../features/auria/useQuestionEditing';
 import { AuriaDocumentReader } from '../components/auria/AuriaDocumentReader';
 import type { AuriaDocument } from '../features/auria/documents';
 import { useChatDocuments } from '../features/auria/useChatDocuments';
+import { useChatProposals } from '../features/auria/useChatProposals';
 import { useWebSearchPreference } from '../features/auria/useWebSearchPreference';
 import { webSearchButtonView } from '../features/auria/webSearchChoice';
 import { AuriaWebSearchToggle } from '../components/auria/AuriaWebSearchToggle';
@@ -243,6 +244,18 @@ export function AuriaScreen({
     if (!conversation.isBusy && lastTurnDocuments > 0) void chatDocuments.reload();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversation.isBusy, lastTurnDocuments]);
+
+  // Changes the Auria proposed to a document (E34): the person decides each one.
+  const proposals = useChatProposals(conversation.chatId);
+  useEffect(() => {
+    if (!conversation.isBusy) void proposals.reload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversation.isBusy]);
+  const decideProposal = (proposal: Parameters<typeof proposals.decide>[0], decision: 'apply' | 'reject') =>
+    void proposals.decide(proposal, decision).then((notice) => {
+      if (notice) showToast(notice);
+      else if (decision === 'apply') void chatDocuments.reload();
+    });
 
   // Web search (A033): the choice for the open chat, re-checked right before each turn.
   const web = useWebSearchPreference(conversation.chatId);
@@ -666,6 +679,10 @@ export function AuriaScreen({
         onRetryHistory={conversation.reload}
         chatDocuments={chatDocuments.documents}
         onOpenDocument={setReadingDocument}
+        proposals={proposals.proposals}
+        decidingProposal={proposals.deciding}
+        onApplyProposal={(proposal) => decideProposal(proposal, 'apply')}
+        onRejectProposal={(proposal) => decideProposal(proposal, 'reject')}
       />
     );
   };

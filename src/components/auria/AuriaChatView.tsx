@@ -3,7 +3,9 @@ import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View
 import { AURIA_CHAT_SCROLL_END_PADDING, AURIA_CONTENT_HORIZONTAL_INSET } from './auriaLayout';
 import { auriaTypography, liquidGlassBorder, liquidGlassTokens, useTheme } from '../../theme';
 import type { AuriaChatMessage } from '../../features/auria/types';
+import type { AuriaDocument } from '../../features/auria/documents';
 import { AuriaAssistantContent } from './AuriaAssistantContent';
+import { AuriaChatDocuments } from './AuriaChatDocuments';
 import { AuriaMessageFiles } from './AuriaMessageFiles';
 import { AuriaVersionSwitcher } from './AuriaVersionSwitcher';
 
@@ -29,6 +31,10 @@ type AuriaChatViewProps = {
   history?: { loading: boolean; hasEarlier: boolean; failed: boolean };
   onLoadEarlier?: () => void;
   onRetryHistory?: () => void;
+  /** Everything the Auria wrote in this chat (E29), listed at the end. */
+  chatDocuments?: AuriaDocument[];
+  /** Opens a document in the reader (A040). */
+  onOpenDocument?: (document: AuriaDocument) => void;
 };
 
 const ATTACHMENT_MAX_W = 230;
@@ -90,6 +96,8 @@ export function AuriaChatView({
   history,
   onLoadEarlier,
   onRetryHistory,
+  chatDocuments = [],
+  onOpenDocument,
 }: AuriaChatViewProps) {
   const { ds, theme } = useTheme();
   /** `< 2/3 >` for a message with other versions (retried answers, edited questions). */
@@ -232,6 +240,7 @@ export function AuriaChatView({
                     onRetry={onRetry}
                     onToggleLike={onToggleLike}
                     onActionFeedback={onActionFeedback}
+                    onOpenDocument={onOpenDocument}
                   />
                 )}
               </View>
@@ -240,6 +249,7 @@ export function AuriaChatView({
           </View>
         );
       })}
+      <AuriaChatDocuments documents={chatDocuments} onOpen={onOpenDocument} />
     </ScrollView>
   );
 }

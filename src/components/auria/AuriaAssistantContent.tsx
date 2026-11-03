@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { savedThinking } from '../../features/auria/thinking';
+import type { AuriaDocument } from '../../features/auria/documents';
 import type { AuriaChatMessage } from '../../features/auria/types';
 import { auriaTypography, useTheme } from '../../theme';
-import { AuriaDocumentArtifact } from './AuriaDocumentArtifact';
+import { AuriaDocumentCard } from './AuriaDocumentCard';
 import { AuriaGeneratedImage } from './AuriaGeneratedImage';
 import { AuriaMarkdown } from './AuriaMarkdown';
 import { AuriaMessageActions } from './AuriaMessageActions';
@@ -24,6 +25,8 @@ type AuriaAssistantContentProps = {
   /** The version switcher `< 2/3 >`, drawn at the start of the actions row. */
   versionSwitcher?: ReactNode;
   onActionFeedback?: (message: string) => void;
+  /** Opens a document this answer wrote (A040). */
+  onOpenDocument?: (document: AuriaDocument) => void;
 };
 
 /**
@@ -39,6 +42,7 @@ export function AuriaAssistantContent({
   onToggleLike,
   versionSwitcher,
   onActionFeedback,
+  onOpenDocument,
 }: AuriaAssistantContentProps) {
   const { ds } = useTheme();
   const live = !!message.live;
@@ -65,7 +69,14 @@ export function AuriaAssistantContent({
       {revealRest && message.sources && message.sources.length > 0 ? (
         <AuriaSourceChips sources={message.sources} onOpenFiles={onOpenFiles} />
       ) : null}
-      {revealRest && message.artifact?.kind === 'document' ? <AuriaDocumentArtifact artifact={message.artifact} /> : null}
+      {/* Documents this turn wrote (E29): read only on the phone (D-07). */}
+      {message.documents?.length ? (
+        <View style={styles.documents}>
+          {message.documents.map((document) => (
+            <AuriaDocumentCard key={document.id} document={document} onOpen={onOpenDocument} />
+          ))}
+        </View>
+      ) : null}
       {/* An image the Auria made (E06): the server saves it as its own message. */}
       {message.imageUrl ? (
         <AuriaGeneratedImage url={message.imageUrl} prompt={message.text} onFeedback={onActionFeedback} />
@@ -95,5 +106,9 @@ const styles = StyleSheet.create({
   statusNote: {
     ...auriaTypography.body,
     fontSize: 12,
+  },
+  documents: {
+    gap: 8,
+    marginTop: 10,
   },
 });

@@ -55,6 +55,7 @@ import { AuriaConversationMenu } from '../components/auria/AuriaConversationMenu
 import { AuriaEditingBanner } from '../components/auria/AuriaEditingBanner';
 import { AuriaQuestionMenu } from '../components/auria/AuriaQuestionMenu';
 import { useQuestionEditing } from '../features/auria/useQuestionEditing';
+import { useChatDocuments } from '../features/auria/useChatDocuments';
 import { useWebSearchPreference } from '../features/auria/useWebSearchPreference';
 import { webSearchButtonView } from '../features/auria/webSearchChoice';
 import { AuriaWebSearchToggle } from '../components/auria/AuriaWebSearchToggle';
@@ -229,6 +230,14 @@ export function AuriaScreen({
       />
     );
   };
+
+  // Documents the Auria wrote in this chat (E29), re-read when a turn writes one.
+  const chatDocuments = useChatDocuments(conversation.chatId);
+  const lastTurnDocuments = conversation.messages[conversation.messages.length - 1]?.documents?.length ?? 0;
+  useEffect(() => {
+    if (!conversation.isBusy && lastTurnDocuments > 0) void chatDocuments.reload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversation.isBusy, lastTurnDocuments]);
 
   // Web search (A033): the choice for the open chat, re-checked right before each turn.
   const web = useWebSearchPreference(conversation.chatId);
@@ -650,6 +659,7 @@ export function AuriaScreen({
         }}
         onLoadEarlier={() => void conversation.loadEarlier()}
         onRetryHistory={conversation.reload}
+        chatDocuments={chatDocuments.documents}
       />
     );
   };

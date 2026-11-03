@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
+import { useWebImage } from '../../features/auria/useWebImage';
 import { siteName } from '../../features/auria/webEvidence';
 import type { WebSource } from '../../features/auria/webResult';
 import { auriaTypography } from '../../theme';
@@ -11,12 +12,23 @@ function hue(name: string): number {
 }
 
 /**
- * The round mark of a web source: the site's initial on a colour drawn from its
- * name. The real logo only ever comes through the server's signed route, which
- * arrives with A036; until then nothing is loaded from the site itself.
+ * The round mark of a web source: the site's logo, read through the server's
+ * signed route (A036, E28), or the site's initial on a colour drawn from its
+ * name while it loads or when there is none. The app never asks the site.
  */
 export function AuriaSiteBadge({ source, size = 18 }: { source: WebSource; size?: number }) {
   const name = siteName(source);
+  const icon = useWebImage(source.icon);
+  if (icon) {
+    return (
+      <Image
+        source={{ uri: icon }}
+        accessibilityIgnoresInvertColors
+        style={{ width: size, height: size, borderRadius: size / 2 }}
+        resizeMode="contain"
+      />
+    );
+  }
   return (
     <View
       accessible={false}

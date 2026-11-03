@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { siteName, sourceDate, webEvidenceView } from '../../features/auria/webEvidence';
 import type { WebResult, WebSource } from '../../features/auria/webResult';
 import { auriaTypography, myceoCornerStyle, useTheme } from '../../theme';
 import { AuriaIcon } from '../icons';
 import { AuriaSiteBadge } from './AuriaSiteBadge';
+import { AuriaWebSourceCover } from './AuriaWebSourceCover';
 
 type AuriaWebEvidenceProps = {
   result: WebResult;
@@ -15,8 +16,9 @@ type AuriaWebEvidenceProps = {
 /**
  * What the web search did for this answer (A035): the state while it runs, up
  * to four source cards, and the full list of sources behind a disclosure. Same
- * content and texts as the web's `WebEvidence`; the source images arrive with
- * A036, so a card shows the site's mark until then.
+ * content and texts as the web's `WebEvidence`; a card's picture and the site
+ * logos never come from the site itself: the
+ * images come through the server's signed route (A036).
  */
 export function AuriaWebEvidence({ result, onOpenSource }: AuriaWebEvidenceProps) {
   const { ds, theme } = useTheme();
@@ -58,6 +60,7 @@ export function AuriaWebEvidence({ result, onOpenSource }: AuriaWebEvidenceProps
               accessibilityLabel={`Open source ${source.index}: ${source.title}`}
               style={({ pressed }) => [styles.card, myceoCornerStyle('inset'), pressed && styles.pressed]}
             >
+              <AuriaWebSourceCover source={source} />
               <View style={styles.cardSite}>
                 <AuriaSiteBadge source={source} size={16} />
                 <Text style={styles.cardSiteName} numberOfLines={1}>

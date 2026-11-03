@@ -20,8 +20,8 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
 
 ## Andamento (2026-11-03)
 
-**Próxima tarefa: A036** (imagens das fontes pela rota `web-image` autenticada).
-Branch `develop`; a `main` recebeu merge até a A034.
+**Próxima tarefa: A037** (criar imagem, Fase 9). Branch `develop`; a `main`
+recebeu merge até a A035.
 
 **Feito** (cada uma com commit próprio e decisão no [registro](../../docs/DECISOES.md)):
 
@@ -35,7 +35,7 @@ Branch `develop`; a `main` recebeu merge até a A034.
 | 5 | A023–A026 | anexos: permissões, envio com progresso, imagens e arquivos privados | D-31 |
 | 6 | A027, A028, A044 | avisos de erro, releitura após falha, bloqueio sem créditos | D-29 |
 | 7 | A029–A032 | Retry, editar pergunta, versões `< 2/3 >`, curtir | D-34 a D-37 |
-| 8 | A033, A034, A035 | preferência de busca por conversa; botão "Web" no composer; andamento, cartões de fonte e citações `[n]` | D-38 a D-40 |
+| 8 | A033–A036 | preferência de busca por conversa; botão "Web" no composer; andamento, cartões de fonte, citações `[n]` e imagens das fontes | D-38 a D-41 |
 | — | fix | aviso de erro não cobre mais o fim da conversa | D-32 |
 
 A015 foi removida (spec 003). A042 está fora do escopo.
@@ -43,7 +43,6 @@ A015 foi removida (spec 003). A042 está fora do escopo.
 **Falta na v1:**
 - P003: ver uma resposta real em streaming no aparelho. Depende de uma conta com plano.
 - V001: roteiro manual da P1.
-- Fase 8: A036 (imagens das fontes).
 - Fase 9: A037, A038 (criar imagem e mostrá-la).
 - Fase 10: A039, A040, A041, A043 (documentos, propostas, criar pelo "+").
 - A056: limpar os mocks e ocultar o que é da v2.
@@ -57,7 +56,7 @@ A015 foi removida (spec 003). A042 está fora do escopo.
   - No aparelho, cada fluxo foi conferido até a recusa real do servidor, ou com um turno simulado.
 - **A busca na web está desligada no servidor de produção**: `GET /auria/web-search/settings` devolve `available: false` (D-38).
   - A A034 só pôde ser vista no estado "indisponível" (o botão fica Off e o toque diz "Search is unavailable.").
-  - A A035 foi conferida com um turno simulado (spike); a A036 fica nos testes até a busca ser ligada.
+  - A A035 foi conferida com um turno simulado (spike); da A036 só se viu o estado sem imagem, porque o simulado não tem caminhos assinados.
 - **Como foi verificado sem plano.** Nada disso é commitado: tudo fica em `src/features/auria/spike/`, que não é versionado.
   - Turnos simulados: `workDemo.ts`, ligado de forma temporária no `http.ts` para mensagens que começam com `/demo`.
   - Conversas de QA criadas sem IA: `seedRetry.ts`.
@@ -245,7 +244,8 @@ A015 foi removida (spec 003). A042 está fora do escopo.
   - Feito no composer, como na web: pílula "Web" / "Web · On" entre o "+" e a pílula de modo. Bloqueado com motivo no toast (empresa desligou, busca indisponível) e "Web · Retry" quando as configurações não carregam. A regra fica em `webSearchButtonView` (`webSearchChoice.ts`); o componente é o `AuriaWebSearchToggle` e o `AuriaComposer` só o recebe como slot (D-39).
 - [x] A035 Evento `web_status` e o resultado de `done.web`/`web_result`: andamento, até 4 cartões de fonte, lista expandível e chips de citação `[n]` — `AuriaWebEvidence.tsx`, `AuriaCitationChip.tsx` — RF-15
   - `webResult.ts` lê os dois formatos (snapshot v2 e resultado v1) e descarta o que não couber no contrato; `webEvidence.ts` tem os textos e a divisão em cartões; `webCitations.ts` troca cada `[n]` com fonte por um link `auriacite:` que o `AuriaMarkdown` desenha como chip. Conferido no emulador com turno simulado (D-40).
-- [ ] A036 Imagens dos cartões de fonte via `web-image` autenticado — E28 — RF-15
+- [x] A036 Imagens dos cartões de fonte via `web-image` autenticado — E28 — RF-15
+  - `webImageFile.ts` baixa a imagem uma vez com o Bearer (como os anexos privados) e o `useWebImage` entrega o arquivo local; sem imagem, o cartão mostra a ilustração própria e o badge a inicial. No emulador só deu para ver o estado sem imagem (D-41).
 
 **Checkpoint (emulador):** H7.1–H7.4.
 

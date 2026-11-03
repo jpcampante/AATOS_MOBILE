@@ -545,11 +545,35 @@ Data: 2026-11-03
 
 ---
 
+### D-41 · Imagens das fontes da web (A036)
+
+Data: 2026-11-03
+
+- A imagem do cartão e o logotipo do site vêm **só** da rota assinada e
+  autenticada do servidor (`GET /auria/web-image/?…&s=…`, E28). O app nunca
+  fala com o site da notícia. Qualquer outro caminho é recusado antes do pedido
+  (`isWebImagePath`, já na A035).
+- O `Image` do Android não manda cabeçalho, então o arquivo é **baixado uma vez
+  com o Bearer** para o cache e mostrado dali — a mesma solução dos anexos
+  privados (`attachmentFiles.ts`). Chamadas simultâneas da mesma imagem dividem
+  um download; em falha, uma segunda tentativa com token renovado; falhou duas
+  vezes, o caminho entra numa lista e não é pedido de novo na sessão (um cartão
+  sem imagem não vira laço de pedidos).
+- **Nunca um quadrado cinza vazio:** sem imagem, o cartão mostra uma ilustração
+  própria (globo e nome do site) e o badge mostra a inicial do site numa cor
+  estável.
+- **Limite da verificação:** o turno simulado não traz caminhos assinados de
+  verdade, e a busca está desligada em produção (D-38), então no emulador só se
+  viu o estado sem imagem. O download autenticado, a recusa de caminho não
+  assinado, a renovação de token e a não repetição estão cobertos por testes.
+
+---
+
 ## Pendências em aberto
 
 | Item | Onde |
 | --- | --- |
-| Spec 002: seguir pela A036 (Fase 8); provar o streaming (P003) com uma conta que tenha plano | [tasks 002](../specs/002-auria-real/tasks.md) |
+| Spec 002: seguir pela A037 (Fase 9); provar o streaming (P003) com uma conta que tenha plano | [tasks 002](../specs/002-auria-real/tasks.md) |
 | Conta de teste com plano ativo: destrava P003 e o sucesso real de Retry, edição e versões no aparelho | conta / billing |
 | O toast de erro ("Couldn't switch versions.", "Couldn't save your like.") usa o ícone de "check" | `AuriaActionToast` |
 | Com créditos bloqueados, o aviso de créditos esconde qualquer outro erro; o "Try again" do aviso devolve a pergunta ao composer também depois de um Retry (D-34) | `AuriaScreen` |

@@ -56,6 +56,8 @@ import { AuriaEditingBanner } from '../components/auria/AuriaEditingBanner';
 import { AuriaQuestionMenu } from '../components/auria/AuriaQuestionMenu';
 import { useQuestionEditing } from '../features/auria/useQuestionEditing';
 import { useWebSearchPreference } from '../features/auria/useWebSearchPreference';
+import { webSearchButtonView } from '../features/auria/webSearchChoice';
+import { AuriaWebSearchToggle } from '../components/auria/AuriaWebSearchToggle';
 import * as Clipboard from 'expo-clipboard';
 import { AuriaReadOnlyNotice } from '../components/auria/AuriaReadOnlyNotice';
 import { AuriaErrorNotice } from '../components/auria/AuriaErrorNotice';
@@ -230,6 +232,13 @@ export function AuriaScreen({
 
   // Web search (A033): the choice for the open chat, re-checked right before each turn.
   const web = useWebSearchPreference(conversation.chatId);
+  /** What the composer's "Web" button shows (A034). */
+  const webButton = webSearchButtonView(web.state);
+  // A refreshed or unsaved choice has to reach the person, not only the button.
+  useEffect(() => {
+    if (web.state.notice) showToast(web.state.notice);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [web.state.notice]);
   /** The `web_mode` for the next turn; a turn that goes Off because of the check says why. */
   const webForTurn = async () => {
     const choice = await web.preflight();
@@ -771,6 +780,14 @@ export function AuriaScreen({
                   imageRatio={imageRatio}
                   onSelectRatio={setImageRatio}
                   onExitImageMode={() => setImageMode(false)}
+                  webSearch={
+                    <AuriaWebSearchToggle
+                      view={webButton}
+                      onChoose={(next) => void web.choose(next)}
+                      onBlocked={showToast}
+                      onRetry={() => void web.reload()}
+                    />
+                  }
                 />
                 )}
               </View>

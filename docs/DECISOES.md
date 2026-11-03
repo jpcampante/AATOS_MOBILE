@@ -600,11 +600,58 @@ Data: 2026-11-03
 
 ---
 
+### D-43 · Documentos da Auria no app (A039 a A041, A043)
+
+Data: 2026-11-03
+
+- **Cartões e lista.** Um turno que escreve um documento mostra o cartão dele na
+  resposta (eventos `canvas` e o que vem no `done`); a conversa inteira lista os
+  seus documentos (E29) no fim, fechada por omissão — as respostas já mostram os
+  do próprio turno.
+- **Só leitura (D-07).** O leitor busca o corpo no servidor (E31) e desenha por
+  formato: `markdown` e `plain` nativos, `html` numa WebView que não navega para
+  lugar nenhum (`about:blank`, sem JavaScript), `sheet-json` como tabela com
+  abas e `deck-json` como a lista de slides. Os dois formatos estruturados são
+  lidos como o backend os lê (a grelha do editor quando foi ele a gravar por
+  último; senão o que a Auria escreveu). Corpo que não encaixa → o leitor diz
+  que não deu para ler, nunca inventa.
+- **Dependência nova:** `react-native-webview` 13.15.0 (vem no Expo Go).
+- **Propostas (E34, E35).** Nada é gravado sem a pessoa: o cartão diz o que
+  mudaria, se o documento ganha nome ou formato novo, e tem Aplicar/Rejeitar. A
+  decisão leva a `revision` que a pessoa viu; 409 (documento ou proposta
+  mudaram) → relê a lista e avisa, nunca decide de novo sozinho.
+- **Criar pelo "+" (A043).** O menu Tools passa a oferecer documento, planilha e
+  apresentação, e a escolha viaja na próxima mensagem como `create`
+  (`doc|sheet|slides`), que é o que o servidor espera. Saíram os modelos de
+  documento locais e o editor HTML: escreviam um documento que só existia no
+  aparelho e que a Auria nunca via (D-06).
+
+---
+
+### D-44 · O que a v1 esconde (A056)
+
+Data: 2026-11-03
+
+- Ficam **fora do alcance** na v1, por não terem backend (D-09, RF-22): o painel
+  de **Galeria**, o de **Projetos** (com a seção de projetos e o "+" de novo
+  projeto na barra lateral) e a **busca simulada** do topo. A barra lateral da
+  v1 tem New chat, News e as conversas reais.
+- Os componentes continuam no repositório, sem caminho que leve a eles: é o
+  código da v2, que volta quando os endpoints existirem (Fases 12–14). Por isso
+  o `grep "data/auria"` ainda acha `auriaMockData` — só dentro desses
+  componentes ocultos, da configuração estática (`AuriaPanel`,
+  `auriaPromptSuggestions`) e do fallback do Discover.
+- Apagados de vez: o mock da imagem (`auria-image-mock.jpg`), o visualizador de
+  imagem simulado, o artefato de documento com editor local e os modelos de
+  documento (D-42, D-43).
+
+---
+
 ## Pendências em aberto
 
 | Item | Onde |
 | --- | --- |
-| Spec 002: seguir pela A039 (Fase 10); provar o streaming (P003) com uma conta que tenha plano | [tasks 002](../specs/002-auria-real/tasks.md) |
+| Spec 002: v1 implementada; falta a regressão no emulador (V003) e o fechamento (V004); provar o streaming (P003) com uma conta que tenha plano | [tasks 002](../specs/002-auria-real/tasks.md) |
 | Conta de teste com plano ativo: destrava P003 e o sucesso real de Retry, edição e versões no aparelho | conta / billing |
 | O toast de erro ("Couldn't switch versions.", "Couldn't save your like.") usa o ícone de "check" | `AuriaActionToast` |
 | Com créditos bloqueados, o aviso de créditos esconde qualquer outro erro; o "Try again" do aviso devolve a pergunta ao composer também depois de um Retry (D-34) | `AuriaScreen` |

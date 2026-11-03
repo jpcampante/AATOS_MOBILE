@@ -34,7 +34,6 @@ import {
 } from '../components/auria/auriaLayout';
 import { AuriaChatView } from '../components/auria/AuriaChatView';
 import { AuriaCameraView } from '../components/auria/AuriaCameraView';
-import { AuriaNewProjectInput, AuriaNewProjectModal } from '../components/auria/AuriaNewProjectModal';
 import { AuriaSidebar } from '../components/auria/AuriaSidebar';
 import { AuriaWelcomeView } from '../components/auria/AuriaWelcomeView';
 import { AuriaWorkspaceHeader, WORKSPACE_HEADER_HEIGHT } from '../components/auria/AuriaWorkspaceHeader';
@@ -562,12 +561,6 @@ export function AuriaScreen({
     if (refused.length) showToast(`${refused[0].name}: ${refused[0].reason}`);
   };
 
-  const openNewProjectModal = () => {
-    dismissKeyboard();
-    closeSidebar();
-    workspace.openProjectModal();
-  };
-
   const openCreateMenu = () => {
     dismissKeyboard();
     setCreateMenuOpen(true);
@@ -582,13 +575,6 @@ export function AuriaScreen({
     void sendToAuria(request);
     attachments.clear();
     setImageMode(false);
-    setPanelKey((key) => key + 1);
-    panelAnim.setValue(1);
-  };
-
-  const handleCreateProject = (input: AuriaNewProjectInput) => {
-    workspace.createProject(input);
-    closeSidebar();
     setPanelKey((key) => key + 1);
     panelAnim.setValue(1);
   };
@@ -638,11 +624,8 @@ export function AuriaScreen({
     if (workspace.panel === 'projects') {
       return (
         <AuriaProjectsPanel
-          projects={workspace.projects}
-          onCreateProject={openNewProjectModal}
-          onDeleteProject={workspace.deleteProject}
+              onDeleteProject={workspace.deleteProject}
           onOpenConversation={handleConversation}
-          onOpenSources={() => transitionPanel('gallery')}
         />
       );
     }
@@ -650,7 +633,6 @@ export function AuriaScreen({
     return (
       <AuriaChatView
         messages={conversation.messages}
-        onOpenFiles={() => transitionPanel('gallery')}
         modelLabel={`Auria · ${auriaModeLabel(conversation.mode)}`}
         onActionFeedback={showToast}
         onRetry={conversation.canContinue ? (id) => void retryAnswer(id) : undefined}
@@ -695,11 +677,8 @@ export function AuriaScreen({
         revealProgress={slideProgress}
         activePanel={workspace.panel}
         activeConversationId={conversation.chatId}
-        projectRows={workspace.projectRows}
-        projects={workspace.projects}
         onNewChat={handleNewChat}
         onSelectPanel={handleSelectSidebarPanel}
-        onCreateProject={openNewProjectModal}
         onSelectConversation={handleConversation}
         conversations={chats.chats}
         conversationsLoaded={chats.loaded}
@@ -753,7 +732,6 @@ export function AuriaScreen({
                     ? 'Discover'
                     : undefined
               }
-              onPlus={workspace.panel === 'projects' ? openNewProjectModal : undefined}
               plusLabel="New project"
               rightSlot={
                 workspace.panel === 'news' ? (
@@ -867,11 +845,6 @@ export function AuriaScreen({
         </View>
       </Animated.View>
 
-      <AuriaNewProjectModal
-        visible={workspace.newProjectOpen}
-        onClose={workspace.closeProjectModal}
-        onCreate={handleCreateProject}
-      />
 
 
       <AuriaCameraView

@@ -11,14 +11,7 @@ import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from 'react-native';
-import {
-  auriaProjects,
-  auriaSidebarProjects,
-  auriaSidebarTopItems,
-  AuriaPanel,
-  AuriaProject,
-  AuriaSidebarProjectRow,
-} from '../../data/auriaMockData';
+import { AuriaPanel } from '../../data/auriaMockData';
 import {
   AuriaIcon,
   AURIA_ICON_SIZE,
@@ -32,14 +25,19 @@ import { useCurrentUser } from '../../features/auth';
 import { providerLabel } from '../../features/auria/chatList';
 import type { AuriaConversation } from '../../features/auria/types';
 
+/**
+ * What the sidebar navigates to in the v1 (A056). Gallery, Projects and the
+ * search panel are simulated and only get a backend in the v2 (D-09), so they
+ * are not reachable here.
+ */
+const V1_TOP_ITEMS = [{ id: 'news' as const, label: 'News', icon: 'newspaper' as const }];
+
 type AuriaSidebarProps = {
   open?: boolean;
   width: number;
   revealProgress?: Animated.Value;
   activePanel: AuriaPanel;
   activeConversationId?: string | null;
-  projectRows?: AuriaSidebarProjectRow[];
-  projects?: AuriaProject[];
   onNewChat: () => void;
   onSelectPanel: (panel: AuriaPanel) => void;
   onSelectConversation: (id: string) => void;
@@ -117,53 +115,12 @@ const PROJECT_ICON_BY_ID: Record<string, AuriaIconName> = {
   'f-legal': 'scale',
 };
 
-function ProjectIcon({
-  projectId,
-  accent,
-  kind,
-  styles,
-}: {
-  projectId: string;
-  accent: string;
-  kind: AuriaSidebarProjectRow['kind'];
-  styles: SidebarStyles;
-}) {
-  if (kind === 'more') {
-    return (
-      <View style={[styles.projectIcon, styles.projectIconMuted]}>
-        <AuriaIcon name="moreHorizontal" size={AURIA_ICON_SIZE.sm} tertiary strokeWidth={AURIA_ICON_STROKE_NAV} />
-      </View>
-    );
-  }
-
-  const iconName = PROJECT_ICON_BY_ID[projectId] ?? 'folder';
-
-  return (
-    <View style={[styles.projectIcon, { backgroundColor: `${accent}18` }]}>
-      <AuriaIcon
-        name={iconName}
-        size={AURIA_ICON_SIZE.sm}
-        color={accent}
-        strokeWidth={AURIA_ICON_STROKE_NAV}
-      />
-    </View>
-  );
-}
-
-const projectMetaById = (projects: AuriaProject[]) =>
-  Object.fromEntries(projects.map((project) => [project.id, project])) as Record<
-    string,
-    AuriaProject
-  >;
-
 export function AuriaSidebar({
   open = false,
   width,
   revealProgress,
   activePanel,
   activeConversationId,
-  projectRows = auriaSidebarProjects,
-  projects = auriaProjects,
   onNewChat,
   onSelectPanel,
   onSelectConversation,
@@ -179,7 +136,6 @@ export function AuriaSidebar({
   const { ds, theme } = useTheme();
   const user = useCurrentUser();
   const styles = useMemo(() => createStyles(ds, theme, width), [ds, theme, width]);
-  const projectMeta = useMemo(() => projectMetaById(projects), [projects]);
 
   const pinnedChats = conversations.filter((chat) => chat.isPinned);
   const recentChats = conversations.filter((chat) => !chat.isPinned);
@@ -214,18 +170,10 @@ export function AuriaSidebar({
     );
   };
 
-  const handleTopItem = (id: (typeof auriaSidebarTopItems)[number]['id']) => {
+  const handleTopItem = (id: (typeof V1_TOP_ITEMS)[number]['id']) => {
     onSelectPanel(id);
   };
 
-  const handleProject = (id: string, kind: AuriaSidebarProjectRow['kind']) => {
-    if (kind === 'more') {
-      onSelectPanel('projects');
-      return;
-    }
-    onSelectProject?.(id);
-    onSelectPanel('projects');
-  };
 
   return (
     <Animated.View
@@ -252,22 +200,6 @@ export function AuriaSidebar({
           </View>
 
           <View style={styles.headerActions}>
-          <Pressable
-            style={({ pressed }) => [
-              styles.headerActionBtn,
-              activePanel === 'search' && styles.headerActionBtnActive,
-              pressed && styles.headerActionBtnPressed,
-            ]}
-            onPress={() => onSelectPanel('search')}
-            accessibilityLabel="Search"
-          >
-            <AuriaIcon
-              name="search"
-              size={AURIA_ICON_SIZE.sm}
-              active={activePanel === 'search'}
-              strokeWidth={AURIA_ICON_STROKE_NAV}
-            />
-          </Pressable>
           <Pressable
             style={({ pressed }) => [styles.profileBtn, pressed && styles.profileBtnPressed]}
             accessibilityRole="button"
@@ -301,7 +233,7 @@ export function AuriaSidebar({
           }
         />
 
-        {auriaSidebarTopItems.map((item) => {
+        {V1_TOP_ITEMS.map((item) => {
           const active = activePanel === item.id;
           const rowIcon = (
             <AuriaIcon
@@ -311,53 +243,6 @@ export function AuriaSidebar({
               strokeWidth={AURIA_ICON_STROKE_NAV}
             />
           );
-
-          // The Projects row pairs navigation (open the panel) with a quick
-          // "+" to create a project. They must be sibling buttons — nesting a
-          // Pressable inside the row Pressable yields invalid <button><button>.
-          if (item.id === 'projects' && onCreateProject) {
-            return (
-              <View key={item.id} style={styles.projectsRow}>
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.row,
-                    styles.projectsMain,
-                    active && styles.rowActive,
-                    pressed && styles.rowPressed,
-                  ]}
-                  onPress={() => handleTopItem(item.id)}
-                  accessibilityRole="button"
-                  accessibilityLabel={item.label}
-                  accessibilityState={{ selected: active }}
-                >
-                  <View style={styles.rowIconSlot}>{rowIcon}</View>
-                  <Text
-                    style={[styles.rowLabel, active && styles.rowLabelActive]}
-                    numberOfLines={1}
-                  >
-                    {item.label}
-                  </Text>
-                </Pressable>
-                <Pressable
-                  onPress={onCreateProject}
-                  hitSlop={8}
-                  accessibilityRole="button"
-                  accessibilityLabel="New project"
-                  style={({ pressed }) => [
-                    styles.rowTrailingBtn,
-                    pressed && styles.rowTrailingBtnPressed,
-                  ]}
-                >
-                  <AuriaIcon
-                    name="plus"
-                    size={AURIA_ICON_SIZE.sm}
-                    color={active ? ds.gray900 : ds.gray500}
-                    strokeWidth={AURIA_ICON_STROKE_STRONG}
-                  />
-                </Pressable>
-              </View>
-            );
-          }
 
           return (
             <SidebarRow
@@ -371,26 +256,6 @@ export function AuriaSidebar({
           );
         })}
 
-        <SidebarSection title="Projects" styles={styles} />
-        {projectRows.map((project) => {
-          const meta = projectMeta[project.id];
-          return (
-            <SidebarRow
-              key={project.id}
-              label={project.name}
-              onPress={() => handleProject(project.id, project.kind)}
-              styles={styles}
-              icon={
-                <ProjectIcon
-                  projectId={project.id}
-                  accent={meta?.accent ?? ds.gray600}
-                  kind={project.kind}
-                  styles={styles}
-                />
-              }
-            />
-          );
-        })}
 
         {pinnedChats.length > 0 ? (
           <>

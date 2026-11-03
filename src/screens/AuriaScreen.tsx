@@ -16,8 +16,6 @@ import {
   AuriaComposerHandle,
 } from '../components/auria/AuriaComposer';
 import { AuriaCreateMenu } from '../components/auria/AuriaCreateMenu';
-import { AuriaDocTemplatesModal } from '../components/auria/AuriaDocTemplatesModal';
-import type { AuriaDocTemplate } from '../data/auriaDocTemplates';
 import { AuriaModeSheet, auriaModeLabel } from '../components/auria/AuriaModeSheet';
 import { AuriaPromptSuggestions } from '../components/auria/AuriaPromptSuggestions';
 import {
@@ -36,7 +34,6 @@ import {
 } from '../components/auria/auriaLayout';
 import { AuriaChatView } from '../components/auria/AuriaChatView';
 import { AuriaCameraView } from '../components/auria/AuriaCameraView';
-import { AuriaNewProjectInput, AuriaNewProjectModal } from '../components/auria/AuriaNewProjectModal';
 import { AuriaSidebar } from '../components/auria/AuriaSidebar';
 import { AuriaWelcomeView } from '../components/auria/AuriaWelcomeView';
 import { AuriaWorkspaceHeader, WORKSPACE_HEADER_HEIGHT } from '../components/auria/AuriaWorkspaceHeader';
@@ -55,6 +52,10 @@ import { AuriaConversationMenu } from '../components/auria/AuriaConversationMenu
 import { AuriaEditingBanner } from '../components/auria/AuriaEditingBanner';
 import { AuriaQuestionMenu } from '../components/auria/AuriaQuestionMenu';
 import { useQuestionEditing } from '../features/auria/useQuestionEditing';
+import { AuriaDocumentReader } from '../components/auria/AuriaDocumentReader';
+import type { AuriaDocument } from '../features/auria/documents';
+import { useChatDocuments } from '../features/auria/useChatDocuments';
+import { useChatProposals } from '../features/auria/useChatProposals';
 import { useWebSearchPreference } from '../features/auria/useWebSearchPreference';
 import { webSearchButtonView } from '../features/auria/webSearchChoice';
 import { AuriaWebSearchToggle } from '../components/auria/AuriaWebSearchToggle';
@@ -230,6 +231,29 @@ export function AuriaScreen({
     );
   };
 
+  /** The document being read (A040); documents are read only on the phone (D-07). */
+  const [readingDocument, setReadingDocument] = useState<AuriaDocument | null>(null);
+
+  // Documents the Auria wrote in this chat (E29), re-read when a turn writes one.
+  const chatDocuments = useChatDocuments(conversation.chatId);
+  const lastTurnDocuments = conversation.messages[conversation.messages.length - 1]?.documents?.length ?? 0;
+  useEffect(() => {
+    if (!conversation.isBusy && lastTurnDocuments > 0) void chatDocuments.reload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversation.isBusy, lastTurnDocuments]);
+
+  // Changes the Auria proposed to a document (E34): the person decides each one.
+  const proposals = useChatProposals(conversation.chatId);
+  useEffect(() => {
+    if (!conversation.isBusy) void proposals.reload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversation.isBusy]);
+  const decideProposal = (proposal: Parameters<typeof proposals.decide>[0], decision: 'apply' | 'reject') =>
+    void proposals.decide(proposal, decision).then((notice) => {
+      if (notice) showToast(notice);
+      else if (decision === 'apply') void chatDocuments.reload();
+    });
+
   // Web search (A033): the choice for the open chat, re-checked right before each turn.
   const web = useWebSearchPreference(conversation.chatId);
   /** What the composer's "Web" button shows (A034). */
@@ -250,6 +274,9 @@ export function AuriaScreen({
     void web.bind(chatId).then((notice) => {
       if (notice) showToast(notice);
     });
+  /** The next message asks the Auria for a new file of this kind (E01 `create`, A043). */
+  const [createFile, setCreateFile] = useState<'doc' | 'sheet' | 'slides' | null>(null);
+
   /** One send at a time while the choice is being checked (a double tap must not send twice). */
   const sendingRef = useRef(false);
 
@@ -265,7 +292,14 @@ export function AuriaScreen({
     sendingRef.current = true;
     try {
       const webMode = await webForTurn();
-      return conversation.send(text, { attachments: files, webMode, onChatCreated: saveWebChoiceFor });
+      const sent = conversation.send(text, {
+        attachments: files,
+        webMode,
+        onChatCreated: saveWebChoiceFor,
+        ...(createFile ? { create: createFile } : null),
+      });
+      if (sent) setCreateFile(null);
+      return sent;
     } finally {
       sendingRef.current = false;
     }
@@ -310,7 +344,6 @@ export function AuriaScreen({
   const attachments = useAuriaAttachments();
   const [imageMode, setImageMode] = useState(false);
   const [imageRatio, setImageRatio] = useState('1:1');
-  const [docTemplatesOpen, setDocTemplatesOpen] = useState(false);
   const [newsSearchOpen, setNewsSearchOpen] = useState(false);
   const [newsCustomizeOpen, setNewsCustomizeOpen] = useState(false);
   const [composerHeight, setComposerHeight] = useState(
@@ -498,10 +531,16 @@ export function AuriaScreen({
     }
     if (imageMode) {
       if (!text) return;
-      if (!(await sendToAuria(`Create an image with aspect ratio ${imageRatio}. Image brief: ${text}`))) return;
+      // Creating an image is its own endpoint (E06), not a turn of the chat.
+      if (credits.blocked) {
+        void credits.check();
+        return;
+      }
       workspace.setComposerText('');
       setImageMode(false);
       dismissKeyboard();
+      if (workspace.panel !== 'chat') workspace.openPanel('chat');
+      if (!(await conversation.generateImage(text, imageRatio))) workspace.setComposerText(text);
       return;
     }
     if (attachments.uploading) {
@@ -522,12 +561,6 @@ export function AuriaScreen({
     if (refused.length) showToast(`${refused[0].name}: ${refused[0].reason}`);
   };
 
-  const openNewProjectModal = () => {
-    dismissKeyboard();
-    closeSidebar();
-    workspace.openProjectModal();
-  };
-
   const openCreateMenu = () => {
     dismissKeyboard();
     setCreateMenuOpen(true);
@@ -542,20 +575,6 @@ export function AuriaScreen({
     void sendToAuria(request);
     attachments.clear();
     setImageMode(false);
-    setPanelKey((key) => key + 1);
-    panelAnim.setValue(1);
-  };
-
-  const handleUseTemplate = (template: AuriaDocTemplate) => {
-    setDocTemplatesOpen(false);
-    void sendToAuria(`Create a document from the "${template.label}" template.`);
-    setPanelKey((key) => key + 1);
-    panelAnim.setValue(1);
-  };
-
-  const handleCreateProject = (input: AuriaNewProjectInput) => {
-    workspace.createProject(input);
-    closeSidebar();
     setPanelKey((key) => key + 1);
     panelAnim.setValue(1);
   };
@@ -605,11 +624,8 @@ export function AuriaScreen({
     if (workspace.panel === 'projects') {
       return (
         <AuriaProjectsPanel
-          projects={workspace.projects}
-          onCreateProject={openNewProjectModal}
-          onDeleteProject={workspace.deleteProject}
+              onDeleteProject={workspace.deleteProject}
           onOpenConversation={handleConversation}
-          onOpenSources={() => transitionPanel('gallery')}
         />
       );
     }
@@ -617,7 +633,6 @@ export function AuriaScreen({
     return (
       <AuriaChatView
         messages={conversation.messages}
-        onOpenFiles={() => transitionPanel('gallery')}
         modelLabel={`Auria · ${auriaModeLabel(conversation.mode)}`}
         onActionFeedback={showToast}
         onRetry={conversation.canContinue ? (id) => void retryAnswer(id) : undefined}
@@ -644,6 +659,12 @@ export function AuriaScreen({
         }}
         onLoadEarlier={() => void conversation.loadEarlier()}
         onRetryHistory={conversation.reload}
+        chatDocuments={chatDocuments.documents}
+        onOpenDocument={setReadingDocument}
+        proposals={proposals.proposals}
+        decidingProposal={proposals.deciding}
+        onApplyProposal={(proposal) => decideProposal(proposal, 'apply')}
+        onRejectProposal={(proposal) => decideProposal(proposal, 'reject')}
       />
     );
   };
@@ -656,11 +677,8 @@ export function AuriaScreen({
         revealProgress={slideProgress}
         activePanel={workspace.panel}
         activeConversationId={conversation.chatId}
-        projectRows={workspace.projectRows}
-        projects={workspace.projects}
         onNewChat={handleNewChat}
         onSelectPanel={handleSelectSidebarPanel}
-        onCreateProject={openNewProjectModal}
         onSelectConversation={handleConversation}
         conversations={chats.chats}
         conversationsLoaded={chats.loaded}
@@ -714,7 +732,6 @@ export function AuriaScreen({
                     ? 'Discover'
                     : undefined
               }
-              onPlus={workspace.panel === 'projects' ? openNewProjectModal : undefined}
               plusLabel="New project"
               rightSlot={
                 workspace.panel === 'news' ? (
@@ -780,6 +797,8 @@ export function AuriaScreen({
                   imageRatio={imageRatio}
                   onSelectRatio={setImageRatio}
                   onExitImageMode={() => setImageMode(false)}
+                  createFile={createFile}
+                  onExitCreateFile={() => setCreateFile(null)}
                   webSearch={
                     <AuriaWebSearchToggle
                       view={webButton}
@@ -806,9 +825,11 @@ export function AuriaScreen({
                 setCreateMenuOpen(false);
                 setImageMode(true);
               }}
-              onCreateDocument={() => {
+              onCreateFile={(kind) => {
                 setCreateMenuOpen(false);
-                setDocTemplatesOpen(true);
+                setCreateFile(kind);
+                if (workspace.panel !== 'chat') workspace.openPanel('chat');
+                composerRef.current?.focus();
               }}
               bottomOffset={shellBottomInset - 20}
             />
@@ -820,20 +841,10 @@ export function AuriaScreen({
               onClose={() => setModelPickerOpen(false)}
             />
 
-            <AuriaDocTemplatesModal
-              visible={docTemplatesOpen}
-              onClose={() => setDocTemplatesOpen(false)}
-              onUse={handleUseTemplate}
-            />
           </View>
         </View>
       </Animated.View>
 
-      <AuriaNewProjectModal
-        visible={workspace.newProjectOpen}
-        onClose={workspace.closeProjectModal}
-        onCreate={handleCreateProject}
-      />
 
 
       <AuriaCameraView
@@ -845,6 +856,7 @@ export function AuriaScreen({
         }}
       />
 
+      <AuriaDocumentReader document={readingDocument} onClose={() => setReadingDocument(null)} />
       <AuriaActionToast message={toast} />
     </View>
   );

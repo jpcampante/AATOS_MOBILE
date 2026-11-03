@@ -2,6 +2,7 @@ import type { AuriaApiError } from './api/errors';
 import type { AuriaMode } from './api/streamChat';
 import { createRun, runReducer, type AuriaRun, type AuriaRunAction } from './runReducer';
 import type { AuriaAttachment, AuriaChatMessage } from './types';
+import { mapApiDocuments } from './documents';
 import { parseWebResult } from './webResult';
 import { applyWorkEvent } from './work/workRun';
 
@@ -69,6 +70,8 @@ export type ConversationAction =
   | { type: 'branch-loaded'; chatId: string; messages: AuriaChatMessage[]; oldestPage: number }
   /** It didn't happen: the old messages come back, with the reason (or none when stopped). */
   | { type: 'replay-failed'; localId: string; error: AuriaApiError | null }
+  /** Something outside a turn failed (generating an image, say). */
+  | { type: 'failed'; error: AuriaApiError }
   | { type: 'clear-error' };
 
 const idleHistory: HistoryState = { loading: false, oldestPage: 1, hasEarlier: false, error: null };
@@ -97,6 +100,8 @@ function settledAnswer(localId: string, run: AuriaRun): AuriaChatMessage | null 
   message.work = run.work; // the panel stays above the answer, closed ("Reasoned for 8 seconds")
   const web = parseWebResult(run.web);
   if (web) message.web = web;
+  const documents = mapApiDocuments(run.documents);
+  if (documents.length) message.documents = documents;
   return message;
 }
 
@@ -247,6 +252,9 @@ export function conversationReducer(state: ConversationState, action: Conversati
         history: { loading: false, oldestPage: action.oldestPage, hasEarlier: action.oldestPage > 1, error: null },
       };
 
+    case 'failed':
+      return { ...state, error: action.error };
+
     case 'clear-error':
       return state.error ? { ...state, error: null } : state;
   }
@@ -260,9 +268,18 @@ export function visibleMessages(state: ConversationState): AuriaChatMessage[] {
   const kept = at >= 0 ? state.messages.slice(0, at) : state.messages;
   const question = replay?.question ? [replay.question] : [];
   const web = parseWebResult(run.web);
+  const documents = mapApiDocuments(run.documents);
   return [
     ...kept,
     ...question,
-    { id: `${localId}-a`, role: 'assistant', text: run.text, live: true, work: run.work, ...(web ? { web } : null) },
+    {
+      id: `${localId}-a`,
+      role: 'assistant',
+      text: run.text,
+      live: true,
+      work: run.work,
+      ...(web ? { web } : null),
+      ...(documents.length ? { documents } : null),
+    },
   ];
 }

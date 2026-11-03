@@ -1,3 +1,4 @@
+import type { AuriaDocument } from './documents';
 import type { WebResult } from './webResult';
 import type { WorkRun } from './work/workRun';
 
@@ -134,4 +135,6 @@ export type AuriaChatMessage = {
   sources?: AuriaSource[];
   /** This turn's web search: progress, sources and the `[n]` behind the citations. */
   web?: WebResult;
+  /** Documents the Auria wrote or changed in this turn (E29, read only). */
+  documents?: AuriaDocument[];
 };

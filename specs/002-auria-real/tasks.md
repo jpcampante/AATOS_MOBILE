@@ -20,8 +20,9 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
 
 ## Andamento (2026-11-03)
 
-**Próxima tarefa: A036** (imagens das fontes pela rota `web-image` autenticada).
-Branch `develop`; a `main` recebeu merge até a A034.
+**Próxima tarefa: V003** (regressão da v1 no emulador, claro e escuro, com
+conferência cruzada na web) e depois a V004. Branch `develop`; a `main` recebeu
+merge até a A035.
 
 **Feito** (cada uma com commit próprio e decisão no [registro](../../docs/DECISOES.md)):
 
@@ -35,7 +36,10 @@ Branch `develop`; a `main` recebeu merge até a A034.
 | 5 | A023–A026 | anexos: permissões, envio com progresso, imagens e arquivos privados | D-31 |
 | 6 | A027, A028, A044 | avisos de erro, releitura após falha, bloqueio sem créditos | D-29 |
 | 7 | A029–A032 | Retry, editar pergunta, versões `< 2/3 >`, curtir | D-34 a D-37 |
-| 8 | A033, A034, A035 | preferência de busca por conversa; botão "Web" no composer; andamento, cartões de fonte e citações `[n]` | D-38 a D-40 |
+| 8 | A033–A036 | preferência de busca por conversa; botão "Web" no composer; andamento, cartões de fonte, citações `[n]` e imagens das fontes | D-38 a D-41 |
+| 9 | A037, A038 | criar imagem pelo endpoint real; imagem na conversa, em tela cheia e compartilhável | D-42 |
+| 10 | A039–A041, A043 | cartões e lista de documentos, leitor só leitura, propostas Aplicar/Rejeitar, criar arquivo pelo "+" | D-43 |
+| — | A056 | mocks mortos fora; Galeria, Projetos e busca simulada ocultos na v1 | D-44 |
 | — | fix | aviso de erro não cobre mais o fim da conversa | D-32 |
 
 A015 foi removida (spec 003). A042 está fora do escopo.
@@ -43,11 +47,9 @@ A015 foi removida (spec 003). A042 está fora do escopo.
 **Falta na v1:**
 - P003: ver uma resposta real em streaming no aparelho. Depende de uma conta com plano.
 - V001: roteiro manual da P1.
-- Fase 8: A036 (imagens das fontes).
-- Fase 9: A037, A038 (criar imagem e mostrá-la).
-- Fase 10: A039, A040, A041, A043 (documentos, propostas, criar pelo "+").
-- A056: limpar os mocks e ocultar o que é da v2.
-- Fechamento: V002, V003, V004.
+- Fechamento: V003 (regressão no emulador) e V004.
+
+**Conferido só por testes** (a conta de teste não tem plano, e a busca está desligada): o sucesso real de criar imagem (A037/A038), os documentos e as propostas (A039–A041, A043) e as imagens das fontes (A036). No aparelho viram-se os caminhos de recusa, os estados vazios e a navegação.
 
 **Falta na v2:** A045–A055, A057, V005 e V006 (projetos, compartilhamento, menções, fontes, escopos e biblioteca).
 
@@ -57,7 +59,7 @@ A015 foi removida (spec 003). A042 está fora do escopo.
   - No aparelho, cada fluxo foi conferido até a recusa real do servidor, ou com um turno simulado.
 - **A busca na web está desligada no servidor de produção**: `GET /auria/web-search/settings` devolve `available: false` (D-38).
   - A A034 só pôde ser vista no estado "indisponível" (o botão fica Off e o toque diz "Search is unavailable.").
-  - A A035 foi conferida com um turno simulado (spike); a A036 fica nos testes até a busca ser ligada.
+  - A A035 foi conferida com um turno simulado (spike); da A036 só se viu o estado sem imagem, porque o simulado não tem caminhos assinados.
 - **Como foi verificado sem plano.** Nada disso é commitado: tudo fica em `src/features/auria/spike/`, que não é versionado.
   - Turnos simulados: `workDemo.ts`, ligado de forma temporária no `http.ts` para mensagens que começam com `/demo`.
   - Conversas de QA criadas sem IA: `seedRetry.ts`.
@@ -245,34 +247,37 @@ A015 foi removida (spec 003). A042 está fora do escopo.
   - Feito no composer, como na web: pílula "Web" / "Web · On" entre o "+" e a pílula de modo. Bloqueado com motivo no toast (empresa desligou, busca indisponível) e "Web · Retry" quando as configurações não carregam. A regra fica em `webSearchButtonView` (`webSearchChoice.ts`); o componente é o `AuriaWebSearchToggle` e o `AuriaComposer` só o recebe como slot (D-39).
 - [x] A035 Evento `web_status` e o resultado de `done.web`/`web_result`: andamento, até 4 cartões de fonte, lista expandível e chips de citação `[n]` — `AuriaWebEvidence.tsx`, `AuriaCitationChip.tsx` — RF-15
   - `webResult.ts` lê os dois formatos (snapshot v2 e resultado v1) e descarta o que não couber no contrato; `webEvidence.ts` tem os textos e a divisão em cartões; `webCitations.ts` troca cada `[n]` com fonte por um link `auriacite:` que o `AuriaMarkdown` desenha como chip. Conferido no emulador com turno simulado (D-40).
-- [ ] A036 Imagens dos cartões de fonte via `web-image` autenticado — E28 — RF-15
+- [x] A036 Imagens dos cartões de fonte via `web-image` autenticado — E28 — RF-15
+  - `webImageFile.ts` baixa a imagem uma vez com o Bearer (como os anexos privados) e o `useWebImage` entrega o arquivo local; sem imagem, o cartão mostra a ilustração própria e o badge a inicial. No emulador só deu para ver o estado sem imagem (D-41).
 
 **Checkpoint (emulador):** H7.1–H7.4.
 
 ## Fase 9 — História 8: Criar imagens (P2)
 
-- [ ] A037 Modo "Criar imagem" → `generate/image`:
+- [x] A037 Modo "Criar imagem" → `generate/image`:
   - proporções 1:1 → `1024x1024`, paisagem → `1792x1024`, retrato → `1024x1792`;
   - progresso e erros de créditos.
 
   Endpoint E06 — RF-16
-- [ ] A038 Mensagem `content_type:"image"` renderizada; visualizador em tela cheia; compartilhar (e salvar, se funcionar no Expo Go). Remover `assets/auria-image-mock.jpg` e ocultar a ferramenta de pincel (D-06) — `AuriaImageArtifact.tsx`, `AuriaImageViewer.tsx` — RF-16, RF-22
+  - As cinco proporções viram os três tamanhos do servidor; a conversa é relida depois do sucesso, porque o servidor salva o par de mensagens (D-42).
+- [x] A038 Mensagem `content_type:"image"` renderizada; visualizador em tela cheia; compartilhar (e salvar, se funcionar no Expo Go). Remover `assets/auria-image-mock.jpg` e ocultar a ferramenta de pincel (D-06) — `AuriaGeneratedImage.tsx`, `AuriaImageFullScreen.tsx` — RF-16, RF-22
+  - O visualizador simulado inteiro saiu (editar, comentar, redimensionar, pincel e o "Saved to Photos"), junto com o mock; ficou imagem, enunciado e Compartilhar (D-42).
 
 **Checkpoint (emulador):** H8.1–H8.3, e a imagem aparece também na web.
 
 ## Fase 10 — História 9: Documentos da Auria (P2)
 
-- [ ] A039 Cartões de documento vindos de `canvas` e `saved.canvas_documents`; lista de documentos da conversa — E29 — RF-17
-- [ ] A040 Leitor de documento, **só leitura** (D-07):
+- [x] A039 Cartões de documento vindos de `canvas` e `saved.canvas_documents`; lista de documentos da conversa — E29 — RF-17
+- [x] A040 Leitor de documento, **só leitura** (D-07):
   - `markdown`/`plain` nativo;
   - `html` em WebView (`react-native-webview`);
   - `sheet-json` em tabela, `deck-json` em slides;
   - o editor local atual (`AuriaDocEditor`) sai do caminho dos documentos reais.
 
   Arquivo: `AuriaDocumentReader.tsx`. Endpoint E31 — RF-17
-- [ ] A041 Propostas: cartão Aplicar/Rejeitar a partir de `canvas_proposal` e da lista pendente; em 409, recarregar — `AuriaProposalCard.tsx`. Endpoints E34, E35 — RF-17
+- [x] A041 Propostas: cartão Aplicar/Rejeitar a partir de `canvas_proposal` e da lista pendente; em 409, recarregar — `AuriaProposalCard.tsx`. Endpoints E34, E35 — RF-17
 - ~~A042 "Pedir mudança" num trecho~~ — **fora de escopo** (D-07: documentos só leitura). O ID fica reservado.
-- [ ] A043 Menu "+" → criar documento, planilha ou apresentação manda `create: doc|sheet|slides`. Modelos de documento viram pedidos à Auria; sai o HTML local (D-06) — `AuriaCreateMenu.tsx`, `AuriaDocTemplatesModal.tsx` — RF-17, RF-22
+- [x] A043 Menu "+" → criar documento, planilha ou apresentação manda `create: doc|sheet|slides`. Modelos de documento viram pedidos à Auria; sai o HTML local (D-06) — `AuriaCreateMenu.tsx`, `AuriaDocTemplatesModal.tsx` — RF-17, RF-22
 
 **Checkpoint (emulador):** H9.1–H9.5.
 
@@ -284,9 +289,10 @@ A044 (bloqueio por créditos) subiu para a Fase 6, na P1 (D-08).
 
 ## Fechamento da v1 (P1 + P2)
 
-- [ ] A056 Remover os mocks mortos da Auria (`auriaMockData` de conversas, galeria e busca; `auriaModels`, D-06). **Ocultar na v1** o que só ganha backend na v2 (D-09, RF-22): painel de Projetos e a seção de projetos da barra lateral, Galeria e painel de busca simulado. Conferir que `grep "data/auria" src/screens src/components` só acha configuração estática ou código oculto da v2 — RNF-05, CS-02
-- [ ] V002 `npm run typecheck` e `npm test` sem erros
+- [x] A056 Remover os mocks mortos da Auria (`auriaMockData` de conversas, galeria e busca; `auriaModels`, D-06). **Ocultar na v1** o que só ganha backend na v2 (D-09, RF-22): painel de Projetos e a seção de projetos da barra lateral, Galeria e painel de busca simulado. Conferir que `grep "data/auria" src/screens src/components` só acha configuração estática ou código oculto da v2 — RNF-05, CS-02
+- [x] V002 `npm run typecheck` e `npm test` sem erros (68 suítes, 463 testes em 2026-11-03)
 - [ ] V003 Regressão completa da v1 no emulador Android (Expo Go), claro e escuro, com conferência cruzada na web. Registrar a versão do backend testada
+  - **Parcial (2026-11-03):** conferidos no emulador a barra lateral da v1 (sem Galeria, Projetos nem busca), o menu Tools com os três arquivos, o pedido "New spreadsheet" no composer, o modo imagem com as proporções, o botão Web indisponível, o painel de busca simulada do turno de QA e o tema escuro pelo Perfil. Falta a regressão ponta a ponta com uma conta com plano e a conferência cruzada na web.
 - [ ] V004 Spec → **Implementada (v1)**; decisões novas no fim de `docs/DECISOES.md`; merge `develop` → `main` quando aprovado
 
 ---

@@ -3,7 +3,11 @@ import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View
 import { AURIA_CHAT_SCROLL_END_PADDING, AURIA_CONTENT_HORIZONTAL_INSET } from './auriaLayout';
 import { auriaTypography, liquidGlassBorder, liquidGlassTokens, useTheme } from '../../theme';
 import type { AuriaChatMessage } from '../../features/auria/types';
+import type { AuriaDocument } from '../../features/auria/documents';
 import { AuriaAssistantContent } from './AuriaAssistantContent';
+import type { AuriaProposal } from '../../features/auria/proposals';
+import { AuriaChatDocuments } from './AuriaChatDocuments';
+import { AuriaProposalCard } from './AuriaProposalCard';
 import { AuriaMessageFiles } from './AuriaMessageFiles';
 import { AuriaVersionSwitcher } from './AuriaVersionSwitcher';
 
@@ -29,6 +33,16 @@ type AuriaChatViewProps = {
   history?: { loading: boolean; hasEarlier: boolean; failed: boolean };
   onLoadEarlier?: () => void;
   onRetryHistory?: () => void;
+  /** Everything the Auria wrote in this chat (E29), listed at the end. */
+  chatDocuments?: AuriaDocument[];
+  /** Opens a document in the reader (A040). */
+  onOpenDocument?: (document: AuriaDocument) => void;
+  /** Changes the Auria proposed and nobody decided yet (E34). */
+  proposals?: AuriaProposal[];
+  /** The proposal whose decision is with the server. */
+  decidingProposal?: string | null;
+  onApplyProposal?: (proposal: AuriaProposal) => void;
+  onRejectProposal?: (proposal: AuriaProposal) => void;
 };
 
 const ATTACHMENT_MAX_W = 230;
@@ -90,6 +104,12 @@ export function AuriaChatView({
   history,
   onLoadEarlier,
   onRetryHistory,
+  chatDocuments = [],
+  onOpenDocument,
+  proposals = [],
+  decidingProposal,
+  onApplyProposal,
+  onRejectProposal,
 }: AuriaChatViewProps) {
   const { ds, theme } = useTheme();
   /** `< 2/3 >` for a message with other versions (retried answers, edited questions). */
@@ -232,6 +252,7 @@ export function AuriaChatView({
                     onRetry={onRetry}
                     onToggleLike={onToggleLike}
                     onActionFeedback={onActionFeedback}
+                    onOpenDocument={onOpenDocument}
                   />
                 )}
               </View>
@@ -240,6 +261,20 @@ export function AuriaChatView({
           </View>
         );
       })}
+      {proposals.length > 0 && onApplyProposal && onRejectProposal ? (
+        <View style={styles.proposals}>
+          {proposals.map((proposal) => (
+            <AuriaProposalCard
+              key={proposal.id}
+              proposal={proposal}
+              busy={decidingProposal === proposal.id}
+              onApply={onApplyProposal}
+              onReject={onRejectProposal}
+            />
+          ))}
+        </View>
+      ) : null}
+      <AuriaChatDocuments documents={chatDocuments} onOpen={onOpenDocument} />
     </ScrollView>
   );
 }
@@ -254,6 +289,9 @@ function createStyles(
   return StyleSheet.create({
     scroll: {
       flex: 1,
+    },
+    proposals: {
+      gap: 8,
     },
     scrollContent: {
       paddingHorizontal: AURIA_CONTENT_HORIZONTAL_INSET,

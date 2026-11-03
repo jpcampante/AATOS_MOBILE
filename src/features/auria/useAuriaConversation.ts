@@ -4,6 +4,8 @@ import { auriaHttp, streamChat } from './api/http';
 import { auriaRoutes } from './api/routes';
 import { listMessages, MESSAGE_PAGE_SIZE } from './api/chats';
 import { activateVersion, editMessage, regenerateMessage, setLiked, type ReplayOptions } from './api/messages';
+import { generateImage as requestImage } from './api/images';
+import { imageSizeForRatio } from './imageSize';
 import { canContinueChat, latestPages } from './chatList';
 import { messageWithAttachments } from './attachments';
 import { absolutizeUrl, serverPath } from './mappers';
@@ -49,6 +51,9 @@ export function useAuriaConversation() {
   const [mode, setModeState] = useState<AuriaMode>(DEFAULT_MODE);
   /** The message whose version is switching (E21), for the switcher's spinner. */
   const [switchingVersionOf, setSwitchingVersionOf] = useState<string | null>(null);
+  /** An image is being generated: the composer waits, like it does for an answer. */
+  const [generatingImage, setGeneratingImage] = useState(false);
+  const generatingImageRef = useRef(false);
   const modeRef = useRef(mode);
   modeRef.current = mode;
 
@@ -263,10 +268,56 @@ export function useAuriaConversation() {
     }
   }, []);
 
-  /** Stop the answer being written. What already arrived stays, marked as stopped. */
+  /**
+   * Creates an image from the prompt (E06, A037). The server saves the pair of
+   * messages itself, so the chat is re-read once it answers; a chat it created
+   * for this image becomes the open one.
+   */
+  const generateImage = useCallback(async (prompt: string, ratio: string): Promise<boolean> => {
+    const text = prompt.trim();
+    const { chatId, live, provider } = stateRef.current;
+    if (!text || live || generatingImageRef.current || !canContinueChat(provider)) return false;
+    generatingImageRef.current = true;
+    setGeneratingImage(true);
+    const controller = new AbortController();
+    abortRef.current = controller;
+    try {
+      const image = await requestImage({ prompt: text, size: imageSizeForRatio(ratio), chatId, signal: controller.signal });
+      const loaded = await fetchLatest(image.chatId);
+      if (image.chatId !== stateRef.current.chatId) dispatch({ type: 'open', chatId: image.chatId, provider: null });
+      dispatch({ type: 'history-loaded', chatId: image.chatId, messages: loaded.messages, oldestPage: loaded.oldestPage });
+      return true;
+    } catch (err) {
+      const error = isAuriaApiError(err) ? err : networkError(err);
+      // Stopped on purpose: no notice. The server may still have saved it, so re-read the chat.
+      if (error.code === 'aborted') {
+        const open = stateRef.current.chatId;
+        if (open) {
+          void fetchLatest(open).then(
+            ({ messages: saved, oldestPage }) =>
+              dispatch({ type: 'branch-loaded', chatId: open, messages: saved, oldestPage }),
+            () => undefined,
+          );
+        }
+        return false;
+      }
+      dispatch({ type: 'failed', error });
+      return false;
+    } finally {
+      if (abortRef.current === controller) abortRef.current = null;
+      generatingImageRef.current = false;
+      setGeneratingImage(false);
+    }
+  }, []);
+
+  /** Stop the answer being written (or the image being made). What already arrived stays. */
   const stop = useCallback(() => {
     const live = stateRef.current.live;
-    if (!live) return;
+    if (!live) {
+      // An image on its way: stop waiting for it.
+      if (generatingImageRef.current) abortRef.current?.abort();
+      return;
+    }
     dispatch({ type: 'run', localId: live.localId, action: { type: 'stop' } });
     abortRef.current?.abort();
   }, []);
@@ -325,11 +376,14 @@ export function useAuriaConversation() {
     messages,
     /** The answer being written, with its status, tools and reasoning. */
     run: state.live?.run ?? null,
-    isBusy: state.live !== null,
+    isBusy: state.live !== null || generatingImage,
+    /** An image is being generated (E06): no other send meanwhile. */
+    generatingImage,
     error: state.error,
     mode,
     setMode,
     send,
+    generateImage,
     retry,
     edit,
     switchVersion,

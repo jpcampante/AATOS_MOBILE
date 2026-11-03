@@ -93,7 +93,11 @@ export function mapApiMessage(msg: ApiMessage, baseUrl: string): AuriaChatMessag
     text = multimodal.instruction?.trim() ?? '';
     if (multimodal.asset_url) files = [attachment('image', multimodal.asset_url, baseUrl, true)];
   } else if (typeof msg.content === 'string') {
-    if (role === 'user') ({ text, files } = extractAttachments(msg.content, baseUrl));
+    if (role === 'user') {
+      ({ text, files } = extractAttachments(msg.content, baseUrl));
+      // The image endpoint marks the request it saves; the person wrote only the brief.
+      text = text.replace(/^\[Generate image\]\s*/, '');
+    }
     else text = msg.content.trim();
   }
 

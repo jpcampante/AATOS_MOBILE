@@ -492,7 +492,10 @@ Data: 2026-10-22
 
 | Item | Onde |
 | --- | --- |
-| Spec 002: provar o streaming (P003) com uma conta que tenha plano; seguir pela A030 | [tasks 002](../specs/002-auria-real/tasks.md) |
+| Spec 002: seguir pela A034 (Fase 8); provar o streaming (P003) com uma conta que tenha plano | [tasks 002](../specs/002-auria-real/tasks.md) |
+| Conta de teste com plano ativo: destrava P003 e o sucesso real de Retry, edição e versões no aparelho | conta / billing |
+| Push e merge na `main` do commit da A033 (`be1dfbe`) e da atualização dos documentos | git |
+| O toast de erro ("Couldn't switch versions.", "Couldn't save your like.") usa o ícone de "check" | `AuriaActionToast` |
 | Com créditos bloqueados, o aviso de créditos esconde qualquer outro erro; o "Try again" do aviso devolve a pergunta ao composer também depois de um Retry (D-34) | `AuriaScreen` |
 | A lista de conversas da barra lateral só recarrega ao abrir o app (D-34) | `useAuriaChats` |
 | Edição que falha (ex.: 402) perde o texto editado; devolvê-lo ao composer (D-35) | `useQuestionEditing` |
@@ -502,6 +505,6 @@ Data: 2026-10-22
 | Se a chave RSA do `.env.test` local do backend for usada em algum ambiente real, trocá-la (ela foi exibida por engano numa sessão) | backend |
 | Apagar as worktrees `_wt/mobile-code-login` e `_wt/main-mobile-code` e o SQLite de teste delas | máquina local |
 | Dúvidas de produto: backend dos dados, idioma da interface, Play Store ou interno (LLM da Auria: respondido pela D-25) | [baseline §7](../specs/000-baseline/spec.md) |
-| Tarefas da baseline ainda abertas: ESLint (T002), CI (T003), testes (T004), permissões (T005), SDK 56 (T006), tema automático (T007), camada de dados (T009–T011), tokens de cor (T013), acessibilidade (T014) | [baseline tasks](../specs/000-baseline/tasks.md) |
+| Tarefas da baseline ainda abertas: ESLint (T002), CI (T003), testes da lógica antiga (T004), SDK 56 (T006), tema automático (T007), camada de dados (T009–T011), tokens de cor (T013), acessibilidade (T014). A T005 (permissões) foi feita na A023 | [baseline tasks](../specs/000-baseline/tasks.md) |
 | Aviso do Expo: `expo@54.0.35`, esperado `~54.0.37` | `package.json` |
 | Fase 2 do login: botões nativos Google/Microsoft e SSO empresarial | spec futura |

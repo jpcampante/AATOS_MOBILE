@@ -17,10 +17,54 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
 
 > **Status:** aprovado em 2026-10-20 (D-05 a D-09 da spec).
 > **v1** = P1 + P2 (Fases 0–10 e o fechamento da v1). **v2** = P3 (Fases 12–14).
->
-> **Andamento (2026-10-22):** Fases 1–6 (P1) concluídas, exceto P003 e V001. Fase 7 em curso:
-> Fase 7 (A029–A032) feita. Fase 8 em curso: A033 feita; próxima A034. A busca na web está desligada no servidor de produção (D-38). Na `main` até a A029 (merge de 2026-10-22). Bloqueio: a conta
-> de teste não tem plano (402), então nenhuma resposta real da Auria foi vista ainda (P003).
+
+## Andamento (2026-11-03)
+
+**Próxima tarefa: A034** (botão "Web" no composer). Branch `develop`; a `main`
+recebeu merge até a A032 (o commit da A033 ainda precisa de push e merge).
+
+**Feito** (cada uma com commit próprio e decisão no [registro](../../docs/DECISOES.md)):
+
+| Fase | Tarefas | O que entrega | Decisões |
+| --- | --- | --- | --- |
+| 0 | P001, P002, P004 | sessão real, host e token conferidos, Markdown escolhido | D-24, D-27 |
+| 1 | A001–A009 | cliente HTTP, SSE, eventos, erros, tipos, mapeadores | D-27 |
+| 2 | A010–A014 | conversa real (envio com stream, parar, nova conversa, Rápido/Profundo) | D-29 |
+| 3 | A016, A017 | painel "Working for 6s" com etapas e logos; "Thinking" salvo | D-32, D-33 |
+| 4 | A018–A022 | histórico: lista, abrir, renomear, fixar, apagar, última conversa | D-29 |
+| 5 | A023–A026 | anexos: permissões, envio com progresso, imagens e arquivos privados | D-31 |
+| 6 | A027, A028, A044 | avisos de erro, releitura após falha, bloqueio sem créditos | D-29 |
+| 7 | A029–A032 | Retry, editar pergunta, versões `< 2/3 >`, curtir | D-34 a D-37 |
+| 8 | A033 | preferência de busca por conversa, conferida antes de cada turno | D-38 |
+| — | fix | aviso de erro não cobre mais o fim da conversa | D-32 |
+
+A015 foi removida (spec 003). A042 está fora do escopo.
+
+**Falta na v1:**
+- P003: ver uma resposta real em streaming no aparelho. Depende de uma conta com plano.
+- V001: roteiro manual da P1.
+- Fase 8: A034 (botão "Web"), A035 (andamento, cartões de fonte e citações `[n]`), A036 (imagens das fontes).
+- Fase 9: A037, A038 (criar imagem e mostrá-la).
+- Fase 10: A039, A040, A041, A043 (documentos, propostas, criar pelo "+").
+- A056: limpar os mocks e ocultar o que é da v2.
+- Fechamento: V002, V003, V004.
+
+**Falta na v2:** A045–A055, A057, V005 e V006 (projetos, compartilhamento, menções, fontes, escopos e biblioteca).
+
+**Bloqueios e como testar sem eles:**
+- **A conta de teste não tem plano**, e o servidor recusa com `402 no_active_plan`. Nenhuma resposta real da Auria foi vista ainda.
+  - O sucesso do envio, do Retry, da edição e da troca de versões está coberto só por testes.
+  - No aparelho, cada fluxo foi conferido até a recusa real do servidor, ou com um turno simulado.
+- **A busca na web está desligada no servidor de produção**: `GET /auria/web-search/settings` devolve `available: false` (D-38).
+  - A A034 só pode ser vista no estado "indisponível".
+  - A A035 e a A036 ficam nos testes até a busca ser ligada.
+- **Como foi verificado sem plano.** Nada disso é commitado: tudo fica em `src/features/auria/spike/`, que não é versionado.
+  - Turnos simulados: `workDemo.ts`, ligado de forma temporária no `http.ts` para mensagens que começam com `/demo`.
+  - Conversas de QA criadas sem IA: `seedRetry.ts`.
+  - Liberar por um momento o bloqueio de créditos no `AuriaScreen`.
+  - Cada conversa de QA criada tem de ser apagada pelo app depois.
+
+**Pendências pequenas:** estão na tabela "Pendências em aberto" do [registro](../../docs/DECISOES.md).
 
 ## Fase 0 — Pré-requisitos e spikes (bloqueia tudo)
 

@@ -53,7 +53,7 @@ describe('useAuriaConversation — retry', () => {
     act(() => {
       expect(result.current.retry('a-1')).toBe(true);
     });
-    expect(regenerate).toHaveBeenCalledWith('a-1', expect.objectContaining({ mode: 'deep', clientOperationId: expect.any(String) }));
+    expect(regenerate).toHaveBeenCalledWith('a-1', expect.objectContaining({ mode: 'deep', clientOperationId: expect.any(String), webMode: 'off' }));
     expect(result.current.isBusy).toBe(true);
     expect(result.current.messages.map((m) => m.text)).toEqual(['What are my tasks?', '']); // the panel writes
 

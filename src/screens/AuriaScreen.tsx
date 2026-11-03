@@ -55,6 +55,7 @@ import { AuriaConversationMenu } from '../components/auria/AuriaConversationMenu
 import { AuriaEditingBanner } from '../components/auria/AuriaEditingBanner';
 import { AuriaQuestionMenu } from '../components/auria/AuriaQuestionMenu';
 import { useQuestionEditing } from '../features/auria/useQuestionEditing';
+import { useWebSearchPreference } from '../features/auria/useWebSearchPreference';
 import * as Clipboard from 'expo-clipboard';
 import { AuriaReadOnlyNotice } from '../components/auria/AuriaReadOnlyNotice';
 import { AuriaErrorNotice } from '../components/auria/AuriaErrorNotice';
@@ -227,34 +228,57 @@ export function AuriaScreen({
     );
   };
 
+  // Web search (A033): the choice for the open chat, re-checked right before each turn.
+  const web = useWebSearchPreference(conversation.chatId);
+  /** The `web_mode` for the next turn; a turn that goes Off because of the check says why. */
+  const webForTurn = async () => {
+    const choice = await web.preflight();
+    if (choice.notice) showToast(choice.notice);
+    return choice.mode;
+  };
+  /** A new chat was created: save the person's choice for it. */
+  const saveWebChoiceFor = (chatId: string) =>
+    void web.bind(chatId).then((notice) => {
+      if (notice) showToast(notice);
+    });
+  /** One send at a time while the choice is being checked (a double tap must not send twice). */
+  const sendingRef = useRef(false);
+
   /** Sends to the real Auria from any entry point (composer, suggestion, article…). */
-  const sendToAuria = (text: string, files: SendOptions['attachments'] = []) => {
+  const sendToAuria = async (text: string, files: SendOptions['attachments'] = []): Promise<boolean> => {
     if (workspace.panel !== 'chat') workspace.openPanel('chat');
     // Out of credits (or the check failed): block before calling Auria (D-08). The notice says why.
     if (credits.blocked) {
       void credits.check();
       return false;
     }
-    return conversation.send(text, { attachments: files });
+    if (sendingRef.current) return false;
+    sendingRef.current = true;
+    try {
+      const webMode = await webForTurn();
+      return conversation.send(text, { attachments: files, webMode, onChatCreated: saveWebChoiceFor });
+    } finally {
+      sendingRef.current = false;
+    }
   };
 
-  /** "Retry" an answer: same credits rule as sending (D-08). */
-  const retryAnswer = (answerId: string) => {
+  /** "Retry" an answer: same credits and web search rules as sending (D-08). */
+  const retryAnswer = async (answerId: string) => {
     if (credits.blocked) {
       void credits.check();
       return;
     }
-    conversation.retry(answerId);
+    conversation.retry(answerId, await webForTurn());
   };
 
   // Long press on a question: copy it, or edit it in the composer (E20, same credits rule).
   const questions = useQuestionEditing({
-    saveEdit: (questionId, text) => {
+    saveEdit: async (questionId, text) => {
       if (credits.blocked) {
         void credits.check();
         return false;
       }
-      return conversation.edit(questionId, text);
+      return conversation.edit(questionId, text, await webForTurn());
     },
     setComposerText: workspace.setComposerText,
   });
@@ -440,7 +464,7 @@ export function AuriaScreen({
 
   const handleSuggestion = (text: string) => {
     dismissKeyboard();
-    sendToAuria(text);
+    void sendToAuria(text);
     attachments.clear();
     setImageMode(false);
   };
@@ -450,22 +474,22 @@ export function AuriaScreen({
     question: string,
   ) => {
     dismissKeyboard();
-    sendToAuria(
+    void sendToAuria(
       `About the article "${article.title}" (${article.sourceName} — ${article.url}): ${question}`,
     );
     attachments.clear();
     setImageMode(false);
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     const text = workspace.composerText.trim();
     if (questions.editing) {
-      if (questions.submit(text)) dismissKeyboard();
+      if (await questions.submit(text)) dismissKeyboard();
       return;
     }
     if (imageMode) {
       if (!text) return;
-      if (!sendToAuria(`Create an image with aspect ratio ${imageRatio}. Image brief: ${text}`)) return;
+      if (!(await sendToAuria(`Create an image with aspect ratio ${imageRatio}. Image brief: ${text}`))) return;
       workspace.setComposerText('');
       setImageMode(false);
       dismissKeyboard();
@@ -477,7 +501,7 @@ export function AuriaScreen({
     }
     const ready = attachments.readyForMessage;
     if (!text && ready.length === 0) return;
-    if (!sendToAuria(text, ready)) return;
+    if (!(await sendToAuria(text, ready))) return;
     workspace.setComposerText('');
     attachments.clear();
     dismissKeyboard();
@@ -506,7 +530,7 @@ export function AuriaScreen({
   };
 
   const handleCreateRequest = (request: string) => {
-    sendToAuria(request);
+    void sendToAuria(request);
     attachments.clear();
     setImageMode(false);
     setPanelKey((key) => key + 1);
@@ -515,7 +539,7 @@ export function AuriaScreen({
 
   const handleUseTemplate = (template: AuriaDocTemplate) => {
     setDocTemplatesOpen(false);
-    sendToAuria(`Create a document from the "${template.label}" template.`);
+    void sendToAuria(`Create a document from the "${template.label}" template.`);
     setPanelKey((key) => key + 1);
     panelAnim.setValue(1);
   };
@@ -587,7 +611,7 @@ export function AuriaScreen({
         onOpenFiles={() => transitionPanel('gallery')}
         modelLabel={`Auria · ${auriaModeLabel(conversation.mode)}`}
         onActionFeedback={showToast}
-        onRetry={conversation.canContinue ? retryAnswer : undefined}
+        onRetry={conversation.canContinue ? (id) => void retryAnswer(id) : undefined}
         onQuestionLongPress={questions.openMenu}
         // Versions (E21): not while an answer is running.
         onSwitchVersion={

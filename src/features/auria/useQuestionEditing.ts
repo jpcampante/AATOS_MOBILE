@@ -2,8 +2,8 @@ import { useCallback, useState } from 'react';
 import type { AuriaChatMessage } from './types';
 
 type QuestionEditingOptions = {
-  /** Saves the edit (behind the screen's rules, e.g. credits). False when it didn't start. */
-  saveEdit: (questionId: string, text: string) => boolean;
+  /** Saves the edit (behind the screen's rules, e.g. credits, web search). False when it didn't start. */
+  saveEdit: (questionId: string, text: string) => boolean | Promise<boolean>;
   /** The composer's text: editing borrows the composer. */
   setComposerText: (text: string) => void;
 };
@@ -34,10 +34,10 @@ export function useQuestionEditing({ saveEdit, setComposerText }: QuestionEditin
     setComposerText('');
   }, [editing, setComposerText]);
 
-  /** Saves the edited text. Returns true when the edit started (editing then ends). */
+  /** Saves the edited text. Resolves true when the edit started (editing then ends). */
   const submit = useCallback(
-    (text: string): boolean => {
-      if (!editing || !text.trim() || !saveEdit(editing.id, text)) return false;
+    async (text: string): Promise<boolean> => {
+      if (!editing || !text.trim() || !(await saveEdit(editing.id, text))) return false;
       setEditing(null);
       setComposerText('');
       return true;

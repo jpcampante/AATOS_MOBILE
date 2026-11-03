@@ -569,11 +569,42 @@ Data: 2026-11-03
 
 ---
 
+### D-42 · Criar e mostrar imagens (A037, A038)
+
+Data: 2026-11-03
+
+- **O modo imagem deixou de ser um pedido em texto à Auria** e passa a chamar o
+  endpoint próprio (`POST /auria/generate/image`, E06), como manda a RF-22: nada
+  de simular. As cinco proporções do composer viram os **três tamanhos** que o
+  servidor aceita: 1:1 → `1024x1024`, qualquer paisagem → `1792x1024`, qualquer
+  retrato → `1024x1792`. Qualidade `standard` (a `hd` custa o dobro em tokens).
+- O servidor **salva o par de mensagens** (pedido e imagem) e devolve o
+  `chat_id`; por isso, depois do sucesso, o app **relê a conversa** em vez de
+  inventar as mensagens. Conversa criada pelo servidor vira a conversa aberta.
+  (O comentário do front web dizendo que o endpoint não persiste está
+  desatualizado em relação ao commit 6567791.)
+- O marcador `[Generate image] ` que o servidor grava no pedido é retirado ao
+  mostrar a mensagem: a pessoa escreveu só o enunciado.
+- Dá para **parar a espera** (a imagem demora): o pedido é abortado e a conversa
+  é relida, porque o servidor pode ter salvo a imagem mesmo assim. Sem plano, o
+  bloqueio de créditos (D-08) vale igual, antes de qualquer chamada.
+- **O visualizador simulado saiu.** O antigo `AuriaImageViewer` trazia Editar,
+  Comentar, Redimensionar, o pincel de remoção e um "Saved to Photos" que não
+  salvava nada — tudo sem backend (D-06). No lugar entra o
+  `AuriaImageFullScreen`: imagem, enunciado e Compartilhar (que no Android é
+  também como se salva). Foram apagados `AuriaImageArtifact`,
+  `AuriaImageViewer`, `AuriaImageRemoveTool` e o `assets/auria-image-mock.jpg`.
+- **Limite da verificação:** sem plano na conta, o servidor recusa antes de
+  gerar; no emulador só se viu o modo imagem e o bloqueio de créditos. O resto
+  está nos testes.
+
+---
+
 ## Pendências em aberto
 
 | Item | Onde |
 | --- | --- |
-| Spec 002: seguir pela A037 (Fase 9); provar o streaming (P003) com uma conta que tenha plano | [tasks 002](../specs/002-auria-real/tasks.md) |
+| Spec 002: seguir pela A039 (Fase 10); provar o streaming (P003) com uma conta que tenha plano | [tasks 002](../specs/002-auria-real/tasks.md) |
 | Conta de teste com plano ativo: destrava P003 e o sucesso real de Retry, edição e versões no aparelho | conta / billing |
 | O toast de erro ("Couldn't switch versions.", "Couldn't save your like.") usa o ícone de "check" | `AuriaActionToast` |
 | Com créditos bloqueados, o aviso de créditos esconde qualquer outro erro; o "Try again" do aviso devolve a pergunta ao composer também depois de um Retry (D-34) | `AuriaScreen` |

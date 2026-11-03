@@ -4,7 +4,7 @@ import { savedThinking } from '../../features/auria/thinking';
 import type { AuriaChatMessage } from '../../features/auria/types';
 import { auriaTypography, useTheme } from '../../theme';
 import { AuriaDocumentArtifact } from './AuriaDocumentArtifact';
-import { AuriaImageArtifact } from './AuriaImageArtifact';
+import { AuriaGeneratedImage } from './AuriaGeneratedImage';
 import { AuriaMarkdown } from './AuriaMarkdown';
 import { AuriaMessageActions } from './AuriaMessageActions';
 import { AuriaReasoningBlock } from './AuriaReasoningBlock';
@@ -66,7 +66,10 @@ export function AuriaAssistantContent({
         <AuriaSourceChips sources={message.sources} onOpenFiles={onOpenFiles} />
       ) : null}
       {revealRest && message.artifact?.kind === 'document' ? <AuriaDocumentArtifact artifact={message.artifact} /> : null}
-      {revealRest && message.artifact?.kind === 'image' ? <AuriaImageArtifact artifact={message.artifact} /> : null}
+      {/* An image the Auria made (E06): the server saves it as its own message. */}
+      {message.imageUrl ? (
+        <AuriaGeneratedImage url={message.imageUrl} prompt={message.text} onFeedback={onActionFeedback} />
+      ) : null}
       {revealRest && message.text ? (
         <AuriaMessageActions
           text={message.text}

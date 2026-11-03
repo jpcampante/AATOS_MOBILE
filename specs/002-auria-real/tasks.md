@@ -20,8 +20,8 @@ Spec: [spec.md](./spec.md) · Plano: [plan.md](./plan.md)
 
 ## Andamento (2026-11-03)
 
-**Próxima tarefa: A037** (criar imagem, Fase 9). Branch `develop`; a `main`
-recebeu merge até a A035.
+**Próxima tarefa: A039** (documentos da Auria, Fase 10). Branch `develop`; a
+`main` recebeu merge até a A035.
 
 **Feito** (cada uma com commit próprio e decisão no [registro](../../docs/DECISOES.md)):
 
@@ -36,6 +36,7 @@ recebeu merge até a A035.
 | 6 | A027, A028, A044 | avisos de erro, releitura após falha, bloqueio sem créditos | D-29 |
 | 7 | A029–A032 | Retry, editar pergunta, versões `< 2/3 >`, curtir | D-34 a D-37 |
 | 8 | A033–A036 | preferência de busca por conversa; botão "Web" no composer; andamento, cartões de fonte, citações `[n]` e imagens das fontes | D-38 a D-41 |
+| 9 | A037, A038 | criar imagem pelo endpoint real; imagem na conversa, em tela cheia e compartilhável | D-42 |
 | — | fix | aviso de erro não cobre mais o fim da conversa | D-32 |
 
 A015 foi removida (spec 003). A042 está fora do escopo.
@@ -43,7 +44,6 @@ A015 foi removida (spec 003). A042 está fora do escopo.
 **Falta na v1:**
 - P003: ver uma resposta real em streaming no aparelho. Depende de uma conta com plano.
 - V001: roteiro manual da P1.
-- Fase 9: A037, A038 (criar imagem e mostrá-la).
 - Fase 10: A039, A040, A041, A043 (documentos, propostas, criar pelo "+").
 - A056: limpar os mocks e ocultar o que é da v2.
 - Fechamento: V002, V003, V004.
@@ -251,12 +251,14 @@ A015 foi removida (spec 003). A042 está fora do escopo.
 
 ## Fase 9 — História 8: Criar imagens (P2)
 
-- [ ] A037 Modo "Criar imagem" → `generate/image`:
+- [x] A037 Modo "Criar imagem" → `generate/image`:
   - proporções 1:1 → `1024x1024`, paisagem → `1792x1024`, retrato → `1024x1792`;
   - progresso e erros de créditos.
 
   Endpoint E06 — RF-16
-- [ ] A038 Mensagem `content_type:"image"` renderizada; visualizador em tela cheia; compartilhar (e salvar, se funcionar no Expo Go). Remover `assets/auria-image-mock.jpg` e ocultar a ferramenta de pincel (D-06) — `AuriaImageArtifact.tsx`, `AuriaImageViewer.tsx` — RF-16, RF-22
+  - As cinco proporções viram os três tamanhos do servidor; a conversa é relida depois do sucesso, porque o servidor salva o par de mensagens (D-42).
+- [x] A038 Mensagem `content_type:"image"` renderizada; visualizador em tela cheia; compartilhar (e salvar, se funcionar no Expo Go). Remover `assets/auria-image-mock.jpg` e ocultar a ferramenta de pincel (D-06) — `AuriaGeneratedImage.tsx`, `AuriaImageFullScreen.tsx` — RF-16, RF-22
+  - O visualizador simulado inteiro saiu (editar, comentar, redimensionar, pincel e o "Saved to Photos"), junto com o mock; ficou imagem, enunciado e Compartilhar (D-42).
 
 **Checkpoint (emulador):** H8.1–H8.3, e a imagem aparece também na web.
 

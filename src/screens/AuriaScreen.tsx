@@ -16,8 +16,6 @@ import {
   AuriaComposerHandle,
 } from '../components/auria/AuriaComposer';
 import { AuriaCreateMenu } from '../components/auria/AuriaCreateMenu';
-import { AuriaDocTemplatesModal } from '../components/auria/AuriaDocTemplatesModal';
-import type { AuriaDocTemplate } from '../data/auriaDocTemplates';
 import { AuriaModeSheet, auriaModeLabel } from '../components/auria/AuriaModeSheet';
 import { AuriaPromptSuggestions } from '../components/auria/AuriaPromptSuggestions';
 import {
@@ -277,6 +275,9 @@ export function AuriaScreen({
     void web.bind(chatId).then((notice) => {
       if (notice) showToast(notice);
     });
+  /** The next message asks the Auria for a new file of this kind (E01 `create`, A043). */
+  const [createFile, setCreateFile] = useState<'doc' | 'sheet' | 'slides' | null>(null);
+
   /** One send at a time while the choice is being checked (a double tap must not send twice). */
   const sendingRef = useRef(false);
 
@@ -292,7 +293,14 @@ export function AuriaScreen({
     sendingRef.current = true;
     try {
       const webMode = await webForTurn();
-      return conversation.send(text, { attachments: files, webMode, onChatCreated: saveWebChoiceFor });
+      const sent = conversation.send(text, {
+        attachments: files,
+        webMode,
+        onChatCreated: saveWebChoiceFor,
+        ...(createFile ? { create: createFile } : null),
+      });
+      if (sent) setCreateFile(null);
+      return sent;
     } finally {
       sendingRef.current = false;
     }
@@ -337,7 +345,6 @@ export function AuriaScreen({
   const attachments = useAuriaAttachments();
   const [imageMode, setImageMode] = useState(false);
   const [imageRatio, setImageRatio] = useState('1:1');
-  const [docTemplatesOpen, setDocTemplatesOpen] = useState(false);
   const [newsSearchOpen, setNewsSearchOpen] = useState(false);
   const [newsCustomizeOpen, setNewsCustomizeOpen] = useState(false);
   const [composerHeight, setComposerHeight] = useState(
@@ -579,13 +586,6 @@ export function AuriaScreen({
     panelAnim.setValue(1);
   };
 
-  const handleUseTemplate = (template: AuriaDocTemplate) => {
-    setDocTemplatesOpen(false);
-    void sendToAuria(`Create a document from the "${template.label}" template.`);
-    setPanelKey((key) => key + 1);
-    panelAnim.setValue(1);
-  };
-
   const handleCreateProject = (input: AuriaNewProjectInput) => {
     workspace.createProject(input);
     closeSidebar();
@@ -819,6 +819,8 @@ export function AuriaScreen({
                   imageRatio={imageRatio}
                   onSelectRatio={setImageRatio}
                   onExitImageMode={() => setImageMode(false)}
+                  createFile={createFile}
+                  onExitCreateFile={() => setCreateFile(null)}
                   webSearch={
                     <AuriaWebSearchToggle
                       view={webButton}
@@ -845,9 +847,11 @@ export function AuriaScreen({
                 setCreateMenuOpen(false);
                 setImageMode(true);
               }}
-              onCreateDocument={() => {
+              onCreateFile={(kind) => {
                 setCreateMenuOpen(false);
-                setDocTemplatesOpen(true);
+                setCreateFile(kind);
+                if (workspace.panel !== 'chat') workspace.openPanel('chat');
+                composerRef.current?.focus();
               }}
               bottomOffset={shellBottomInset - 20}
             />
@@ -859,11 +863,6 @@ export function AuriaScreen({
               onClose={() => setModelPickerOpen(false)}
             />
 
-            <AuriaDocTemplatesModal
-              visible={docTemplatesOpen}
-              onClose={() => setDocTemplatesOpen(false)}
-              onUse={handleUseTemplate}
-            />
           </View>
         </View>
       </Animated.View>

@@ -64,7 +64,18 @@ type AuriaComposerProps = {
   onExitImageMode?: () => void;
   /** The web search button (A034), shown in the action row beside the answer mode. */
   webSearch?: ReactNode;
+  /** The next message asks the Auria for a new file of this kind (A043). */
+  createFile?: 'doc' | 'sheet' | 'slides' | null;
+  /** Drops that request; the next message is an ordinary one. */
+  onExitCreateFile?: () => void;
 };
+
+/** What each new-file request is called in the composer (A043). */
+const CREATE_FILE_LABEL = {
+  doc: 'New document',
+  sheet: 'New spreadsheet',
+  slides: 'New presentation',
+} as const;
 
 /** Aspect ratios offered when generating an image, straight in the composer. */
 export const COMPOSER_IMAGE_RATIOS = ['1:1', '4:3', '3:4', '16:9', '9:16'] as const;
@@ -103,6 +114,8 @@ export const AuriaComposer = forwardRef<AuriaComposerHandle, AuriaComposerProps>
       onSelectRatio,
       onExitImageMode,
       webSearch,
+      createFile = null,
+      onExitCreateFile,
     },
     ref,
   ) {
@@ -214,12 +227,37 @@ export const AuriaComposer = forwardRef<AuriaComposerHandle, AuriaComposerProps>
           </View>
         ) : null}
 
+        {/* What the next message asks the Auria to create (A043) */}
+        {createFile ? (
+          <View style={styles.imageBar}>
+            <AuriaIcon name={createFile === 'sheet' ? 'grid' : 'document'} size={16} color={ds.auriaBlue} strokeWidth={2} />
+            <Text style={styles.createLabel} numberOfLines={1}>
+              {CREATE_FILE_LABEL[createFile]}
+            </Text>
+            <Pressable
+              onPress={onExitCreateFile}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={`Don't create a ${CREATE_FILE_LABEL[createFile].toLowerCase()}`}
+              style={styles.imageExit}
+            >
+              <AuriaIcon name="close" size={14} color={ds.gray600} strokeWidth={2.5} />
+            </Pressable>
+          </View>
+        ) : null}
+
         {/* Row 1 — multiline text */}
         <TextInput
           ref={inputRef}
           value={text}
           onChangeText={setText}
-          placeholder={imageMode ? 'Describe the image…' : 'Ask anything'}
+          placeholder={
+            imageMode
+              ? 'Describe the image…'
+              : createFile
+                ? `Describe the ${CREATE_FILE_LABEL[createFile].toLowerCase()}…`
+                : 'Ask anything'
+          }
           placeholderTextColor={ds.gray400}
           style={[styles.input, inputWebFocusReset]}
           multiline
@@ -390,6 +428,14 @@ function createStyles(
     },
     ratioChipTextActive: {
       color: ds.white,
+    },
+    createLabel: {
+      ...auriaTypography.label,
+      flex: 1,
+      fontSize: 13,
+      letterSpacing: 0,
+      fontWeight: theme.typography.fontWeight.medium,
+      color: ds.gray900,
     },
     imageExit: {
       width: 26,

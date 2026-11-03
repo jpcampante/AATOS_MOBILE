@@ -37,7 +37,7 @@ type CreateActionId =
   | 'document'
   | 'image'
   | 'websearch'
-  | 'research';
+  | 'research' | 'sheet' | 'slides';
 type AuriaCreateMenuProps = {
   visible: boolean;
   onClose: () => void;
@@ -49,7 +49,8 @@ type AuriaCreateMenuProps = {
   /** Enters image-generation mode in the main composer (prompt + aspect ratio). */
   onCreateImage: () => void;
   /** Opens the document-templates picker. */
-  onCreateDocument: () => void;
+  /** Asks the Auria for a new file of this kind in the next message (E01 `create`). */
+  onCreateFile: (kind: 'doc' | 'sheet' | 'slides') => void;
   bottomOffset: number;
 };
 
@@ -68,6 +69,8 @@ const PRIMARY_ACTIONS: CreateAction[] = [
 const TOOL_ACTIONS: CreateAction[] = [
   { id: 'image', label: 'Create image', icon: 'frame' },
   { id: 'document', label: 'Create document', icon: 'document' },
+  { id: 'sheet', label: 'Create spreadsheet', icon: 'grid' },
+  { id: 'slides', label: 'Create presentation', icon: 'frame' },
 ];
 
 /** Create-menu card radius — larger, ChatGPT-style rounded corners. */
@@ -86,7 +89,7 @@ export function AuriaCreateMenu({
   onOpenCamera,
   onAddFiles,
   onCreateImage,
-  onCreateDocument,
+  onCreateFile,
   bottomOffset,
 }: AuriaCreateMenuProps) {
   const { theme } = useTheme();
@@ -169,9 +172,9 @@ export function AuriaCreateMenu({
       void pickPhotos();
       return;
     }
-    if (id === 'document') {
-      // Document creation opens a templates picker (ported from web doc-welcome).
-      onCreateDocument();
+    if (id === 'document' || id === 'sheet' || id === 'slides') {
+      // The Auria writes the file in this chat (A043): the next message says what it is about.
+      onCreateFile(id === 'document' ? 'doc' : id);
       return;
     }
     if (id === 'image') {

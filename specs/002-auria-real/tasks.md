@@ -292,6 +292,7 @@ A044 (bloqueio por créditos) subiu para a Fase 6, na P1 (D-08).
 - [x] A056 Remover os mocks mortos da Auria (`auriaMockData` de conversas, galeria e busca; `auriaModels`, D-06). **Ocultar na v1** o que só ganha backend na v2 (D-09, RF-22): painel de Projetos e a seção de projetos da barra lateral, Galeria e painel de busca simulado. Conferir que `grep "data/auria" src/screens src/components` só acha configuração estática ou código oculto da v2 — RNF-05, CS-02
 - [x] V002 `npm run typecheck` e `npm test` sem erros (68 suítes, 463 testes em 2026-11-03)
 - [ ] V003 Regressão completa da v1 no emulador Android (Expo Go), claro e escuro, com conferência cruzada na web. Registrar a versão do backend testada
+  - **Parcial (2026-11-03):** conferidos no emulador a barra lateral da v1 (sem Galeria, Projetos nem busca), o menu Tools com os três arquivos, o pedido "New spreadsheet" no composer, o modo imagem com as proporções, o botão Web indisponível, o painel de busca simulada do turno de QA e o tema escuro pelo Perfil. Falta a regressão ponta a ponta com uma conta com plano e a conferência cruzada na web.
 - [ ] V004 Spec → **Implementada (v1)**; decisões novas no fim de `docs/DECISOES.md`; merge `develop` → `main` quando aprovado
 
 ---
